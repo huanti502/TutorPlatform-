@@ -513,9 +513,9 @@ public static class SeedData
             await db.SaveChangesAsync();
         }
 
-        // ════════════════════════════════════════════════════
+        // ═══════════════════════════
         //  TIN NHAN
-        // ════════════════════════════════════════════════════
+        // ═══════════════════════════
         if (!await db.Messages.AnyAsync())
         {
             var convs = new[]
