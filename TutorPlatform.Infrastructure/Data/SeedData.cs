@@ -206,9 +206,9 @@ public static class SeedData
             }
         }
 
-        // ════════════════════════════════════════════════════
+        // ═══════════════════════════════════════════════════
         //  BOOKINGS + REVIEWS + REVIEW REPLIES
-        // ════════════════════════════════════════════════════
+        // ═══════════════════════════════════════════════════
         var reviewComments = new[]
         {
             "Thay/Co day rat de hieu, toi tien bo ro ret sau vai buoi hoc!",
@@ -550,9 +550,9 @@ public static class SeedData
             await db.SaveChangesAsync();
         }
 
-        // ════════════════════════════════════════════════════
+        // ═══════════════════════════════════
         //  NOTIFICATIONS
-        // ════════════════════════════════════════════════════
+        // ═══════════════════════════════════
         if (!await db.Notifications.AnyAsync())
         {
             var notifs = new List<Notification>();
