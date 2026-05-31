@@ -59,6 +59,7 @@ public static class SeedData
         }
 
         // ── BADGES ────────────────────────────────────────
+        // ── BADGES ────────────────────────────────────────
         if (!await db.Badges.AnyAsync())
         {
             db.Badges.AddRange(
@@ -68,16 +69,16 @@ public static class SeedData
                 new Badge { Id = 4, Name = "Huyền thoại", Description = "Hoàn thành 100 buổi học", Icon = "🏆", Color = "#FFD700", Type = BadgeType.Sessions, RequiredCount = 100 },
                 new Badge { Id = 5, Name = "Được yêu thích", Description = "Nhận được 5 lượt đánh giá", Icon = "⭐", Color = "#FF9800", Type = BadgeType.Reviews, RequiredCount = 5 },
                 new Badge { Id = 6, Name = "Top Rated", Description = "Nhận được 20 lượt đánh giá", Icon = "🌟", Color = "#FF5722", Type = BadgeType.Reviews, RequiredCount = 20 },
-                new Badge { Id = 7, Name = "Xuất sắc", Description = "Điểm TB ≥ 4.5 sao", Icon = "💎", Color = "#00BCD4", Type = BadgeType.Rating, RequiredCount = 45 },
-                new Badge { Id = 8, Name = "Hoàn hảo", Description = "Điểm TB ≥ 4.8 sao", Icon = "👑", Color = "#E91E63", Type = BadgeType.Rating, RequiredCount = 48 },
+                new Badge { Id = 7, Name = "Gia sư xuất sắc", Description = "Điểm TB ≥ 4.5⭐ (ít nhất 5 đánh giá)", Icon = "💎", Color = "#00BCD4", Type = BadgeType.Rating, RequiredCount = 45 },
+                new Badge { Id = 8, Name = "Hoàn hảo", Description = "Điểm TB ≥ 4.8⭐ (ít nhất 5 đánh giá)", Icon = "👑", Color = "#E91E63", Type = BadgeType.Rating, RequiredCount = 48 },
                 new Badge { Id = 9, Name = "Đa năng", Description = "Dạy từ 3 môn học trở lên", Icon = "📚", Color = "#607D8B", Type = BadgeType.Subjects, RequiredCount = 3 },
                 new Badge { Id = 10, Name = "Triệu phú", Description = "Tích lũy doanh thu 1,000,000 VNĐ", Icon = "💰", Color = "#795548", Type = BadgeType.Revenue, RequiredCount = 1000 }
             );
             await db.SaveChangesAsync();
         }
-      
 
-   
+
+
         // ════════════════════════════════════════════════════
         //  TẠO GIA SƯ
         // ════════════════════════════════════════════════════
