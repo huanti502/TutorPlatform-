@@ -1,0 +1,274 @@
+﻿@{
+    ViewBag.Title = "AI Tư vấn chọn gia sư";
+}
+
+<div class="container py-4" style="max-width:800px">
+
+    @* Header *@
+    <div class="text-center mb-4">
+        <div style="font-size:3rem"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><line x1="7" y1="15" x2="7" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="17" y1="15" x2="17" y2="15"/></svg> </div>
+        <h3 class="fw-bold mb-1">AI Tư vấn gia sư</h3>
+        <p class="text-muted">
+            Hỏi tôi bất cứ điều gì về việc tìm gia sư phù hợp!
+        </p>
+    </div>
+
+    @* Gợi ý câu hỏi nhanh *@
+    <div class="d-flex flex-wrap gap-2 justify-content-center mb-4" id="suggestions">
+        @foreach (var q in new[]{
+            "Tôi cần gia sư Toán lớp 12 tại Hà Nội",
+            "Tìm gia sư Tiếng Anh online dưới 200k/giờ",
+            "Gia sư lập trình Python cho người mới bắt đầu",
+            "Gia sư nào có rating cao nhất?",
+            "Cách đặt lịch học như thế nào?"
+        })
+        {
+            <button class="btn btn-outline-primary btn-sm rounded-pill suggestion-btn">
+                @q
+            </button>
+        }
+    </div>
+
+    @* Khung chat *@
+    <div class="card" style="border-radius:var(--radius-xl);overflow:hidden">
+
+        @* Vùng tin nhắn *@
+        <div id="chatMessages"
+             style="height:460px;overflow-y:auto;padding:24px;background:#f8f9fa;">
+
+            @* Tin nhắn chào mừng của AI *@
+            <div class="d-flex gap-3 mb-3">
+                <div class="flex-shrink-0 rounded-circle bg-primary text-white
+                    d-flex align-items-center justify-content-center fw-bold"
+                     style="width:38px;height:38px;font-size:18px">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><line x1="7" y1="15" x2="7" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="17" y1="15" x2="17" y2="15"/></svg> </div>
+                <div class="px-4 py-3 bg-white rounded-4 shadow-sm"
+                     style="max-width:80%;border-radius:4px 20px 20px 20px!important">
+                    <p class="mb-1">
+                        Xin chào! Tôi là trợ lý AI của <strong>TutorPlatform</strong> 👋
+                    </p>
+                    <p class="mb-1">
+                        Tôi có thể giúp bạn:
+                    </p>
+                    <ul class="mb-1" style="font-size:0.9rem">
+                        <li>🔍 Tìm gia sư phù hợp với môn học, ngân sách, khu vực</li>
+                        <li><svg width="14" height="14" fill="#F59E0B" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> So sánh và đánh giá gia sư</li>
+                        <li><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Hướng dẫn đặt lịch và thanh toán</li>
+                        <li>💡 Gợi ý phương pháp học tập hiệu quả</li>
+                    </ul>
+                    <p class="mb-0">Bạn cần tìm gia sư môn gì? 😊</p>
+                    <small class="text-muted">Vừa xong</small>
+                </div>
+            </div>
+        </div>
+
+        @* Ô nhập *@
+        <div class="p-3 bg-white border-top">
+            <div class="d-flex gap-2 align-items-end">
+                <textarea id="userInput" class="form-control"
+                          placeholder="Nhập câu hỏi của bạn... (Enter để gửi, Shift+Enter xuống dòng)"
+                          rows="2"
+                          style="border-radius:14px;resize:none;border:2px solid #e0e0e0;
+                transition:border .2s;font-size:0.9rem"></textarea>
+                <button id="sendBtn" class="btn btn-primary px-3"
+                        style="border-radius:14px;height:52px;width:52px;flex-shrink:0">
+                    <svg width="20" height="20" fill="none" stroke="currentColor"
+                         stroke-width="2" viewBox="0 0 24 24">
+                        <line x1="22" y1="2" x2="11" y2="13" />
+                        <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                    </svg>
+                </button>
+            </div>
+            <small class="text-muted mt-1 d-block">
+                💡 Mẹo: Cho biết môn học, khu vực, ngân sách để AI tư vấn chính xác hơn
+            </small>
+        </div>
+    </div>
+
+    @* Disclaimer *@
+    <p class="text-center text-muted mt-3" style="font-size:0.78rem">
+        🔒 Powered by Claude AI · Thông tin gia sư được lấy trực tiếp từ hệ thống
+    </p>
+</div>
+
+@section Scripts {
+    <script>
+        // Lịch sử hội thoại (để AI nhớ context)
+        const history = [];
+        const messagesEl = document.getElementById("chatMessages");
+        const inputEl = document.getElementById("userInput");
+        const sendBtn = document.getElementById("sendBtn");
+
+        // Gợi ý câu hỏi nhanh
+        document.querySelectorAll(".suggestion-btn").forEach(btn => {
+            btn.onclick = () => {
+                inputEl.value = btn.textContent.trim();
+                sendMessage();
+                document.getElementById("suggestions").style.display = "none";
+            };
+        });
+
+        // Gửi tin nhắn
+        async function sendMessage() {
+            const msg = inputEl.value.trim();
+            if (!msg) return;
+
+            inputEl.value = "";
+            sendBtn.disabled = true;
+
+            // Hiển thị tin nhắn của user
+            appendMessage("user", msg);
+
+            // Hiển thị loading
+            const loadingId = appendLoading();
+
+            // Gọi API
+            try {
+                const res = await fetch("/AI/SendMessage", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        message: msg,
+                        history: history.slice(-10) // Giữ 10 tin nhắn gần nhất
+                    })
+                });
+                const data = await res.json();
+
+                removeLoading(loadingId);
+
+                if (data.success) {
+                    appendMessage("assistant", data.reply);
+                    history.push({ role: "user", content: msg });
+                    history.push({ role: "assistant", content: data.reply });
+                } else {
+                    appendMessage("assistant", data.reply);
+                }
+            } catch (e) {
+                removeLoading(loadingId);
+                appendMessage("assistant", "<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Lỗi kết nối. Vui lòng thử lại!");
+            }
+
+            sendBtn.disabled = false;
+            inputEl.focus();
+        }
+
+        // Render tin nhắn
+        function appendMessage(role, content) {
+            const isUser = role === "user";
+            const time = new Date().toLocaleTimeString("vi-VN",
+                { hour: "2-digit", minute: "2-digit" });
+
+            // Convert markdown đơn giản → HTML
+            const html = content
+                .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                .replace(/\n/g, "<br>");
+
+            const div = document.createElement("div");
+            div.className = `d-flex gap-3 mb-3 ${isUser ? "flex-row-reverse" : ""}`;
+            div.innerHTML = isUser
+                ? `<div class="rounded-circle bg-success text-white d-flex align-items-center
+                               justify-content-center fw-bold flex-shrink-0"
+                        style="width:38px;height:38px">Tôi</div>
+                   <div class="px-4 py-3 text-white"
+                        style="max-width:75%;background:#0d6efd;
+                               border-radius:var(--radius-xl) 4px 20px 20px;">
+                       ${esc(content).replace(/\n/g, "<br>")}
+                       <br><small style="opacity:.7">${time}</small>
+                   </div>`
+                : `<div class="flex-shrink-0 rounded-circle bg-primary text-white
+                               d-flex align-items-center justify-content-center"
+                        style="width:38px;height:38px;font-size:18px"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><line x1="7" y1="15" x2="7" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="17" y1="15" x2="17" y2="15"/></svg> </div>
+                   <div class="px-4 py-3 bg-white rounded-4 shadow-sm"
+                        style="max-width:80%;border-radius:4px 20px 20px 20px!important;
+                               line-height:1.6">
+                       ${html}
+                       <br><small class="text-muted">${time}</small>
+                   </div>`;
+
+            messagesEl.appendChild(div);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+        }
+
+        // Loading bubble
+        function appendLoading() {
+            const id = "load_" + Date.now();
+            const div = document.createElement("div");
+            div.id = id;
+            div.className = "d-flex gap-3 mb-3";
+            div.innerHTML = `
+                <div class="flex-shrink-0 rounded-circle bg-primary text-white d-flex
+                            align-items-center justify-content-center"
+                     style="width:38px;height:38px;font-size:18px"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><line x1="7" y1="15" x2="7" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="17" y1="15" x2="17" y2="15"/></svg> </div>
+                <div class="px-4 py-3 bg-white rounded-4 shadow-sm d-flex gap-2 align-items-center">
+                    <span class="dot-pulse"></span>
+                    <small class="text-muted">AI đang suy nghĩ...</small>
+                </div>`;
+            messagesEl.appendChild(div);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+            return id;
+        }
+        function removeLoading(id) {
+            document.getElementById(id)?.remove();
+        }
+
+        // XSS protection
+        function esc(t) {
+            return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        // Phím tắt
+        inputEl.addEventListener("keydown", e => {
+            if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+        });
+        sendBtn.onclick = sendMessage;
+        inputEl.focus();
+    </script>
+
+    <style>
+        @@keyframes dotPulse {
+            0%, 80%, 100% {
+                transform: scale(0);
+                opacity: .3
+            }
+
+            40% {
+                transform: scale(1);
+                opacity: 1
+            }
+        }
+
+        .dot-pulse {
+            display: inline-flex;
+            gap: 4px;
+        }
+
+            .dot-pulse::before, .dot-pulse::after,
+            .dot-pulse span {
+                content: '';
+                display: inline-block;
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: #0d6efd;
+                animation: dotPulse 1.4s infinite;
+            }
+
+            .dot-pulse::before {
+                animation-delay: 0s
+            }
+
+        .dot-pulse {
+            animation-delay: .2s
+        }
+
+            .dot-pulse::after {
+                animation-delay: .4s
+            }
+
+        #userInput:focus {
+            border-color: #0d6efd !important;
+            outline: none;
+            box-shadow: none;
+        }
+    </style>
+}

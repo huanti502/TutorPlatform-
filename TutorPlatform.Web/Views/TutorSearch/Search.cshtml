@@ -1,0 +1,175 @@
+﻿@model List<TutorPlatform.Web.Controllers.TutorSearchController.SearchResult>
+@using TutorPlatform.Core.Models
+@{
+    ViewBag.Title = "Tìm kiếm gia sư";
+}
+
+<div class="container-fluid py-4">
+    <div class="row g-4">
+
+        @* Sidebar bộ lọc *@
+        <div class="col-lg-3">
+            <div class="card shadow-sm sticky-top" style="top:80px">
+                <div class="card-header bg-primary text-white fw-bold">🔍 Bộ lọc</div>
+                <div class="card-body">
+                    <form method="get">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Từ khóa</label>
+                            <input name="keyword" class="form-control" placeholder="Tên, khu vực..."
+                                   value="@ViewBag.Keyword" />
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Môn học</label>
+                            <select name="subjectId" class="form-select">
+                                <option value="">-- Tất cả --</option>
+                                @foreach (var s in (ViewBag.Subjects as List<Subject> ?? new()))
+                                {
+                                    <option value="@s.Id" selected="@(ViewBag.SubjectId?.ToString() == s.Id.ToString())">
+                                        @s.Name
+                                    </option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Hình thức</label>
+                            <select name="mode" class="form-select">
+                                <option value="">-- Tất cả --</option>
+                                <option value="Online" selected="@(ViewBag.Mode?.ToString() == "Online")">🖥 Online</option>
+                                <option value="Offline" selected="@(ViewBag.Mode?.ToString() == "Offline")">🏠 Tại nhà</option>
+                                <option value="Both" selected="@(ViewBag.Mode?.ToString() == "Both")">🔄 Cả hai</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Học phí (VNĐ/giờ)</label>
+                            <div class="d-flex gap-2">
+                                <input type="number" name="minPrice" class="form-control form-control-sm"
+                                       placeholder="Từ" value="@ViewBag.MinPrice" step="50000" />
+                                <input type="number" name="maxPrice" class="form-control form-control-sm"
+                                       placeholder="Đến" value="@ViewBag.MaxPrice" step="50000" />
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Rating tối thiểu</label>
+                            <select name="minRating" class="form-select">
+                                <option value="0">Tất cả</option>
+                                <option value="3" selected="@(ViewBag.MinRating?.ToString() == "3")"><svg width="14" height="14" fill="#F59E0B" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> <svg width="14" height="14" fill="#F59E0B" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> <svg width="14" height="14" fill="#F59E0B" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> 3+</option>
+                                <option value="4" selected="@(ViewBag.MinRating?.ToString() == "4")"><svg width="14" height="14" fill="#F59E0B" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> <svg width="14" height="14" fill="#F59E0B" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> <svg width="14" height="14" fill="#F59E0B" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> <svg width="14" height="14" fill="#F59E0B" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> 4+</option>
+                                <option value="4.5" selected="@(ViewBag.MinRating?.ToString() == "4.5")"><svg width="14" height="14" fill="#F59E0B" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> 4.5+</option>
+                            </select>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label fw-semibold">Sắp xếp</label>
+                            <select name="sortBy" class="form-select">
+                                <option value="rating" selected="@(ViewBag.SortBy?.ToString() == "rating")"><svg width="14" height="14" fill="#F59E0B" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> Rating cao</option>
+                                <option value="price_asc" selected="@(ViewBag.SortBy?.ToString() == "price_asc")">💰 Giá thấp→cao</option>
+                                <option value="price_desc" selected="@(ViewBag.SortBy?.ToString() == "price_desc")">💎 Giá cao→thấp</option>
+                                <option value="newest" selected="@(ViewBag.SortBy?.ToString() == "newest")">🆕 Mới nhất</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">🔍 Tìm kiếm</button>
+                        <a href="/TutorSearch/Search" class="btn btn-outline-secondary w-100 mt-2">✖ Xóa bộ lọc</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        @* Kết quả *@
+        <div class="col-lg-9">
+            <h5 class="fw-bold mb-3">Tìm thấy <span class="text-primary">@ViewBag.TotalCount</span> gia sư</h5>
+
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <div style="font-size:4rem">🔎</div>
+                    <h5>Không tìm thấy gia sư phù hợp</h5>
+                    <p>Thử điều chỉnh bộ lọc.</p>
+                </div>
+            }
+            else
+            {
+                <div class="row g-3">
+                    @foreach (var r in Model)
+                    {
+                        var t = r.Profile;
+                        <div class="col-md-6 col-xl-4">
+                            <div class="card h-100 " style="border-radius:12px;transition:transform .2s"
+                                 onmouseover="this.style.transform='translateY(-4px)'"
+                                 onmouseout="this.style.transform=''">
+                                <div class="card-body p-4">
+                                    <div class="d-flex align-items-center gap-3 mb-3">
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
+                                             style="width:48px;height:48px;font-size:20px;flex-shrink:0">
+                                            @t.User?.FullName?.FirstOrDefault()
+                                        </div>
+                                        <div>
+                                            <h6 class="fw-bold mb-0">@t.User?.FullName</h6>
+                                            <small class="text-muted"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="flex-shrink:0;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> @t.TeachingArea</small>
+                                        </div>
+                                    </div>
+
+                                    @* Huy hiệu *@
+                                    @if (t.TutorBadges?.Any() == true)
+                                    {
+                                        <div class="d-flex flex-wrap gap-1 mb-2">
+                                            @foreach (var tb in t.TutorBadges.Take(3))
+                                            {
+                                                <span class="badge rounded-pill px-2" style="background:@tb.Badge?.Color;font-size:11px">
+                                                    @tb.Badge?.Icon @tb.Badge?.Name
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+
+                                    @* Rating *@
+                                    <div class="d-flex align-items-center gap-1 mb-2">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            <span class="text-warning">@(i <= Math.Round(r.AvgRating) ? "★" : "☆")</span>
+                                        }
+                                        <span class="fw-semibold ms-1">@r.AvgRating.ToString("0.#")</span>
+                                        <span class="text-muted small">(@r.ReviewCount)</span>
+                                    </div>
+
+                                    <div class="small text-muted mb-3">
+                                        <div><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> @t.Education | ⏱ @t.ExperienceYears năm</div>
+                                        <div><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> @r.CompletedCount buổi đã dạy</div>
+                                    </div>
+
+                                    <div class="d-flex flex-wrap gap-1 mb-3">
+                                        @foreach (var ts in t.TutorSubjects?.Take(3) ?? Enumerable.Empty<TutorSubject>())
+                                        {
+                                            <span class="badge bg-light text-dark border">@ts.Subject?.Name</span>
+                                        }
+                                    </div>
+
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="fw-bold text-primary">
+                                            @t.HourlyRate.ToString("N0") <small class="text-muted fw-normal">VNĐ/h</small>
+                                        </span>
+                                        <a href="/Tutor/Detail/@t.Id" class="btn btn-primary btn-sm">Xem hồ sơ</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+
+                @* Phân trang *@
+                @if ((int)ViewBag.TotalPages > 1)
+                {
+                    <nav class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            @for (int i = 1; i <= (int)ViewBag.TotalPages; i++)
+                            {
+                                <li class="page-item @(i == (int)ViewBag.Page ? "active" : "")">
+                                    <a class="page-link"
+                                       href="?page=@i&keyword=@ViewBag.Keyword&subjectId=@ViewBag.SubjectId&mode=@ViewBag.Mode&minPrice=@ViewBag.MinPrice&maxPrice=@ViewBag.MaxPrice&minRating=@ViewBag.MinRating&sortBy=@ViewBag.SortBy">@i</a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                }
+            }
+        </div>
+    </div>
+</div>

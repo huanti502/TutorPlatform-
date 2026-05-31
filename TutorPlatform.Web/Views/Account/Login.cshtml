@@ -1,0 +1,110 @@
+@model TutorPlatform.Web.ViewModels.LoginViewModel
+@{
+    ViewData["Title"] = "Đăng nhập";
+}
+
+<div style="min-height:calc(100vh - 130px);display:flex;align-items:center;background:var(--bg);padding:2.5rem 0;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-5 col-lg-4">
+
+                <!-- Logo + Title -->
+                <div class="text-center mb-5">
+                    <div class="mx-auto mb-4 d-flex align-items-center justify-content-center"
+                         style="width:56px;height:56px;border-radius:16px;background:linear-gradient(135deg,var(--primary),#7C3AED);box-shadow:var(--shadow-primary);">
+                        <svg width="26" height="26" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+                            <path d="M6 10L14 6L22 10V14C22 18.4 18.4 21.6 14 22C9.6 21.6 6 18.4 6 14V10Z" fill="white"/>
+                            <path d="M10 14L13 17L18 12" stroke="var(--primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                    </div>
+                    <h4 style="font-weight:800;margin-bottom:0.3rem;letter-spacing:-0.03em;">Chào mừng trở lại</h4>
+                    <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">Đăng nhập vào tài khoản của bạn</p>
+                </div>
+
+                <!-- Card -->
+                <div class="card" style="border-radius:var(--radius-xl);box-shadow:var(--shadow-lg);border-color:var(--border);">
+                    <div class="card-body p-4">
+
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div class="alert alert-danger mb-4">
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0;" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                                </svg>
+                                @Html.ValidationSummary(true)
+                            </div>
+                        }
+
+                        <form asp-action="Login" method="post" novalidate>
+                            @Html.AntiForgeryToken()
+
+                            <div class="mb-4">
+                                <label class="form-label" asp-for="Email">Email</label>
+                                <input asp-for="Email" class="form-control" placeholder="ten@email.com"
+                                       type="email" autocomplete="email" />
+                                <span asp-validation-for="Email" class="text-danger" style="font-size:0.8rem;"></span>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label" asp-for="Password">Mật khẩu</label>
+                                <div style="position:relative;">
+                                    <input asp-for="Password" type="password" class="form-control"
+                                           placeholder="••••••••" id="pwField" autocomplete="current-password"
+                                           style="padding-right:3rem;" />
+                                    <button type="button" id="pwToggle"
+                                            style="position:absolute;right:12px;top:50%;transform:translateY(-50%);
+                                                   background:none;border:none;cursor:pointer;color:var(--text-muted);
+                                                   padding:0;display:flex;align-items:center;width:20px;height:20px;"
+                                            aria-label="Hiện/ẩn mật khẩu">
+                                        <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+                                        </svg>
+                                    </button>
+                                </div>
+                                <span asp-validation-for="Password" class="text-danger" style="font-size:0.8rem;"></span>
+                            </div>
+
+                            <div class="d-flex align-items-center justify-content-between mb-4">
+                                <div class="form-check mb-0">
+                                    <input asp-for="RememberMe" class="form-check-input" type="checkbox" />
+                                    <label asp-for="RememberMe" class="form-check-label" style="font-size:0.85rem;color:var(--text-secondary);">
+                                        Ghi nhớ đăng nhập
+                                    </label>
+                                </div>
+                                <a asp-controller="Account" asp-action="ForgotPassword"
+                                   style="font-size:0.85rem;font-weight:600;color:var(--primary);">
+                                    Quên mật khẩu?
+                                </a>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100" style="padding:0.7rem;font-size:0.95rem;">
+                                Đăng nhập
+                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <p class="text-center mt-4" style="font-size:0.875rem;color:var(--text-muted);">
+                    Chưa có tài khoản?
+                    <a asp-controller="Account" asp-action="Register" style="font-weight:700;color:var(--primary);">
+                        Đăng ký miễn phí
+                    </a>
+                </p>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+    <script>
+        document.getElementById('pwToggle')?.addEventListener('click', function () {
+            const f = document.getElementById('pwField');
+            f.type = f.type === 'password' ? 'text' : 'password';
+        });
+    </script>
+}

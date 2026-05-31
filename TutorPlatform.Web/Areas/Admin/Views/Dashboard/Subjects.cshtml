@@ -1,0 +1,345 @@
+﻿@using TutorPlatform.Core.Models
+@model List<Subject>
+@{
+    ViewData["Title"] = "Quản lý môn học";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    var active = Model.Count(s => s.IsActive);
+    var inactive = Model.Count(s => !s.IsActive);
+}
+
+<style>
+    .subject-row {
+        transition: background 0.15s;
+    }
+
+        .subject-row:hover {
+            background: var(--primary-light) !important;
+        }
+
+    .level-badge {
+        font-size: 0.72rem;
+        font-weight: 700;
+        padding: 0.25em 0.7em;
+        border-radius: 100px;
+    }
+
+    .add-input {
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        padding: 0.65rem 1rem;
+        font-size: 0.9rem;
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        transition: all 0.2s;
+        width: 100%;
+    }
+
+        .add-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+</style>
+
+<section class="section-sm">
+    <div class="container">
+
+        <!-- Header -->
+        <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
+            <a href="/Admin/Dashboard"
+               class="d-inline-flex align-items-center gap-1"
+               style="color:var(--text-muted);text-decoration:none;
+                font-size:0.875rem;font-weight:500;">
+                <svg width="14" height="14" fill="none" stroke="currentColor"
+                     stroke-width="2" viewBox="0 0 24 24">
+                    <path d="m15 18-6-6 6-6" />
+                </svg>
+                Dashboard
+            </a>
+            <div class="flex-grow-1">
+                <h4 style="font-weight:800;margin-bottom:0.2rem;">
+                    Quản lý môn học
+                </h4>
+                <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">
+                    @Model.Count tổng · @active hoạt động · @inactive ẩn
+                </p>
+            </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="row g-3 mb-4">
+            @foreach (var (val, lbl, color, bg) in new[]{
+                (Model.Count.ToString(), "Tổng môn học",
+                 "#1E40AF","#EFF6FF"),
+                (active.ToString(), "Đang hoạt động",
+                 "#059669","#F0FDF4"),
+                (inactive.ToString(), "Đang ẩn",
+                 "#D97706","#FFF7ED"),
+            })
+            {
+                <div class="col-4">
+                    <div class="card"
+                         style="border-radius:var(--radius-lg);border:none;
+                        box-shadow:var(--shadow-sm);
+                        padding:1rem 1.25rem;
+                        border-top:3px solid @color;">
+                        <div style="font-size:1.75rem;font-weight:800;
+                            color:@color;line-height:1;">
+                            @val
+                        </div>
+                        <div style="font-size:0.75rem;font-weight:600;
+                            color:var(--text-muted);margin-top:4px;">
+                            @lbl
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <div class="row g-4">
+
+            <!-- Add form -->
+            <div class="col-lg-4">
+                <div class="card"
+                     style="border-radius:20px;border:none;
+                    box-shadow:var(--shadow-md);
+                    position:sticky;top:80px;">
+                    <div class="card-body p-4">
+                        <h6 style="font-weight:700;font-size:0.8rem;
+                            text-transform:uppercase;
+                            letter-spacing:0.06em;
+                            color:var(--text-muted);
+                            margin-bottom:1.25rem;">
+                            Thêm môn học mới
+                        </h6>
+
+                        <form action="/Admin/Dashboard/AddSubject" method="post">
+                            @Html.AntiForgeryToken()
+
+                            <div class="mb-3">
+                                <label class="form-label">Tên môn học</label>
+                                <input type="text" name="name"
+                                       class="add-input"
+                                       placeholder="VD: Toán học, Tiếng Anh..."
+                                       required />
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Mô tả</label>
+                                <input type="text" name="description"
+                                       class="add-input"
+                                       placeholder="Mô tả ngắn (tuỳ chọn)" />
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">Cấp học</label>
+                                <div class="d-flex flex-wrap gap-2" id="levelBtns">
+                                    @foreach (var lvl in new[]{
+                                        "Tiểu học","THCS","THPT","Đại học"
+                                    })
+                                    {
+                                        <label style="cursor:pointer;">
+                                            <input type="radio" name="level"
+                                                   value="@lvl"
+                                                   class="d-none level-radio"
+                                            @(lvl == "THPT" ? "checked" : "") />
+                                            <span class="level-chip"
+                                                  style="display:inline-block;
+                                                padding:0.35em 0.85em;
+                                                border-radius:100px;
+                                                font-size:0.8rem;
+                                                font-weight:700;
+                                                border:2px solid var(--border);
+                                                background:var(--surface);
+                                                color:var(--text-secondary);
+                                                transition:all 0.15s;">
+                                                @lvl
+                                            </span>
+                                        </label>
+                                    }
+                                </div>
+                            </div>
+
+                            <button type="submit"
+                                    class="btn btn-primary w-100"
+                                    style="border-radius:var(--radius-md);font-weight:700;
+                                padding:0.75rem;">
+                                <svg width="16" height="16" fill="none"
+                                     stroke="currentColor" stroke-width="2.5"
+                                     viewBox="0 0 24 24" class="me-1">
+                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
+                                Thêm môn học
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subject list -->
+            <div class="col-lg-8">
+                <div class="card"
+                     style="border-radius:20px;border:none;
+                    box-shadow:var(--shadow-sm);overflow:hidden;">
+                    <div class="p-4 pb-0">
+                        <h6 style="font-weight:700;font-size:0.8rem;
+                            text-transform:uppercase;
+                            letter-spacing:0.06em;
+                            color:var(--text-muted);margin-bottom:1rem;">
+                            Danh sách môn học
+                        </h6>
+                    </div>
+
+                    @if (!Model.Any())
+                    {
+                        <div class="text-center py-5">
+                            <div style="width:56px;height:56px;border-radius:var(--radius-lg);
+                                background:var(--primary-light);
+                                display:flex;align-items:center;
+                                justify-content:center;
+                                margin:0 auto 1rem;">
+                                <svg width="24" height="24" fill="none"
+                                     stroke="var(--primary)" stroke-width="1.5"
+                                     viewBox="0 0 24 24">
+                                    <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+                                </svg>
+                            </div>
+                            <p style="color:var(--text-muted);font-size:0.875rem;">
+                                Chưa có môn học nào
+                            </p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        <th style="padding:0.75rem 1.25rem;">
+                                            Môn học
+                                        </th>
+                                        <th>Cấp học</th>
+                                        <th>Trạng thái</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var s in Model)
+                                    {
+                                        var levelColor = s.Level switch
+                                        {
+                                            "Tiểu học" => ("#FDF2F8", "#EC4899"),
+                                            "THCS" => ("#EFF6FF", "#2563EB"),
+                                            "THPT" => ("#F5F3FF", "#7C3AED"),
+                                            "Đại học" => ("#F0FDF4", "#059669"),
+                                            _ => ("#F1F5F9", "#64748B"),
+                                        };
+                                        <tr class="subject-row">
+                                            <td style="padding:0.875rem 1.25rem;">
+                                                <div style="font-weight:700;
+                                                    font-size:0.9rem;
+                                                    color:var(--text-primary);">
+                                                    @s.Name
+                                                </div>
+                                                @if (!string.IsNullOrEmpty(s.Description))
+                                                {
+                                                    <div style="font-size:0.75rem;
+                                                        color:var(--text-muted);
+                                                        margin-top:2px;">
+                                                        @s.Description
+                                                    </div>
+                                                }
+                                            </td>
+                                            <td>
+                                                <span class="level-badge"
+                                                      style="background:@levelColor.Item1;
+                                                    color:@levelColor.Item2;">
+                                                    @s.Level
+                                                </span>
+                                            </td>
+                                            <td>
+                                                @if (s.IsActive)
+                                                {
+                                                    <span style="display:inline-flex;
+                                                        align-items:center;
+                                                        gap:4px;font-size:0.78rem;
+                                                        font-weight:700;
+                                                        color:#059669;">
+                                                        <span style="width:6px;height:6px;
+                                                            border-radius:50%;
+                                                            background:#059669;
+                                                            display:inline-block;">
+                                                        </span>
+                                                        Hoạt động
+                                                    </span>
+                                                }
+                                                else
+                                                {
+                                                    <span style="display:inline-flex;
+                                                        align-items:center;
+                                                        gap:4px;font-size:0.78rem;
+                                                        font-weight:700;
+                                                        color:var(--text-muted);">
+                                                        <span style="width:6px;height:6px;
+                                                            border-radius:50%;
+                                                            background:var(--text-muted);
+                                                            display:inline-block;">
+                                                        </span>
+                                                        Đang ẩn
+                                                    </span>
+                                                }
+                                            </td>
+                                            <td>
+                                                <form action="/Admin/Dashboard/ToggleSubject"
+                                                      method="post"
+                                                      class="d-inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden"
+                                                           name="id"
+                                                           value="@s.Id" />
+                                                    <button type="submit"
+                                                            class="btn btn-sm"
+                                                            style="border-radius:8px;
+                                                        font-size:0.78rem;
+                                                        font-weight:600;
+                                                        border:none;
+                                                        background:@(s.IsActive ? "var(--warning-light)" : "var(--success-light)");
+                                                        color:@(s.IsActive ? "#D97706" : "#059669");">
+                                                        @(s.IsActive ? "Ẩn" : "Hiện")
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        document.querySelectorAll('.level-radio').forEach(radio => {
+            if (radio.checked) {
+                radio.nextElementSibling.style.background = 'var(--primary)';
+                radio.nextElementSibling.style.color = '#fff';
+                radio.nextElementSibling.style.borderColor = 'var(--primary)';
+            }
+            radio.addEventListener('change', () => {
+                document.querySelectorAll('.level-chip').forEach(chip => {
+                    chip.style.background = 'var(--surface)';
+                    chip.style.color = 'var(--text-secondary)';
+                    chip.style.borderColor = 'var(--border)';
+                });
+                radio.nextElementSibling.style.background = 'var(--primary)';
+                radio.nextElementSibling.style.color = '#fff';
+                radio.nextElementSibling.style.borderColor = 'var(--primary)';
+            });
+        });
+    </script>
+}

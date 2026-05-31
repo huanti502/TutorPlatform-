@@ -1,0 +1,548 @@
+@{
+    string? navAvatarUrl = null;
+    if (User.Identity?.IsAuthenticated == true)
+    {
+        var userManager = Context.RequestServices
+            .GetService<Microsoft.AspNetCore.Identity.UserManager<TutorPlatform.Core.Models.AppUser>>();
+        var currentUser = await userManager!.GetUserAsync(User);
+        navAvatarUrl = currentUser?.AvatarUrl;
+    }
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Gia Sư Việt</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+
+    <a href="#main-content" style="position:absolute;left:-9999px;top:8px;z-index:9999;background:var(--primary);color:#fff;padding:8px 16px;border-radius:var(--radius-sm);font-weight:600;font-size:0.875rem;transition:left 0.2s;"
+       onfocus="this.style.left='8px'" onblur="this.style.left='-9999px'">
+        Bỏ qua đến nội dung chính
+    </a>
+
+    <nav class="navbar navbar-expand-xl sticky-top" aria-label="Điều hướng chính">
+        <div class="container">
+
+            <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">
+                <div style="width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--primary),#7C3AED);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                    <svg width="18" height="18" viewBox="0 0 28 28" fill="none">
+                        <path d="M6 10L14 6L22 10V14C22 18.4 18.4 21.6 14 22C9.6 21.6 6 18.4 6 14V10Z" fill="white" />
+                        <path d="M10 14L13 17L18 12" stroke="var(--primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </div>
+                Gia Sư Việt
+            </a>
+
+            <button class="navbar-toggler border-0" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#navMenu"
+                    aria-controls="navMenu" aria-expanded="false" aria-label="Mở menu">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <div class="collapse navbar-collapse" id="navMenu">
+
+                <ul class="navbar-nav me-auto ms-3 gap-0">
+
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center gap-1"
+                           asp-area="" asp-controller="TutorSearch" asp-action="Search">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <circle cx="11" cy="11" r="8" />
+                                <path d="m21 21-4.35-4.35" />
+                            </svg>
+                            Tìm gia sư
+                        </a>
+                    </li>
+
+                    @if (User.Identity!.IsAuthenticated && User.IsInRole("Student"))
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-1" href="/AI/Chat">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M12 2a8 8 0 0 1 8 8c0 5.4-5.3 10.4-8 12C9.3 20.4 4 15.4 4 10a8 8 0 0 1 8-8z" />
+                                    <circle cx="12" cy="10" r="3" />
+                                </svg>
+                                AI Tư vấn
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-1" asp-controller="AI" asp-action="StudyPlan">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M9 20l-5.447-2.724A1 1 0 0 1 3 16.382V5.618a1 1 0 0 1 1.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0 0 21 18.382V7.618a1 1 0 0 0-.553-.894L15 4m0 13V4m0 0L9 7" />
+                                </svg>
+                                Lộ trình
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-1" href="/Student/AIReport">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z" />
+                                </svg>
+                                Báo cáo AI
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-1" href="/Document/Index">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z" />
+                                </svg>
+                                Tài liệu
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-1" href="/Quiz">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3m.08 4h.01" />
+                                </svg>
+                                Quiz AI
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-1" href="/Battle">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M14.5 17.5L3 6V3h3l11.5 11.5M14.5 17.5l2 2a2.121 2.121 0 0 0 3-3l-2-2M14.5 17.5l-3 3M4.5 8.5l2 2M7 3l3 3M21 3l-3 3" />
+                                </svg>
+                                ⚔️ Battle
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-1" href="/Leaderboard">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z" />
+                                </svg>
+                                Xếp hạng
+                            </a>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-1" href="/Document/Index">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z" />
+                                </svg>
+                                Tài liệu
+                            </a>
+                        </li>
+                    }
+
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center gap-1" href="/Booking/Calendar">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <rect x="3" y="4" width="18" height="18" rx="2" />
+                                <line x1="16" y1="2" x2="16" y2="6" />
+                                <line x1="8" y1="2" x2="8" y2="6" />
+                                <line x1="3" y1="10" x2="21" y2="10" />
+                            </svg>
+                            Lịch học
+                        </a>
+                    </li>
+
+                    <li class="nav-item">
+                        <a class="nav-link d-flex align-items-center gap-1"
+                           asp-area="" asp-controller="Blog" asp-action="Index">
+                            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
+                            </svg>
+                            Blog
+                        </a>
+                    </li>
+                </ul>
+
+                <ul class="navbar-nav ms-auto align-items-center gap-2">
+
+                    @if (User.Identity!.IsAuthenticated)
+                    {
+                        <li class="nav-item">
+                            <a class="nav-icon-btn"
+                               asp-area="" asp-controller="Message" asp-action="Index"
+                               title="Tin nhắn" aria-label="Tin nhắn">
+                                <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                </svg>
+                            </a>
+                        </li>
+
+                        <li class="nav-item" style="position:relative;">
+                            <a class="nav-icon-btn"
+                               asp-area="" asp-controller="Account" asp-action="Notifications"
+                               title="Thông báo" aria-label="Thông báo">
+                                <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+                                    <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+                                </svg>
+                                <span id="notifBadge"
+                                      style="position:absolute;top:-3px;right:-3px;min-width:18px;height:18px;
+                                background:var(--danger);color:#fff;border-radius:var(--radius-full);
+                                font-size:10px;font-weight:700;display:none;
+                                align-items:center;justify-content:center;
+                                border:2px solid #fff;padding:0 3px;line-height:1;"
+                                      aria-live="polite">0</span>
+                            </a>
+                        </li>
+
+                        <li class="nav-item dropdown">
+                            <a class="nav-user-btn dropdown-toggle"
+                               href="#" data-bs-toggle="dropdown"
+                               aria-expanded="false" aria-label="Menu tài khoản">
+                                @if (!string.IsNullOrEmpty(navAvatarUrl))
+                                {
+                                    <img src="@navAvatarUrl"
+                                         style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:2px solid rgba(79,70,229,0.2);"
+                                         alt="Ảnh đại diện" />
+                                }
+                                else
+                                {
+                                    <span class="avatar avatar-xs"
+                                          style="background:linear-gradient(135deg,var(--primary),#7C3AED);">
+                                        @User.Identity!.Name?[0].ToString().ToUpper()
+                                    </span>
+                                }
+                                <span class="d-none d-md-inline"
+                                      style="font-size:0.85rem;font-weight:600;max-width:120px;
+                                    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                                    @User.Identity!.Name
+                                </span>
+                            </a>
+
+                            <ul class="dropdown-menu dropdown-menu-end mt-2">
+
+                                @if (User.IsInRole("Student"))
+                                {
+                                    <li><span class="dropdown-header">Học viên</span></li>
+                                    <li>
+                                        <a class="dropdown-item" asp-area="" asp-controller="Student" asp-action="Profile">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                                            Hồ sơ cá nhân
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" asp-area="" asp-controller="Booking" asp-action="MyBookings">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                                            Lịch học của tôi
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" asp-area="" asp-controller="Booking" asp-action="Calendar">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                                            Xem lịch tổng quan
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="/Battle">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 17.5L3 6V3h3l11.5 11.5M14.5 17.5l2 2a2.121 2.121 0 0 0 3-3l-2-2M14.5 17.5l-3 3M4.5 8.5l2 2M7 3l3 3M21 3l-3 3" /></svg>
+                                            ⚔️ Quiz Battle
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                }
+
+                                @if (User.IsInRole("Tutor"))
+                                {
+                                    <li><span class="dropdown-header">Gia sư</span></li>
+                                    <li>
+                                        <a class="dropdown-item" asp-area="" asp-controller="Tutor" asp-action="Dashboard">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
+                                            Dashboard
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" asp-area="" asp-controller="Booking" asp-action="Calendar">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
+                                            Lịch dạy
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" asp-area="" asp-controller="Tutor" asp-action="Profile">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /></svg>
+                                            Hồ sơ gia sư
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" asp-area="" asp-controller="Tutor" asp-action="Availability">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>
+                                            Lịch rảnh
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" asp-area="" asp-controller="Booking" asp-action="TutorRequests">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87m-4-12a4 4 0 0 1 0 7.75" /></svg>
+                                            Yêu cầu học
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="/Battle">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 17.5L3 6V3h3l11.5 11.5M14.5 17.5l2 2a2.121 2.121 0 0 0 3-3l-2-2M14.5 17.5l-3 3M4.5 8.5l2 2M7 3l3 3M21 3l-3 3" /></svg>
+                                            ⚔️ Quiz Battle
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                }
+
+                                @if (User.IsInRole("Admin"))
+                                {
+                                    <li><span class="dropdown-header">Quản trị</span></li>
+                                    <li>
+                                        <a class="dropdown-item" asp-area="" asp-controller="Admin" asp-action="Index">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
+                                            Admin Panel
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                }
+
+                                <li>
+                                    <a class="dropdown-item" asp-area="" asp-controller="Account" asp-action="ChangePassword">
+                                        <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                                        Đổi mật khẩu
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form asp-area="" asp-controller="Account" asp-action="Logout" method="post">
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+                                            Đăng xuất
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                    }
+                    else
+                    {
+                        <li class="nav-item">
+                            <a class="nav-link" style="font-weight:600;color:var(--text-secondary) !important;"
+                               asp-controller="Account" asp-action="Login">
+                                Đăng nhập
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="btn btn-primary btn-sm px-4"
+                               asp-controller="Account" asp-action="Register">
+                                Đăng ký miễn phí
+                            </a>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    @if (TempData["Success"] != null)
+    {
+        <div style="position:fixed;top:80px;right:1.5rem;z-index:var(--z-toast);min-width:300px;max-width:400px;"
+             role="alert" aria-live="polite">
+            <div style="background:#F0FDF4;border:1.5px solid #BBF7D0;border-radius:var(--radius-md);
+                padding:14px 16px;display:flex;align-items:center;gap:10px;
+                font-size:0.875rem;font-weight:500;color:#14532D;
+                box-shadow:var(--shadow-xl);animation:slideIn 0.3s cubic-bezier(0.16,1,0.3,1);"
+                 id="toastSuccess">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--success);" aria-hidden="true">
+                    <polyline points="20 6 9 17 4 12" />
+                </svg>
+                <span style="flex:1;">@TempData["Success"]</span>
+                <button onclick="document.getElementById('toastSuccess').remove()"
+                        style="background:none;border:none;cursor:pointer;opacity:0.5;font-size:1.1rem;padding:0;line-height:1;color:inherit;"
+                        aria-label="Đóng thông báo">
+                    ×
+                </button>
+            </div>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div style="position:fixed;top:80px;right:1.5rem;z-index:var(--z-toast);min-width:300px;max-width:400px;"
+             role="alert" aria-live="assertive">
+            <div style="background:var(--danger-light);border:1.5px solid #FECACA;border-radius:var(--radius-md);
+                padding:14px 16px;display:flex;align-items:center;gap:10px;
+                font-size:0.875rem;font-weight:500;color:#7F1D1D;
+                box-shadow:var(--shadow-xl);animation:slideIn 0.3s cubic-bezier(0.16,1,0.3,1);"
+                 id="toastError">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--danger);" aria-hidden="true">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="15" y1="9" x2="9" y2="15" />
+                    <line x1="9" y1="9" x2="15" y2="15" />
+                </svg>
+                <span style="flex:1;">@TempData["Error"]</span>
+                <button onclick="document.getElementById('toastError').remove()"
+                        style="background:none;border:none;cursor:pointer;opacity:0.5;font-size:1.1rem;padding:0;line-height:1;color:inherit;"
+                        aria-label="Đóng thông báo">
+                    ×
+                </button>
+            </div>
+        </div>
+    }
+
+    <main role="main" id="main-content">
+        @RenderBody()
+    </main>
+
+    <footer class="footer" role="contentinfo">
+        <div class="container">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width:28px;height:28px;border-radius:8px;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;">
+                        <svg width="16" height="16" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+                            <path d="M6 10L14 6L22 10V14C22 18.4 18.4 21.6 14 22C9.6 21.6 6 18.4 6 14V10Z" fill="white" fill-opacity="0.8" />
+                        </svg>
+                    </div>
+                    <span style="font-family:'Plus Jakarta Sans',sans-serif;font-weight:700;color:#fff;font-size:0.95rem;letter-spacing:-0.02em;">
+                        Gia Sư Việt
+                    </span>
+                    <span style="color:rgba(255,255,255,0.4);">© 2026</span>
+                </div>
+                <div class="d-flex align-items-center gap-4">
+                    <a asp-area="" asp-controller="Blog" asp-action="Index">Blog</a>
+                    <a asp-area="" asp-controller="Home" asp-action="Privacy">Chính sách bảo mật</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.0/signalr.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    <script>
+        setTimeout(() => {
+        ['toastSuccess', 'toastError'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+        el.style.opacity = '0';
+        el.style.transition = 'opacity 0.4s ease';
+        setTimeout(() => el.remove(), 400);
+        }
+        });
+        }, 5000);
+
+        window.showToast = function (title, content, link) {
+        let container = document.getElementById("toastContainer");
+        if (!container) {
+        container = document.createElement("div");
+        container.id = "toastContainer";
+        container.style.cssText = "position:fixed;bottom:24px;right:24px;z-index:var(--z-toast,1000);display:flex;flex-direction:column;gap:8px;";
+        document.body.appendChild(container);
+        }
+        const toast = document.createElement("div");
+        toast.style.cssText = `
+        background:#fff;border-left:4px solid var(--primary);
+        border-radius:var(--radius-md,12px);padding:14px 16px;
+        min-width:300px;max-width:380px;
+        box-shadow:0 10px 28px rgba(0,0,0,0.12);
+        animation:slideIn .3s cubic-bezier(0.16,1,0.3,1);
+        cursor:pointer;border:1px solid var(--border);border-left-width:4px;
+        `;
+        toast.innerHTML = `
+        <div style="font-weight:700;font-size:13.5px;margin-bottom:3px;color:var(--text-primary);">${title}</div>
+        <div style="font-size:13px;color:var(--text-secondary);">${content}</div>
+        `;
+        toast.onclick = () => window.location.href = link;
+        container.appendChild(toast);
+        setTimeout(() => {
+        toast.style.opacity = "0";
+        toast.style.transition = "opacity .35s ease";
+        setTimeout(() => toast.remove(), 400);
+        }, 5000);
+        };
+    </script>
+
+    @if (User.Identity?.IsAuthenticated == true)
+    {
+        <script>
+            (function () {
+            const badge = document.getElementById("notifBadge");
+            let count = 0;
+            const conn = new signalR.HubConnectionBuilder()
+            .withUrl("/chatHub")
+            .withAutomaticReconnect()
+            .build();
+
+            conn.on("ReceiveNotification", function (data) {
+            count++;
+            if (badge) {
+            badge.textContent = count > 9 ? "9+" : count;
+            badge.style.display = "inline-flex";
+            }
+            window.showToast(data.title, data.content, data.link);
+            });
+
+            // ── Nhận lời thách đấu Battle từ bất kỳ trang nào ──
+            const battleConn = new signalR.HubConnectionBuilder()
+            .withUrl("/battleHub")
+            .withAutomaticReconnect()
+            .build();
+
+            battleConn.on("ReceiveBattleInvite", function (invite) {
+            window._pendingBattleInvite = invite;
+            window.showToast(
+            `⚔️ ${invite.challengerName} thách đấu!`,
+            `Môn: ${invite.subjectName} · Cấp: ${invite.level} — <a href="/Battle">Vào Battle để trả lời</a>`,
+            "/Battle"
+            );
+            });
+
+            battleConn.start().catch(e => console.error("Battle SignalR:", e));
+            window._battleConn = battleConn;
+
+            conn.start().catch(e => console.error("Notif SignalR:", e));
+
+            if (badge) {
+            badge.closest("a")?.addEventListener("click", () => {
+            count = 0;
+            badge.style.display = "none";
+            });
+            }
+            })();
+        </script>
+
+        <script>
+            function updateCountdowns() {
+            document.querySelectorAll('.countdown').forEach(el => {
+            const target = new Date(el.dataset.time);
+            const diff = target - new Date();
+            if (diff <= 0) {
+            el.textContent = "Đã đến giờ! Tải lại trang.";
+            el.style.color = "var(--danger)";
+            return;
+            }
+            const h = Math.floor(diff / 3600000);
+            const m = Math.floor((diff % 3600000) / 60000);
+            const s = Math.floor((diff % 60000) / 1000);
+            el.textContent = h > 0 ? `Còn ${h}h ${m}p` : m > 0 ? `Còn ${m}p ${s}s` : `Còn ${s}s`;
+            });
+            }
+            setInterval(updateCountdowns, 1000);
+            updateCountdowns();
+
+            async function checkUpcomingClass() {
+            try {
+            const res = await fetch("/Booking/GetUpcoming");
+            const data = await res.json();
+            if (data.hasUpcoming) {
+            window.showToast("Sắp đến giờ học!", `${data.subjectName} với ${data.partnerName} lúc ${data.startTime}`, data.joinUrl);
+            if (Notification.permission === "granted") {
+            new Notification("Gia Sư Việt nhắc lịch học!", { body: `${data.subjectName} - ${data.startTime}`, icon: "/favicon.ico" });
+            }
+            }
+            } catch (e) { console.error("Lỗi khi check lịch học:", e); }
+            }
+            if (Notification.permission === "default") Notification.requestPermission();
+            setInterval(checkUpcomingClass, 60000);
+            checkUpcomingClass();
+        </script>
+    }
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+</html>

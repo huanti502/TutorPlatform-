@@ -1,0 +1,244 @@
+﻿@model IEnumerable<TutorPlatform.Core.Models.Subject>
+@{
+    ViewData["Title"] = "AI Quiz Generator";
+}
+
+<div class="container py-4">
+    <!-- BƯỚC 1: Chọn môn -->
+    <div id="step-select" class="card shadow-sm mx-auto" style="max-width:600px">
+        <div class="card-body p-4">
+            <h3 class="fw-bold mb-1"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a8 8 0 0 1 8 8c0 5.4-5.3 10.4-8 12C9.3 20.4 4 15.4 4 10a8 8 0 0 1 8-8z"/></svg> AI Quiz Generator</h3>
+            <p class="text-muted mb-4">AI tạo đề trắc nghiệm cá nhân hoá ngay lập tức</p>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Môn học</label>
+                <select id="subjectId" class="form-select">
+                    @foreach (var s in Model)
+                    {
+                        <option value="@s.Id">@s.Name</option>
+                    }
+                </select>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label fw-semibold">Cấp độ</label>
+                <div class="d-flex gap-2">
+                    @foreach (var lvl in new[] { "Cơ bản", "Trung bình", "Nâng cao" })
+                    {
+                        <button class="btn btn-outline-primary level-btn flex-fill" data-level="@lvl">@lvl</button>
+                    }
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-semibold">Chủ đề cụ thể <span class="text-muted">(tuỳ chọn)</span></label>
+                <input id="topic" type="text" class="form-control" placeholder="Vd: Đạo hàm, Thì hiện tại hoàn thành...">
+            </div>
+
+            <button id="btnGenerate" class="btn btn-primary w-100 py-2 fw-semibold">
+                ✨ Tạo đề bài ngay
+            </button>
+        </div>
+    </div>
+
+    <!-- BƯỚC 2: Loading -->
+    <div id="step-loading" class="text-center py-5" style="display:none">
+        <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem"></div>
+        <h5 class="text-muted">AI đang soạn đề...</h5>
+        <p class="text-muted small">Thường mất 5-10 giây</p>
+    </div>
+
+    <!-- BƯỚC 3: Làm bài -->
+    <div id="step-quiz" style="display:none" class="mx-auto" style="max-width:750px">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h4 class="fw-bold mb-0">📝 Làm bài</h4>
+            <div class="d-flex align-items-center gap-3">
+                <span class="badge bg-light text-dark border fs-6">
+                    ⏱️ <span id="timer">10:00</span>
+                </span>
+                <span class="text-muted" id="progress-text">Câu 0/10</span>
+            </div>
+        </div>
+
+        <!-- Progress bar -->
+        <div class="progress mb-4" style="height:6px">
+            <div id="progress-bar" class="progress-bar bg-primary" style="width:0%"></div>
+        </div>
+
+        <div id="question-container"></div>
+
+        <div class="d-flex gap-2 mt-4">
+            <button id="btnPrev" class="btn btn-outline-secondary" style="display:none">← Trước</button>
+            <button id="btnNext" class="btn btn-primary ms-auto">Tiếp theo →</button>
+            <button id="btnSubmit" class="btn btn-success ms-auto" style="display:none">🏁 Nộp bài</button>
+        </div>
+    </div>
+
+    <!-- BƯỚC 4: Kết quả -->
+    <div id="step-result" style="display:none" class="mx-auto" style="max-width:750px">
+        <div class="card shadow text-center mb-4">
+            <div class="card-body p-5">
+                <div id="result-emoji" class="display-3 mb-3"></div>
+                <h2 id="result-score" class="fw-bold"></h2>
+                <p id="result-badge" class="fs-5 text-muted mb-4"></p>
+                <div class="d-flex gap-2 justify-content-center">
+                    <button class="btn btn-primary" onclick="location.reload()">🔄 Làm đề mới</button>
+                    <a href="/Quiz/History" class="btn btn-outline-secondary"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z"/></svg> Lịch sử bài làm</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Review từng câu -->
+        <h5 class="fw-bold mb-3">📖 Xem lại đáp án</h5>
+        <div id="review-container"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let questions = [];
+        let userAnswers = [];
+        let currentQ = 0;
+        let selectedLevel = 'Trung bình';
+        let timerInterval;
+        let secondsLeft = 600; // 10 phút
+        const subjectId = () => parseInt(document.getElementById('subjectId').value);
+
+        // Chọn cấp độ
+        document.querySelectorAll('.level-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.level-btn').forEach(b => b.classList.remove('active', 'btn-primary'));
+                btn.classList.add('active', 'btn-primary');
+                btn.classList.remove('btn-outline-primary');
+                selectedLevel = btn.dataset.level;
+            });
+        });
+        document.querySelector('.level-btn').click(); // mặc định chọn "Cơ bản"
+
+        // Sinh đề
+        document.getElementById('btnGenerate').addEventListener('click', async () => {
+            show('step-loading');
+            hide('step-select');
+
+            const res = await fetch('/Quiz/Generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    subjectId: subjectId(),
+                    level: selectedLevel,
+                    topic: document.getElementById('topic').value.trim() || null
+                })
+            });
+            const data = await res.json();
+
+            if (!data.success) {
+                alert('Lỗi: ' + data.error);
+                show('step-select');
+                hide('step-loading');
+                return;
+            }
+
+            questions = data.data.questions;
+            userAnswers = new Array(questions.length).fill(null);
+            currentQ = 0;
+
+            hide('step-loading');
+            show('step-quiz');
+            renderQuestion();
+            startTimer();
+        });
+
+        function renderQuestion() {
+            const q = questions[currentQ];
+            const total = questions.length;
+
+            document.getElementById('progress-text').textContent = `Câu ${currentQ + 1}/${total}`;
+            document.getElementById('progress-bar').style.width = `${((currentQ + 1) / total) * 100}%`;
+
+            document.getElementById('question-container').innerHTML = `
+                    <div class="card shadow-sm mb-3">
+                        <div class="card-body p-4">
+                            <p class="text-muted small mb-2">Câu ${currentQ + 1} / ${total}</p>
+                            <h5 class="fw-semibold mb-4">${q.question}</h5>
+                            ${q.options.map((opt, i) => `
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="opt" id="opt${i}"
+                                        value="${i}" ${userAnswers[currentQ] === i ? 'checked' : ''}
+                                        onchange="userAnswers[${currentQ}]=${i}">
+                                    <label class="form-check-label" for="opt${i}">${opt}</label>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>`;
+
+            document.getElementById('btnPrev').style.display = currentQ > 0 ? '' : 'none';
+            document.getElementById('btnNext').style.display = currentQ < total - 1 ? '' : 'none';
+            document.getElementById('btnSubmit').style.display = currentQ === total - 1 ? '' : 'none';
+        }
+
+        document.getElementById('btnNext').addEventListener('click', () => { currentQ++; renderQuestion(); });
+        document.getElementById('btnPrev').addEventListener('click', () => { currentQ--; renderQuestion(); });
+
+        document.getElementById('btnSubmit').addEventListener('click', submitQuiz);
+
+        async function submitQuiz() {
+            clearInterval(timerInterval);
+            const unanswered = userAnswers.filter(a => a === null).length;
+            if (unanswered > 0 && !confirm(`Còn ${unanswered} câu chưa trả lời. Nộp bài?`)) return;
+
+            let score = 0;
+            questions.forEach((q, i) => { if (userAnswers[i] === q.correctIndex) score++; });
+
+            // Lưu kết quả
+            const res = await fetch('/Quiz/Submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subjectId: subjectId(), level: selectedLevel, score, total: questions.length })
+            });
+            const result = await res.json();
+
+            // Hiển thị kết quả
+            hide('step-quiz');
+            show('step-result');
+
+            const pct = result.percent;
+            document.getElementById('result-emoji').textContent = pct >= 90 ? '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> ' : pct >= 70 ? '<svg width="14" height="14" fill="#F59E0B" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> ' : pct >= 50 ? '📚' : '💪';
+            document.getElementById('result-score').textContent = `${score} / ${questions.length} câu đúng (${pct}%)`;
+            document.getElementById('result-badge').textContent = result.badge;
+
+            // Review đáp án
+            document.getElementById('review-container').innerHTML = questions.map((q, i) => {
+                const isCorrect = userAnswers[i] === q.correctIndex;
+                return `
+                        <div class="card mb-3 border-${isCorrect ? 'success' : 'danger'}">
+                            <div class="card-header bg-${isCorrect ? 'success' : 'danger'} bg-opacity-10 fw-semibold">
+                                ${isCorrect ? '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> ' : '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> '} Câu ${i + 1}: ${q.question}
+                            </div>
+                            <div class="card-body">
+                                ${q.options.map((opt, j) => `
+                                    <div class="${j === q.correctIndex ? 'text-success fw-semibold' : (j === userAnswers[i] && !isCorrect ? 'text-danger text-decoration-line-through' : 'text-muted')}">
+                                        ${j === q.correctIndex ? '✓' : (j === userAnswers[i] ? '✗' : '○')} ${opt}
+                                    </div>
+                                `).join('')}
+                                <div class="alert alert-info mt-3 mb-0 small">
+                                    💡 <strong>Giải thích:</strong> ${q.explanation}
+                                </div>
+                            </div>
+                        </div>`;
+            }).join('');
+        }
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                secondsLeft--;
+                const m = Math.floor(secondsLeft / 60);
+                const s = secondsLeft % 60;
+                document.getElementById('timer').textContent = `${m}:${s.toString().padStart(2, '0')}`;
+                if (secondsLeft <= 0) { clearInterval(timerInterval); submitQuiz(); }
+            }, 1000);
+        }
+
+        function show(id) { document.getElementById(id).style.display = ''; }
+        function hide(id) { document.getElementById(id).style.display = 'none'; }
+    </script>
+}

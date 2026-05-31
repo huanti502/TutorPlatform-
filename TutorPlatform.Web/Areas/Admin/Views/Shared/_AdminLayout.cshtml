@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewBag.Title — Admin | Gia Sư Việt</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <style>
+            body {
+                background: var(--bg);
+            }
+
+            /* ── Sidebar ── */
+            .admin-sidebar {
+                width: 240px;
+                min-height: 100vh;
+                background: var(--text-primary);
+                position: fixed;
+                top: 0;
+                left: 0;
+                z-index: 200;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .admin-sidebar-logo {
+                padding: 20px 16px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                border-bottom: 1px solid rgba(255,255,255,0.08);
+            }
+
+            .admin-sidebar-logo-text {
+                font-family: 'Plus Jakarta Sans', sans-serif;
+                font-weight: 800;
+                font-size: 1rem;
+                color: #fff;
+                letter-spacing: -0.03em;
+            }
+
+            .admin-sidebar .nav-section {
+                font-size: 0.68rem;
+                text-transform: uppercase;
+                letter-spacing: 0.1em;
+                color: rgba(255,255,255,0.35);
+                padding: 16px 16px 6px;
+                font-weight: 600;
+            }
+
+            .admin-sidebar .nav-link {
+                color: rgba(255,255,255,0.65) !important;
+                padding: 9px 12px;
+                border-radius: var(--radius-sm);
+                margin: 1px 8px;
+                font-size: 0.875rem;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                transition: var(--transition-fast);
+            }
+
+                .admin-sidebar .nav-link:hover {
+                    background: rgba(255,255,255,0.08);
+                    color: #fff !important;
+                }
+
+                .admin-sidebar .nav-link.active {
+                    background: rgba(79,70,229,0.35);
+                    color: #fff !important;
+                    font-weight: 600;
+                }
+
+                .admin-sidebar .nav-link svg {
+                    flex-shrink: 0;
+                    opacity: 0.8;
+                }
+
+                .admin-sidebar .nav-link:hover svg,
+                .admin-sidebar .nav-link.active svg {
+                    opacity: 1;
+                }
+
+            /* ── Main ── */
+            .admin-main {
+                margin-left: 240px;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            /* ── Topbar ── */
+            .admin-topbar {
+                background: var(--surface);
+                padding: 0 24px;
+                border-bottom: 1px solid var(--border);
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                position: sticky;
+                top: 0;
+                z-index: 100;
+                min-height: 60px;
+            }
+
+            .admin-content {
+                flex: 1;
+            }
+
+            @@media (max-width: 991px) {
+                .admin-sidebar {
+                    transform: translateX(-100%);
+                    transition: transform 0.25s ease;
+                }
+
+                    .admin-sidebar.open {
+                        transform: translateX(0);
+                    }
+
+                .admin-main {
+                    margin-left: 0;
+                }
+            }
+    </style>
+</head>
+<body>
+
+    <!-- ── Sidebar ── -->
+    <aside class="admin-sidebar" id="adminSidebar" role="navigation" aria-label="Admin navigation">
+        <div class="admin-sidebar-logo">
+            <div style="width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--primary),#7C3AED);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="16" height="16" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+                    <path d="M6 10L14 6L22 10V14C22 18.4 18.4 21.6 14 22C9.6 21.6 6 18.4 6 14V10Z" fill="white" />
+                </svg>
+            </div>
+            <span class="admin-sidebar-logo-text">TutorAdmin</span>
+        </div>
+
+        <nav class="mt-2 flex-1">
+            <div class="nav-section">Tổng quan</div>
+            <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"
+               href="/Admin/Dashboard">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
+                Dashboard
+            </a>
+
+            <div class="nav-section">Quản lý</div>
+            <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "PendingTutors" ? "active" : "")"
+               href="/Admin/PendingTutors">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /><polyline points="16 11 18 13 22 9" /></svg>
+                Duyệt Gia sư
+            </a>
+            <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Users" ? "active" : "")"
+               href="/Admin/Users">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87m-4-12a4 4 0 0 1 0 7.75" /></svg>
+                Người dùng
+            </a>
+            <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Subjects" ? "active" : "")"
+               href="/Admin/Dashboard/Subjects">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
+                Môn học
+            </a>
+
+            <div class="nav-section">Hệ thống</div>
+            <a class="nav-link" href="/">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>
+                Về trang chủ
+            </a>
+
+            <div style="padding:0 8px;margin-top:auto;">
+                <form method="post" action="/Account/Logout">
+                    @Html.AntiForgeryToken()
+                    <button type="submit"
+                            class="nav-link w-100 border-0"
+                            style="background:none;cursor:pointer;color:rgba(239,68,68,0.8) !important;margin:1px 0;">
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
+                        Đăng xuất
+                    </button>
+                </form>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- ── Main ── -->
+    <div class="admin-main">
+
+        <!-- Topbar -->
+        <header class="admin-topbar">
+            <div style="display:flex;align-items:center;gap:12px;">
+                <button class="d-lg-none border-0 bg-transparent p-1" id="sidebarToggle" aria-label="Mở sidebar">
+                    <svg width="20" height="20" fill="none" stroke="var(--text-primary)" stroke-width="2" viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>
+                </button>
+                <div>
+                    <span style="font-size:0.75rem;color:var(--text-muted);">Admin</span>
+                    <span style="margin:0 6px;color:var(--border-strong);">/</span>
+                    <span style="font-size:0.875rem;font-weight:600;color:var(--text-primary);">@ViewBag.Title</span>
+                </div>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <div class="avatar avatar-sm" style="font-size:12px;">
+                    @User.Identity?.Name?[0].ToString().ToUpper()
+                </div>
+                <span style="font-size:0.875rem;font-weight:600;color:var(--text-primary);">@User.Identity?.Name</span>
+            </div>
+        </header>
+
+        <!-- Alerts -->
+        <div class="px-4 pt-3">
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success d-flex align-items-center gap-2">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+                    @TempData["Success"]
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Đóng"></button>
+                </div>
+            }
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger d-flex align-items-center gap-2">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>
+                    @TempData["Error"]
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Đóng"></button>
+                </div>
+            }
+            @if (TempData["Info"] != null)
+            {
+                <div class="alert alert-info d-flex align-items-center gap-2">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" /></svg>
+                    @TempData["Info"]
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Đóng"></button>
+                </div>
+            }
+        </div>
+
+        <main class="admin-content" id="main-content">
+            @RenderBody()
+        </main>
+    </div>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.getElementById('sidebarToggle')?.addEventListener('click', () => {
+        document.getElementById('adminSidebar')?.classList.toggle('open');
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

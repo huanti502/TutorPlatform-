@@ -1,0 +1,111 @@
+﻿@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+@model IEnumerable<TutorPlatform.Core.Models.TutorProfile>
+@{
+    ViewData["Title"] = "Duyệt gia sư";
+}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-0">⏳ Duyệt hồ sơ gia sư</h3>
+            <p class="text-muted mb-0">@Model.Count() hồ sơ chờ duyệt</p>
+        </div>
+        <a href="/Admin" class="btn btn-outline-secondary">← Dashboard</a>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5">
+            <div class="fs-1 mb-3"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> </div>
+            <h5 class="text-muted">Không có hồ sơ nào chờ duyệt</h5>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var t in Model)
+            {
+                <div class="col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                <div class="rounded-circle bg-primary text-white d-flex align-items-center
+                                    justify-content-center fw-bold fs-5"
+                                     style="width:50px;height:50px">
+                                    @t.User?.FullName.FirstOrDefault()
+                                </div>
+                                <div>
+                                    <h6 class="fw-bold mb-0">@t.User?.FullName</h6>
+                                    <div class="text-muted small">@t.User?.Email</div>
+                                </div>
+                            </div>
+                            <div class="mb-3 small">
+                                <div><span class="text-muted">Học vấn:</span> @t.Education</div>
+                                <div><span class="text-muted">Kinh nghiệm:</span> @t.ExperienceYears năm</div>
+                                <div><span class="text-muted">Học phí:</span> @t.HourlyRate.ToString("N0")đ/h</div>
+                                <div><span class="text-muted">Khu vực:</span> @t.TeachingArea</div>
+                            </div>
+                            <div class="mb-3">
+                                @foreach (var ts in t.TutorSubjects)
+                                {
+                                    <span class="badge bg-light text-dark border me-1">@ts.Subject?.Name</span>
+                                }
+                            </div>
+
+                            @if (t.Certificates.Any())
+                            {
+                                <div class="mb-3">
+                                    <div class="text-muted small mb-1">📎 Chứng chỉ:</div>
+                                    @foreach (var c in t.Certificates)
+                                    {
+                                        <a href="@c.FilePath" target="_blank" class="badge bg-info text-dark me-1">@c.Title</a>
+                                    }
+                                </div>
+                            }
+
+                            <div class="d-flex gap-2">
+                                <form method="post" action="/Admin/ApproveTutor" class="flex-grow-1">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="tutorId" value="@t.Id">
+                                    <button class="btn btn-success w-100"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Duyệt</button>
+                                </form>
+                                <button class="btn btn-danger flex-grow-1"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#rejectModal"
+                                        onclick="document.getElementById('rejectTutorId').value='@t.Id'">
+                                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Từ chối
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Modal từ chối -->
+<div class="modal fade" id="rejectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="post" action="/Admin/RejectTutor">
+                @Html.AntiForgeryToken()
+                <div class="modal-header">
+                    <h5 class="modal-title"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Từ chối hồ sơ</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" name="tutorId" id="rejectTutorId">
+                    <label class="form-label fw-semibold">Lý do từ chối</label>
+                    <textarea name="reason" class="form-control" rows="3"
+                              placeholder="VD: Hồ sơ chưa đầy đủ, thiếu chứng chỉ..."></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Huỷ</button>
+                    <button type="submit" class="btn btn-danger">Xác nhận từ chối</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

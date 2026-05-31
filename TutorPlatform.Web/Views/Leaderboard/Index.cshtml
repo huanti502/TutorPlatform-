@@ -1,0 +1,149 @@
+﻿@model List<TutorPlatform.Web.Controllers.LeaderboardController.LeaderboardEntry>
+@{
+    ViewData["Title"] = "Bảng xếp hạng học viên";
+    var me = ViewBag.CurrentUser as TutorPlatform.Core.Models.AppUser;
+    int myRank = ViewBag.MyRank;
+}
+
+<div class="container py-4">
+    <div class="text-center mb-5">
+        <h2 class="fw-bold"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> Bảng Xếp Hạng Học Viên</h2>
+        <p class="text-muted">Tích lũy XP qua các buổi học, quiz và đánh giá</p>
+    </div>
+
+    @* Card vị trí của tôi *@
+    @if (User.Identity?.IsAuthenticated == true && me?.Role == "Student")
+    {
+        <div class="alert alert-primary d-flex align-items-center gap-3 mb-4">
+            <span class="fs-3">@(TutorPlatform.Web.Services.XpService.GetLevel(me.XpPoints).icon)</span>
+            <div class="flex-grow-1">
+                <strong>Vị trí của bạn: #@(myRank > 0 ? myRank : "chưa có")</strong>
+                <div class="text-muted small">@me.XpPoints XP — @me.XpLevel</div>
+            </div>
+            <a href="/Quiz" class="btn btn-primary btn-sm">+XP ngay</a>
+        </div>
+    }
+
+    @* Top 3 đặc biệt *@
+    @if (Model.Count >= 3)
+    {
+        <div class="row justify-content-center mb-5 align-items-end">
+            @* Hạng 2 *@
+            <div class="col-4 text-center">
+                <div class="card shadow border-0 p-3">
+                    <div class="fs-1">🥈</div>
+                    <img src="@(Model[1].Avatar ?? "/images/default-avatar.png")"
+                         class="rounded-circle mx-auto mb-2" width="60" height="60" style="object-fit:cover">
+                    <div class="fw-semibold small">@Model[1].FullName</div>
+                    <div class="text-warning fw-bold">@Model[1].XpPoints XP</div>
+                </div>
+            </div>
+            @* Hạng 1 *@
+            <div class="col-4 text-center" style="margin-bottom:-20px">
+                <div class="card shadow-lg border-warning border-2 p-3">
+                    <div class="fs-1"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 4l3 12h14l3-12-6 7-4-7-4 7z"/><line x1="2" y1="20" x2="22" y2="20"/></svg> </div>
+                    <img src="@(Model[0].Avatar ?? "/images/default-avatar.png")"
+                         class="rounded-circle mx-auto mb-2" width="75" height="75" style="object-fit:cover">
+                    <div class="fw-bold">@Model[0].FullName</div>
+                    <div class="text-warning fw-bold">@Model[0].XpPoints XP</div>
+                </div>
+            </div>
+            @* Hạng 3 *@
+            <div class="col-4 text-center">
+                <div class="card shadow border-0 p-3">
+                    <div class="fs-1">🥉</div>
+                    <img src="@(Model[2].Avatar ?? "/images/default-avatar.png")"
+                         class="rounded-circle mx-auto mb-2" width="60" height="60" style="object-fit:cover">
+                    <div class="fw-semibold small">@Model[2].FullName</div>
+                    <div class="text-warning fw-bold">@Model[2].XpPoints XP</div>
+                </div>
+            </div>
+        </div>
+    }
+
+    @* Bảng xếp hạng đầy đủ *@
+    <div class="card shadow-sm">
+        <div class="card-body p-0">
+            <table class="table table-hover mb-0">
+                <thead class="">
+                    <tr>
+                        <th width="60" class="ps-4">Hạng</th>
+                        <th>Học viên</th>
+                        <th>Cấp độ</th>
+                        <th class="text-end pe-4">XP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var entry in Model)
+                    {
+                        bool isMe = me?.Id == entry.UserId;
+                        <tr class="@(isMe ? "table-primary fw-bold" : "")">
+                            <td class="ps-4">
+                                @if (entry.Rank == 1)
+                                {
+                                    <span>🥇</span>
+                                }
+                                else if (entry.Rank == 2)
+                                {
+
+                                    <span>🥈</span>
+                                }
+                                else if (entry.Rank == 3)
+                                {
+
+                                    <span>🥉</span>
+                                }
+                                else
+                                {
+
+                                    <span class="text-muted">#@entry.Rank</span>
+                                }
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <img src="@(entry.Avatar ?? "/images/default-avatar.png")"
+                                         class="rounded-circle" width="36" height="36" style="object-fit:cover">
+                                    @entry.FullName
+                                    @if (isMe)
+                                    {
+                                        <span class="badge bg-primary">Bạn</span>
+                                    }
+                                </div>
+                            </td>
+                            <td><span>@entry.LevelIcon @entry.XpLevel</span></td>
+                            <td class="text-end pe-4 fw-semibold text-warning">@entry.XpPoints.ToString("N0") XP</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    @* Bảng XP cách kiếm điểm *@
+    <div class="card mt-4 shadow-sm">
+        <div class="card-header fw-semibold">⚡ Cách kiếm XP</div>
+        <div class="card-body">
+            <div class="row g-2">
+                @foreach (var (action, xp) in TutorPlatform.Web.Services.XpService.XpTable)
+                {
+                    var label = action switch
+                    {
+                        "booking_completed" => "Hoàn thành buổi học",
+                        "review_written" => "Viết đánh giá gia sư",
+                        "quiz_pass" => "Quiz đạt ≥ 70%",
+                        "quiz_perfect" => "Quiz đạt điểm tuyệt đối",
+                        "post_created" => "Đăng bài blog",
+                        "first_booking" => "Đặt lịch lần đầu (bonus)",
+                        _ => action
+                    };
+                    <div class="col-md-4">
+                        <div class="d-flex align-items-center gap-2 p-2 bg-light rounded">
+                            <span class="badge bg-warning text-dark">+@xp XP</span>
+                            <span class="small">@label</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

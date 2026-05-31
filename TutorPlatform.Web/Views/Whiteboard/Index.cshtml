@@ -1,0 +1,820 @@
+@model TutorPlatform.Core.Models.Booking
+@{
+    ViewData["Title"] = "Bảng trắng - " + ViewBag.Subject;
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 Bảng trắng - @ViewBag.Subject</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: #1a1a2e;
+            font-family: 'Segoe UI', sans-serif;
+            overflow: hidden;
+        }
+
+        /* ── Header ── */
+        .wb-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #16213e;
+            padding: 10px 20px;
+            border-bottom: 1px solid #0f3460;
+            height: 56px;
+            flex-shrink: 0;
+        }
+        .wb-title {
+            color: #e2e8f0;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .wb-title .badge {
+            background: #0f3460;
+            color: #60a5fa;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .wb-users {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+        .online-dot {
+            width: 8px; height: 8px;
+            background: #22c55e;
+            border-radius: 50%;
+            animation: blink 2s infinite;
+        }
+        @@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+        .btn-back {
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 6px 12px;
+            border: 1px solid #0f3460;
+            border-radius: 8px;
+            font-size: 13px;
+            transition: all .2s;
+            cursor: pointer;
+            background: transparent;
+        }
+        .btn-back:hover { background:#0f3460; color:#e2e8f0; }
+
+        /* ── Layout ── */
+        .wb-main { display: flex; flex: 1; overflow: hidden; }
+
+        /* ── Toolbar ── */
+        .wb-toolbar {
+            width: 64px;
+            background: #16213e;
+            border-right: 1px solid #0f3460;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 0;
+            gap: 4px;
+            overflow-y: auto;
+        }
+        .tool-btn {
+            width: 44px; height: 44px;
+            border: none;
+            border-radius: 10px;
+            background: transparent;
+            color: #94a3b8;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            transition: all .2s;
+            position: relative;
+        }
+        .tool-btn:hover { background:#0f3460; color:#e2e8f0; }
+        .tool-btn.active { background:#3b82f6; color:white; }
+        .tool-btn[title]:hover::after {
+            content: attr(title);
+            position: absolute;
+            left: 54px; top: 50%;
+            transform: translateY(-50%);
+            background: #0f3460;
+            color: #e2e8f0;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 12px;
+            white-space: nowrap;
+            z-index: 100;
+            pointer-events: none;
+        }
+        .divider { width:36px; height:1px; background:#0f3460; margin:4px 0; }
+
+        /* Color palette */
+        .color-palette { display:flex; flex-direction:column; gap:4px; padding:4px; }
+        .color-row { display:flex; gap:4px; }
+        .color-dot {
+            width:16px; height:16px;
+            border-radius:50%;
+            cursor:pointer;
+            border:2px solid transparent;
+            transition:all .15s;
+        }
+        .color-dot:hover, .color-dot.active { border-color:white; transform:scale(1.2); }
+        .color-custom { width:36px; height:28px; border:none; border-radius:6px; cursor:pointer; padding:0; }
+
+        /* Size picker */
+        .size-picker { display:flex; flex-direction:column; gap:6px; align-items:center; padding:4px; }
+        .size-dot {
+            background:#94a3b8;
+            border-radius:50%;
+            cursor:pointer;
+            transition:all .15s;
+            border:2px solid transparent;
+        }
+        .size-dot:hover, .size-dot.active { border-color:#3b82f6; background:#3b82f6; }
+
+        /* ── Canvas ── */
+        .canvas-container {
+            flex:1;
+            position:relative;
+            overflow:hidden;
+            background:white;
+        }
+        #wb-canvas {
+            position:absolute;
+            top:0; left:0;
+            cursor:crosshair;
+            touch-action:none;
+        }
+
+        /* Text popup */
+        #text-input-popup {
+            position:absolute;
+            display:none;
+            z-index:100;
+            background:white;
+            border:2px solid #3b82f6;
+            border-radius:8px;
+            padding:8px;
+            box-shadow:0 4px 20px rgba(0,0,0,.3);
+        }
+        #text-input-field {
+            border:none; outline:none;
+            font-size:18px;
+            min-width:200px;
+            background:transparent;
+            color:#1a1a2e;
+        }
+
+        /* ── Right panel ── */
+        .wb-right {
+            width: 220px;
+            background: #16213e;
+            border-left: 1px solid #0f3460;
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            gap: 0;
+        }
+        .panel-title {
+            color: #60a5fa;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+        }
+        .participant {
+            display:flex;
+            align-items:center;
+            gap:8px;
+            padding:8px;
+            background:#0f3460;
+            border-radius:8px;
+            margin-bottom:6px;
+            transition: opacity .3s;
+        }
+        .participant-avatar {
+            width:32px; height:32px;
+            border-radius:50%;
+            background:#3b82f6;
+            display:flex;
+            align-items:center;
+            justify-content:center;
+            color:white;
+            font-size:13px;
+            font-weight:700;
+            flex-shrink:0;
+        }
+        .participant-info { flex:1; min-width:0; }
+        .participant-name {
+            color:#e2e8f0;
+            font-size:13px;
+            font-weight:600;
+            white-space:nowrap;
+            overflow:hidden;
+            text-overflow:ellipsis;
+        }
+        .participant-role { color:#64748b; font-size:11px; }
+        .online-indicator { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+
+        /* ── Chat ── */
+        .quick-chat {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+        .chat-msgs {
+            flex: 1;
+            max-height: 200px;
+            min-height: 60px;
+            overflow-y: auto;
+            margin-bottom: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .chat-msgs::-webkit-scrollbar { width:4px; }
+        .chat-msgs::-webkit-scrollbar-track { background:#0f3460; }
+        .chat-msgs::-webkit-scrollbar-thumb { background:#3b82f6; border-radius:2px; }
+        .chat-msg {
+            background:#0f3460;
+            border-radius:8px;
+            padding:6px 8px;
+        }
+        .chat-msg .sender { color:#60a5fa; font-size:11px; font-weight:600; }
+        .chat-msg .text { color:#e2e8f0; font-size:12px; margin-top:2px; word-break:break-word; }
+        .chat-msg.mine .sender { color:#22c55e; }
+        .chat-input-row { display:flex; gap:6px; }
+        .chat-input {
+            flex:1;
+            background:#0f3460;
+            border:1px solid #1e3a5f;
+            color:#e2e8f0;
+            border-radius:8px;
+            padding:6px 10px;
+            font-size:12px;
+            outline:none;
+        }
+        .chat-input:focus { border-color:#3b82f6; }
+        .chat-send {
+            background:#3b82f6;
+            color:white;
+            border:none;
+            border-radius:8px;
+            padding:6px 10px;
+            cursor:pointer;
+            font-size:14px;
+            transition:background .2s;
+        }
+        .chat-send:hover { background:#2563eb; }
+
+        /* Connection status */
+        .conn-status {
+            font-size:11px;
+            padding:2px 8px;
+            border-radius:10px;
+            margin-left:6px;
+        }
+        .conn-status.connected { background:#064e3b; color:#34d399; }
+        .conn-status.connecting { background:#78350f; color:#fbbf24; }
+        .conn-status.error { background:#7f1d1d; color:#fca5a5; }
+
+        /* ── Toast ── */
+        .toast {
+            position:fixed;
+            top:70px; right:20px;
+            background:#1e3a5f;
+            color:#e2e8f0;
+            padding:10px 16px;
+            border-radius:8px;
+            border-left:3px solid #3b82f6;
+            font-size:13px;
+            z-index:1000;
+            opacity:0;
+            transform: translateY(-8px);
+            transition: opacity .3s, transform .3s;
+            pointer-events:none;
+        }
+        .toast.show { opacity:1; transform:translateY(0); }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="wb-header">
+        <div class="wb-title">
+            🎨 Bảng trắng
+            <span class="badge">@ViewBag.Subject</span>
+        </div>
+        <div class="wb-users">
+            <div class="online-dot"></div>
+            <span id="online-count">Đang kết nối...</span>
+            <span class="conn-status connecting" id="conn-status">●</span>
+            &nbsp;·&nbsp;
+            <button class="btn-back" onclick="goBack()">← Quay lại</button>
+        </div>
+    </div>
+
+    <div class="wb-main">
+        <!-- Toolbar -->
+        <div class="wb-toolbar">
+            <button class="tool-btn active" id="btn-pen"    title="Bút vẽ (P)"    onclick="setTool('pen')">✏️</button>
+            <button class="tool-btn"        id="btn-eraser" title="Tẩy (E)"       onclick="setTool('eraser')">🧹</button>
+            <button class="tool-btn"        id="btn-line"   title="Đường thẳng (L)" onclick="setTool('line')">╱</button>
+            <button class="tool-btn"        id="btn-rect"   title="Hình chữ nhật (R)" onclick="setTool('rect')">▭</button>
+            <button class="tool-btn"        id="btn-circle" title="Hình tròn (C)" onclick="setTool('circle')">○</button>
+            <button class="tool-btn"        id="btn-text"   title="Chèn chữ (T)"  onclick="setTool('text')">T</button>
+
+            <div class="divider"></div>
+
+            <div class="color-palette">
+                <div class="color-row">
+                    <div class="color-dot active" style="background:#000000" onclick="setColor('#000000')" title="Đen"></div>
+                    <div class="color-dot" style="background:#ffffff;border:1px solid #ccc" onclick="setColor('#ffffff')" title="Trắng"></div>
+                </div>
+                <div class="color-row">
+                    <div class="color-dot" style="background:#ef4444" onclick="setColor('#ef4444')" title="Đỏ"></div>
+                    <div class="color-dot" style="background:#f97316" onclick="setColor('#f97316')" title="Cam"></div>
+                </div>
+                <div class="color-row">
+                    <div class="color-dot" style="background:#eab308" onclick="setColor('#eab308')" title="Vàng"></div>
+                    <div class="color-dot" style="background:#22c55e" onclick="setColor('#22c55e')" title="Xanh lá"></div>
+                </div>
+                <div class="color-row">
+                    <div class="color-dot" style="background:#3b82f6" onclick="setColor('#3b82f6')" title="Xanh dương"></div>
+                    <div class="color-dot" style="background:#a855f7" onclick="setColor('#a855f7')" title="Tím"></div>
+                </div>
+                <input type="color" class="color-custom" id="custom-color" value="#000000"
+                       title="Màu tùy chọn" onchange="setColor(this.value)">
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="size-picker">
+                <div class="size-dot active" style="width:6px;height:6px"   onclick="setSize(2,this)"  title="Mỏng"></div>
+                <div class="size-dot"        style="width:10px;height:10px" onclick="setSize(5,this)"  title="Vừa"></div>
+                <div class="size-dot"        style="width:14px;height:14px" onclick="setSize(10,this)" title="Dày"></div>
+                <div class="size-dot"        style="width:18px;height:18px" onclick="setSize(20,this)" title="Rất dày"></div>
+            </div>
+
+            <div class="divider"></div>
+
+            <button class="tool-btn" title="Hoàn tác (Ctrl+Z)" onclick="undoLocal()">↩️</button>
+            <button class="tool-btn" title="Xóa tất cả"        onclick="clearAll()" style="color:#ef4444">🗑️</button>
+            <button class="tool-btn" title="Lưu ảnh PNG"       onclick="saveImage()">💾</button>
+        </div>
+
+        <!-- Canvas -->
+        <div class="canvas-container" id="canvas-container">
+            <canvas id="wb-canvas"></canvas>
+            <div id="text-input-popup">
+                <input type="text" id="text-input-field" placeholder="Nhập chữ, Enter để xác nhận...">
+            </div>
+        </div>
+
+        <!-- Right panel -->
+        <div class="wb-right">
+            <div class="panel-title">👥 Tham gia</div>
+
+            <!-- Người dùng hiện tại -->
+            <div class="participant">
+                <div class="participant-avatar">@ViewBag.UserName.ToString().Substring(0,1).ToUpper()</div>
+                <div class="participant-info">
+                    <div class="participant-name">@ViewBag.UserName</div>
+                    <div class="participant-role">@(ViewBag.IsStudent ? "Học sinh" : "Gia sư") · Bạn</div>
+                </div>
+                <div class="online-indicator" style="background:#22c55e"></div>
+            </div>
+
+            <!-- Đối phương -->
+            <div id="partner-card" class="participant" style="opacity:.45">
+                <div class="participant-avatar" style="background:#64748b">
+                    @ViewBag.Partner.ToString().Substring(0,1).ToUpper()
+                </div>
+                <div class="participant-info">
+                    <div class="participant-name">@ViewBag.Partner</div>
+                    <div class="participant-role" id="partner-role">Chưa kết nối</div>
+                </div>
+                <div class="online-indicator" id="partner-dot" style="background:#64748b"></div>
+            </div>
+
+            <!-- Chat nhanh -->
+            <div class="quick-chat" style="margin-top:16px;">
+                <div class="panel-title">💬 Chat nhanh</div>
+                <div class="chat-msgs" id="chat-msgs"></div>
+                <div class="chat-input-row">
+                    <input type="text" class="chat-input" id="chat-input"
+                           placeholder="Nhắn tin... (Enter)"
+                           onkeydown="if(event.key==='Enter')sendChat()">
+                    <button class="chat-send" onclick="sendChat()" title="Gửi">➤</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script>
+        // ── CONFIG ────────────────────────────────────────────
+        const ROOM_ID  = '@ViewBag.RoomId';
+        const MY_NAME  = '@ViewBag.UserName';
+        const IS_STUDENT = @(ViewBag.IsStudent ? "true" : "false");
+        const BACK_URL = IS_STUDENT ? '/Booking/MyBookings' : '/Booking/TutorRequests';
+
+        function goBack() {
+            if (window.opener) { window.close(); }
+            else { window.location.href = BACK_URL; }
+        }
+
+        // ── CANVAS ────────────────────────────────────────────
+        const canvas    = document.getElementById('wb-canvas');
+        const ctx       = canvas.getContext('2d');
+        const container = document.getElementById('canvas-container');
+
+        function resizeCanvas() {
+            // Lưu nội dung trước khi resize
+            const tmp = document.createElement('canvas');
+            tmp.width  = canvas.width;
+            tmp.height = canvas.height;
+            tmp.getContext('2d').drawImage(canvas, 0, 0);
+
+            canvas.width  = container.clientWidth;
+            canvas.height = container.clientHeight;
+
+            // Vẽ lại nội dung cũ
+            ctx.drawImage(tmp, 0, 0);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+
+        // ── STATE ─────────────────────────────────────────────
+        let tool      = 'pen';
+        let color     = '#000000';
+        let lineWidth = 2;
+        let isDrawing = false;
+        let points    = [];
+        let history   = []; // ImageData stack
+        let sendThrottle;
+        let snapshotBeforeStroke;
+
+        // ── TOOL / COLOR / SIZE ───────────────────────────────
+        function setTool(t) {
+            tool = t;
+            document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('btn-' + t)?.classList.add('active');
+            canvas.style.cursor = t === 'eraser' ? 'cell' : t === 'text' ? 'text' : 'crosshair';
+        }
+
+        function setColor(c) {
+            color = c;
+            document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+            event?.target?.classList?.add('active');
+            document.getElementById('custom-color').value = c;
+        }
+
+        function setSize(s, el) {
+            lineWidth = s;
+            document.querySelectorAll('.size-dot').forEach(d => d.classList.remove('active'));
+            el?.classList?.add('active');
+        }
+
+        // ── KEYBOARD SHORTCUTS ───────────────────────────────
+        document.addEventListener('keydown', e => {
+            if (e.target === document.getElementById('chat-input') ||
+                e.target === document.getElementById('text-input-field')) return;
+            if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undoLocal(); return; }
+            const map = { p:'pen', e:'eraser', l:'line', r:'rect', c:'circle', t:'text' };
+            if (map[e.key]) setTool(map[e.key]);
+        });
+
+        // ── DRAW ──────────────────────────────────────────────
+        function drawStroke(stroke, scaleW, scaleH) {
+            if (!stroke.points || stroke.points.length < 1) return;
+            const w = scaleW || canvas.width;
+            const h = scaleH || canvas.height;
+
+            ctx.save();
+            ctx.strokeStyle = stroke.tool === 'eraser' ? '#ffffff' : stroke.color;
+            ctx.fillStyle   = stroke.color;
+            ctx.lineWidth   = stroke.lineWidth;
+            ctx.lineCap     = 'round';
+            ctx.lineJoin    = 'round';
+
+            if (stroke.tool === 'pen' || stroke.tool === 'eraser') {
+                if (stroke.points.length < 2) { ctx.restore(); return; }
+                ctx.beginPath();
+                ctx.moveTo(stroke.points[0].x * w, stroke.points[0].y * h);
+                for (let i = 1; i < stroke.points.length; i++)
+                    ctx.lineTo(stroke.points[i].x * w, stroke.points[i].y * h);
+                ctx.stroke();
+            } else if (stroke.tool === 'line') {
+                const p0 = stroke.points[0], p1 = stroke.points[stroke.points.length - 1];
+                ctx.beginPath();
+                ctx.moveTo(p0.x * w, p0.y * h);
+                ctx.lineTo(p1.x * w, p1.y * h);
+                ctx.stroke();
+            } else if (stroke.tool === 'rect') {
+                const p0 = stroke.points[0], p1 = stroke.points[stroke.points.length - 1];
+                ctx.strokeRect(p0.x * w, p0.y * h, (p1.x - p0.x) * w, (p1.y - p0.y) * h);
+            } else if (stroke.tool === 'circle') {
+                const p0 = stroke.points[0], p1 = stroke.points[stroke.points.length - 1];
+                const rx = Math.abs((p1.x - p0.x) * w) / 2;
+                const ry = Math.abs((p1.y - p0.y) * h) / 2;
+                ctx.beginPath();
+                ctx.ellipse((p0.x + p1.x) / 2 * w, (p0.y + p1.y) / 2 * h, rx, ry, 0, 0, Math.PI * 2);
+                ctx.stroke();
+            } else if (stroke.tool === 'text' && stroke.text) {
+                ctx.font = `${stroke.fontSize || 18}px Segoe UI, sans-serif`;
+                ctx.fillText(stroke.text, stroke.points[0].x * w, stroke.points[0].y * h);
+            }
+            ctx.restore();
+        }
+
+        function saveSnapshot() {
+            history.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+            if (history.length > 50) history.shift();
+        }
+
+        function undoLocal() {
+            if (history.length > 0) {
+                ctx.putImageData(history.pop(), 0, 0);
+                // Sync canvas state to partner
+                syncCanvasToPartner();
+                showToast('↩️ Đã hoàn tác');
+            } else {
+                showToast('Không có gì để hoàn tác');
+            }
+        }
+
+        function clearAll() {
+            if (!confirm('Xóa toàn bộ bảng trắng cho tất cả mọi người?')) return;
+            saveSnapshot();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            safeInvoke('ClearBoard', ROOM_ID);
+        }
+
+        function saveImage() {
+            const a = document.createElement('a');
+            a.download = `whiteboard-${ROOM_ID}-${Date.now()}.png`;
+            a.href = canvas.toDataURL('image/png');
+            a.click();
+            showToast('💾 Đã lưu ảnh!');
+        }
+
+        function syncCanvasToPartner() {
+            const dataUrl = canvas.toDataURL('image/png');
+            safeInvoke('SyncCanvas', ROOM_ID, dataUrl);
+        }
+
+        // ── MOUSE / TOUCH ─────────────────────────────────────
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+            return {
+                x: (clientX - rect.left) / canvas.width,
+                y: (clientY - rect.top)  / canvas.height
+            };
+        }
+
+        canvas.addEventListener('mousedown',  startDraw);
+        canvas.addEventListener('mousemove',  onDraw);
+        canvas.addEventListener('mouseup',    endDraw);
+        canvas.addEventListener('mouseleave', endDraw);
+        canvas.addEventListener('touchstart', e => { e.preventDefault(); startDraw(e); }, { passive:false });
+        canvas.addEventListener('touchmove',  e => { e.preventDefault(); onDraw(e); },   { passive:false });
+        canvas.addEventListener('touchend',   e => { e.preventDefault(); endDraw(e); },  { passive:false });
+
+        function startDraw(e) {
+            if (tool === 'text') { showTextInput(e); return; }
+            saveSnapshot();
+            snapshotBeforeStroke = history[history.length - 1];
+            isDrawing = true;
+            const pos = getPos(e);
+            points = [pos];
+            ctx.beginPath();
+        }
+
+        function onDraw(e) {
+            if (!isDrawing) return;
+            const pos = getPos(e);
+            points.push(pos);
+
+            if (['line', 'rect', 'circle'].includes(tool)) {
+                if (snapshotBeforeStroke) ctx.putImageData(snapshotBeforeStroke, 0, 0);
+                drawStroke({ tool, color, lineWidth, points });
+            } else {
+                const prev = points[points.length - 2] || pos;
+                drawStroke({ tool, color, lineWidth, points: [prev, pos] });
+            }
+
+            clearTimeout(sendThrottle);
+            sendThrottle = setTimeout(() => {
+                safeInvoke('SendStroke', ROOM_ID, { tool, color, lineWidth, points, isComplete: false });
+            }, 30);
+        }
+
+        function endDraw() {
+            if (!isDrawing) return;
+            isDrawing = false;
+            if (points.length > 0) {
+                safeInvoke('SendStroke', ROOM_ID, { tool, color, lineWidth, points, isComplete: true });
+            }
+        }
+
+        // ── TEXT TOOL ─────────────────────────────────────────
+        const textPopup = document.getElementById('text-input-popup');
+        const textField = document.getElementById('text-input-field');
+        let textPos = { x: 0, y: 0 };
+
+        function showTextInput(e) {
+            const rect      = container.getBoundingClientRect();
+            const clientX   = e.touches ? e.touches[0].clientX : e.clientX;
+            const clientY   = e.touches ? e.touches[0].clientY : e.clientY;
+            textPos = getPos(e);
+            textPopup.style.display = 'block';
+            textPopup.style.left    = (clientX - rect.left) + 'px';
+            textPopup.style.top     = (clientY - rect.top - 50) + 'px';
+            textField.value = '';
+            setTimeout(() => textField.focus(), 50);
+        }
+
+        textField.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+                const text = textField.value.trim();
+                if (text) {
+                    saveSnapshot();
+                    const stroke = { tool:'text', color, lineWidth, points:[textPos], text, fontSize:18, isComplete:true };
+                    drawStroke(stroke);
+                    safeInvoke('SendStroke', ROOM_ID, stroke);
+                }
+                textPopup.style.display = 'none';
+            }
+            if (e.key === 'Escape') textPopup.style.display = 'none';
+        });
+
+        // Click ngoài để đóng text popup
+        document.addEventListener('mousedown', e => {
+            if (!textPopup.contains(e.target) && e.target !== canvas)
+                textPopup.style.display = 'none';
+        });
+
+        // ── CHAT ──────────────────────────────────────────────
+        function sendChat() {
+            const input = document.getElementById('chat-input');
+            const msg = input.value.trim();
+            if (!msg) return;
+            safeInvoke('SendChat', ROOM_ID, MY_NAME, msg);
+            addChatMsg('Bạn', msg, true);
+            input.value = '';
+            input.focus();
+        }
+
+        function addChatMsg(sender, text, isMine) {
+            const div = document.createElement('div');
+            div.className = 'chat-msg' + (isMine ? ' mine' : '');
+            div.innerHTML = `<div class="sender">${escapeHtml(sender)}</div><div class="text">${escapeHtml(text)}</div>`;
+            const msgs = document.getElementById('chat-msgs');
+            msgs.appendChild(div);
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+
+        function escapeHtml(s) {
+            return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        }
+
+        // ── TOAST ─────────────────────────────────────────────
+        let toastTimer;
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        // ── SIGNALR ───────────────────────────────────────────
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl('/whiteboardHub')
+            .withAutomaticReconnect([0, 2000, 5000, 10000])
+            .build();
+
+        function safeInvoke(method, ...args) {
+            if (connection.state === signalR.HubConnectionState.Connected)
+                connection.invoke(method, ...args).catch(console.error);
+        }
+
+        // Nhận nét vẽ từ đối phương
+        connection.on('ReceiveStroke', stroke => {
+            drawStroke(stroke);
+        });
+
+        // Nhận chat
+        connection.on('ReceiveChat', (sender, text) => {
+            addChatMsg(sender, text, false);
+            showToast(`💬 ${sender}: ${text}`);
+        });
+
+        // Đối phương vào phòng
+        connection.on('UserJoined', count => {
+            setPartnerOnline(true);
+            document.getElementById('online-count').textContent = `${count} người online`;
+            showToast('🟢 Đối phương đã vào bảng!');
+            // Gửi trạng thái canvas hiện tại cho đối phương
+            setTimeout(syncCanvasToPartner, 500);
+        });
+
+        // Đối phương rời phòng
+        connection.on('UserLeft', count => {
+            setPartnerOnline(false);
+            document.getElementById('online-count').textContent = count > 0 ? `${count} người online` : '1 người online (Bạn)';
+            showToast('🔴 Đối phương đã rời bảng');
+        });
+
+        // Nhận thông tin phòng khi mới vào
+        connection.on('RoomInfo', count => {
+            if (count > 1) setPartnerOnline(true);
+            document.getElementById('online-count').textContent = count > 1
+                ? `${count} người online`
+                : '1 người online (Bạn)';
+        });
+
+        // Nhận canvas sync (khi đối phương undo hoặc sync)
+        connection.on('CanvasSynced', dataUrl => {
+            const img = new Image();
+            img.onload = () => {
+                saveSnapshot();
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            };
+            img.src = dataUrl;
+            showToast('↩️ Đối phương vừa hoàn tác');
+        });
+
+        // Xóa bảng
+        connection.on('BoardCleared', () => {
+            saveSnapshot();
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            showToast('🗑️ Bảng đã được xóa');
+        });
+
+        // Trạng thái kết nối
+        connection.onreconnecting(() => {
+            setConnStatus('connecting', '● Đang kết nối lại...');
+        });
+        connection.onreconnected(() => {
+            setConnStatus('connected', '● Online');
+            safeInvoke('JoinRoom', ROOM_ID);
+            showToast('✅ Đã kết nối lại!');
+        });
+        connection.onclose(() => {
+            setConnStatus('error', '● Mất kết nối');
+        });
+
+        function setConnStatus(cls, text) {
+            const el = document.getElementById('conn-status');
+            el.className = `conn-status ${cls}`;
+            el.textContent = text;
+        }
+
+        function setPartnerOnline(online) {
+            document.getElementById('partner-card').style.opacity = online ? '1' : '.45';
+            document.getElementById('partner-dot').style.background = online ? '#22c55e' : '#64748b';
+            document.getElementById('partner-role').textContent = online
+                ? (IS_STUDENT ? 'Gia sư · Online' : 'Học sinh · Online')
+                : 'Chưa kết nối';
+        }
+
+        async function startConnection() {
+            try {
+                await connection.start();
+                setConnStatus('connected', '● Online');
+                await connection.invoke('JoinRoom', ROOM_ID);
+                showToast('✅ Kết nối thành công!');
+            } catch (err) {
+                console.error(err);
+                setConnStatus('error', '● Lỗi kết nối');
+                setTimeout(startConnection, 3000);
+            }
+        }
+
+        startConnection();
+    </script>
+</body>
+</html>

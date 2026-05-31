@@ -1,0 +1,149 @@
+﻿@model List<TutorPlatform.Core.Models.Review>
+@{
+    var profile = ViewBag.Profile as TutorPlatform.Core.Models.TutorProfile;
+    var starDist = ViewBag.StarDist as Dictionary<int, int> ?? new();
+    double avg = ViewBag.AvgRating;
+    int total = starDist.Values.Sum();
+    int filterStar = ViewBag.FilterStar;
+    ViewBag.Title = $"Đánh giá của {profile?.User?.FullName}";
+}
+
+<div class="container py-4" style="max-width:860px">
+    <h4 class="fw-bold mb-4"><svg width="14" height="14" fill="#F59E0B" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> Đánh giá — @profile?.User?.FullName</h4>
+
+    @* Tổng quan rating *@
+    <div class="card  mb-4 p-4">
+        <div class="row align-items-center g-4">
+            <div class="col-md-3 text-center">
+                <div style="font-size:4rem;font-weight:800;color:#FF9800">@avg.ToString("0.#")</div>
+                <div class="text-warning fs-4">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        <span>@(i <= Math.Round(avg) ? "★" : "☆")</span>
+                    }
+                </div>
+                <div class="text-muted small">@total đánh giá</div>
+            </div>
+            <div class="col-md-9">
+                @for (int s = 5; s >= 1; s--)
+                {
+                    var cnt = starDist.GetValueOrDefault(s, 0);
+                    var pct = total > 0 ? (cnt * 100 / total) : 0;
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <a href="?id=@profile?.Id&star=@s"
+                           class="text-warning text-decoration-none fw-semibold"
+                           style="width:24px">@s★</a>
+                        <div class="progress flex-grow-1" style="height:10px;border-radius:10px">
+                            <div class="progress-bar bg-warning" style="width:@pct%"></div>
+                        </div>
+                        <span class="text-muted small" style="width:50px">
+                            @cnt (@pct%)
+                        </span>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    @* Bộ lọc *@
+    <div class="d-flex gap-2 mb-3 flex-wrap">
+        <a href="?id=@profile?.Id"
+           class="btn btn-sm @(filterStar == 0 ? "btn-warning" : "btn-outline-warning")">
+            Tất cả
+        </a>
+        @for (int s = 5; s >= 1; s--)
+        {
+            <a href="?id=@profile?.Id&star=@s"
+               class="btn btn-sm @(filterStar == s ? "btn-warning" : "btn-outline-secondary")">
+                @s ★ (@starDist.GetValueOrDefault(s, 0))
+            </a>
+        }
+    </div>
+
+    @* Danh sách review *@
+    @if (!Model.Any())
+    {
+        <div class="text-center text-muted py-5">
+            <div style="font-size:3rem">💬</div>
+            <p>Không có đánh giá nào @(filterStar > 0 ? $"{filterStar} sao" : "").</p>
+        </div>
+    }
+    else
+    {
+        @foreach (var r in Model)
+        {
+            <div class="card  mb-3" style="border-radius:14px">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="rounded-circle bg-success text-white d-flex align-items-center
+                                justify-content-center fw-bold"
+                                 style="width:38px;height:38px">
+                                @r.Student?.FullName?.FirstOrDefault()
+                            </div>
+                            <div>
+                                <div class="fw-semibold">@r.Student?.FullName</div>
+                                <small class="text-muted">@r.CreatedAt.ToString("dd/MM/yyyy")</small>
+                            </div>
+                        </div>
+                        <div class="text-warning fw-bold">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                <span>@(i <= r.Rating ? "★" : "☆")</span>
+                            }
+                        </div>
+                    </div>
+
+                    @* Nội dung review *@
+                    <p class="mb-3">@r.Comment</p>
+
+                    @* Reply của gia sư *@
+                    @if (r.Reply != null)
+                    {
+                        <div class="ms-4 ps-3 border-start border-primary">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge bg-primary">Gia sư phản hồi</span>
+                                <small class="text-muted">@r.Reply.CreatedAt.ToString("dd/MM/yyyy")</small>
+                            </div>
+                            <p class="mb-2 text-dark">@r.Reply.Content</p>
+
+                            @* Gia sư có thể sửa reply *@
+                            @if (User.IsInRole("Tutor"))
+                            {
+                                <button class="btn btn-sm btn-link text-muted p-0"
+                                        onclick="toggleReplyForm(@r.Id)">
+                                    ✏️ Sửa
+                                </button>
+                            }
+                        </div>
+                    }
+
+                    @* Form reply (chỉ gia sư thấy, chưa có reply hoặc đang sửa) *@
+                    @if (User.IsInRole("Tutor"))
+                    {
+                        <div id="replyForm_@r.Id"
+                             class="mt-3 @(r.Reply == null ? "" : "d-none")">
+                            <form method="post" action="/Review/Reply">
+                                <input type="hidden" name="reviewId" value="@r.Id" />
+                                <input type="hidden" name="tutorProfileId" value="@profile?.Id" />
+                                <div class="d-flex gap-2">
+                                    <input type="text" name="content" class="form-control form-control-sm"
+                                           placeholder="Phản hồi đánh giá này..."
+                                           value="@r.Reply?.Content" />
+                                    <button class="btn btn-primary btn-sm px-3">Gửi</button>
+                                </div>
+                            </form>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<script>
+    function toggleReplyForm(id) {
+        const f = document.getElementById("replyForm_" + id);
+        f.classList.toggle("d-none");
+    }
+</script>

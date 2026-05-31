@@ -1,0 +1,6 @@
+/* Scoped layout CSS - minimal, main styles in site.css */
+.navbar .container {
+    min-height: 64px;
+    display: flex;
+    align-items: center;
+}

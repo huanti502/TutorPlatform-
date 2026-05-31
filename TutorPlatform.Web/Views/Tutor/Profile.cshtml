@@ -1,0 +1,440 @@
+﻿@using TutorPlatform.Core.Models
+@model TutorPlatform.Web.ViewModels.TutorProfileFormViewModel
+@{
+    ViewData["Title"] = "Hồ sơ gia sư";
+    var subjects = ViewBag.Subjects as List<Subject> ?? new List<Subject>();
+}
+
+<style>
+    .profile-banner {
+        background: linear-gradient(135deg, #1E40AF 0%, #4F46E5 60%, #7C3AED 100%);
+        padding: 2.5rem 0 4.5rem;
+        position: relative;
+        overflow: hidden;
+    }
+    .profile-banner::before {
+        content: '';
+        position: absolute;
+        top: -50px; right: -50px;
+        width: 250px; height: 250px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.05);
+    }
+    .profile-banner::after {
+        content: '';
+        position: absolute;
+        bottom: -70px; left: -30px;
+        width: 200px; height: 200px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.04);
+    }
+    .form-card {
+        margin-top: -48px;
+        position: relative;
+        z-index: 2;
+        border-radius: 24px;
+        border: none;
+        box-shadow: var(--shadow-lg);
+    }
+    .field-group {
+        background: var(--bg);
+        border-radius: 14px;
+        padding: 1.25rem;
+        border: 1.5px solid var(--border);
+        margin-bottom: 1.25rem;
+    }
+    .field-group-title {
+        font-size: 0.72rem;
+        font-weight: 800;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    .tp-input {
+        background: var(--surface);
+        border: 1.5px solid var(--border);
+        border-radius: 10px;
+        padding: 0.7rem 1rem;
+        font-size: 0.9rem;
+        width: 100%;
+        color: var(--text-primary);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        transition:var(--transition);
+    }
+    .tp-input:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        background: #fff;
+    }
+    .subject-chip {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 0.875rem;
+        border-radius: 100px;
+        border: 2px solid var(--border);
+        background: var(--surface);
+        cursor: pointer;
+        transition: all 0.18s;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--text-secondary);
+        user-select: none;
+    }
+    .subject-chip:hover {
+        border-color: var(--primary);
+        color: var(--primary);
+        background: var(--primary-light);
+    }
+    .subject-chip.selected {
+        border-color: var(--primary);
+        background: var(--primary);
+        color: #fff;
+    }
+    .subject-chip input { display: none; }
+    .mode-card {
+        border: 2px solid var(--border);
+        border-radius: 14px;
+        padding: 1rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.18s;
+        background: var(--surface);
+    }
+    .mode-card:hover {
+        border-color: var(--primary);
+        background: var(--primary-light);
+    }
+    .mode-card.selected {
+        border-color: var(--primary);
+        background: var(--primary-light);
+    }
+    .mode-card.selected .mode-label { color: var(--primary); }
+    .mode-card input { display: none; }
+    .save-btn {
+        background: linear-gradient(135deg, #1E40AF, #4F46E5);
+        color: #fff; border: none;
+        border-radius: 14px;
+        padding: 0.9rem 2.5rem;
+        font-weight: 800;
+        font-size: 1rem;
+        cursor: pointer;
+        transition:var(--transition);
+        box-shadow: 0 4px 16px rgba(30,64,175,0.3);
+    }
+    .save-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(30,64,175,0.4);
+    }
+</style>
+
+<!-- Banner -->
+<div class="profile-banner">
+    <div class="container" style="position:relative;z-index:1;">
+        <div class="d-flex align-items-center gap-3">
+            <div style="width:52px;height:52px;border-radius:var(--radius-lg);
+                        background:rgba(255,255,255,0.15);
+                        display:flex;align-items:center;justify-content:center;
+                        border:1px solid rgba(255,255,255,0.25);">
+                <svg width="26" height="26" fill="none" stroke="#fff"
+                     stroke-width="1.8" viewBox="0 0 24 24">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+            </div>
+            <div>
+                <h4 style="color:#fff;font-weight:800;margin:0;">
+                    Hồ sơ gia sư
+                </h4>
+                <p style="color:rgba(255,255,255,0.7);font-size:0.85rem;margin:0;">
+                    Cập nhật thông tin để học viên tìm thấy bạn
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Form -->
+<section style="background:var(--bg);padding-bottom:3rem;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card form-card">
+                    <div class="card-body p-4 p-md-5">
+
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div class="alert alert-danger mb-4"
+                                 style="border-radius:var(--radius-md);font-size:0.875rem;">
+                                @Html.ValidationSummary(true)
+                            </div>
+                        }
+
+                        <form asp-action="Profile" method="post">
+                            @Html.AntiForgeryToken()
+
+                            <!-- Học vấn & Kinh nghiệm -->
+                            <div class="field-group">
+                                <div class="field-group-title">
+                                    <svg width="14" height="14" fill="none"
+                                         stroke="currentColor" stroke-width="2"
+                                         viewBox="0 0 24 24">
+                                        <path d="M22 10v6M2 10l10-5 10 5"/>
+                                        <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                                    </svg>
+                                    Học vấn & Kinh nghiệm
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">
+                                        Trình độ học vấn
+                                    </label>
+                                    <input asp-for="Education"
+                                           class="tp-input"
+                                           placeholder="VD: ĐH Bách Khoa - Kỹ thuật phần mềm" />
+                                    <span asp-validation-for="Education"
+                                          class="text-danger"
+                                          style="font-size:0.78rem;"></span>
+                                </div>
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">
+                                            Số năm kinh nghiệm
+                                        </label>
+                                        <div style="position:relative;">
+                                            <input asp-for="ExperienceYears"
+                                                   type="number" min="0" max="50"
+                                                   class="tp-input"
+                                                   style="padding-right:2.5rem;" />
+                                            <span style="position:absolute;
+                                                         right:12px;top:50%;
+                                                         transform:translateY(-50%);
+                                                         font-size:0.78rem;
+                                                         color:var(--text-muted);
+                                                         font-weight:600;">
+                                                năm
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">
+                                            Học phí / giờ
+                                        </label>
+                                        <div style="position:relative;">
+                                            <input asp-for="HourlyRate"
+                                                   type="number" min="0"
+                                                   class="tp-input"
+                                                   style="padding-right:2rem;" />
+                                            <span style="position:absolute;
+                                                         right:12px;top:50%;
+                                                         transform:translateY(-50%);
+                                                         font-size:0.78rem;
+                                                         color:var(--text-muted);
+                                                         font-weight:600;">
+                                                đ
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Khu vực & Hình thức -->
+                            <div class="field-group">
+                                <div class="field-group-title">
+                                    <svg width="14" height="14" fill="none"
+                                         stroke="currentColor" stroke-width="2"
+                                         viewBox="0 0 24 24">
+                                        <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/>
+                                        <circle cx="12" cy="10" r="3"/>
+                                    </svg>
+                                    Khu vực & Hình thức dạy
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Khu vực dạy</label>
+                                    <input asp-for="TeachingArea"
+                                           class="tp-input"
+                                           placeholder="VD: Quận 1, TP.HCM" />
+                                    <span asp-validation-for="TeachingArea"
+                                          class="text-danger"
+                                          style="font-size:0.78rem;"></span>
+                                </div>
+                                <!-- Teaching mode cards -->
+                                <label class="form-label">Hình thức dạy</label>
+                                <div class="row g-2" id="modeCards">
+                                    @foreach (var (val, lbl, icon) in new[]{
+                                        ("Online", "Online",
+                                         "M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"),
+                                        ("Offline", "Trực tiếp",
+                                         "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z M15 11a3 3 0 11-6 0 3 3 0 016 0z"),
+                                        ("Both", "Cả hai",
+                                         "M13 10V3L4 14h7v7l9-11h-7z"),
+                                    })
+                                    {
+                                        <div class="col-4">
+                                            <label class="mode-card @(Model.TeachingMode == val ? "selected" : "")"
+                                                   data-value="@val">
+                                                <input type="radio"
+                                                       asp-for="TeachingMode"
+                                                       id="teaching-@val" class="peer sr-only"  value="@val" />
+                                                <svg width="22" height="22" fill="none"
+                                                     stroke="currentColor"
+                                                     stroke-width="1.8"
+                                                     viewBox="0 0 24 24"
+                                                     style="display:block;margin:0 auto 0.4rem;">
+                                                    <path d="@icon"
+                                                          stroke-linecap="round"
+                                                          stroke-linejoin="round"/>
+                                                </svg>
+                                                <div class="mode-label"
+                                                     style="font-size:0.8rem;
+                                                            font-weight:700;
+                                                            color:var(--text-secondary);">
+                                                    @lbl
+                                                </div>
+                                            </label>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+
+                            <!-- Giới thiệu -->
+                            <div class="field-group">
+                                <div class="field-group-title">
+                                    <svg width="14" height="14" fill="none"
+                                         stroke="currentColor" stroke-width="2"
+                                         viewBox="0 0 24 24">
+                                        <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                    </svg>
+                                    Giới thiệu bản thân
+                                </div>
+                                <textarea asp-for="Bio" class="tp-input"
+                                          rows="4"
+                                          style="resize:vertical;line-height:1.7;"
+                                          placeholder="Mô tả kinh nghiệm, phương pháp giảng dạy, thành tích nổi bật..."></textarea>
+                                <div class="text-end mt-1"
+                                     style="font-size:0.72rem;color:var(--text-muted);">
+                                    <span id="bioCount">0</span>/500 ký tự
+                                </div>
+                            </div>
+
+                            <!-- Môn học -->
+                            <div class="field-group">
+                                <div class="field-group-title">
+                                    <svg width="14" height="14" fill="none"
+                                         stroke="currentColor" stroke-width="2"
+                                         viewBox="0 0 24 24">
+                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                    </svg>
+                                    Môn học giảng dạy
+                                    <span style="font-size:0.68rem;color:var(--text-muted);
+                                                 font-weight:500;text-transform:none;
+                                                 letter-spacing:0;margin-left:4px;">
+                                        (chọn ít nhất 1)
+                                    </span>
+                                </div>
+                                <div class="d-flex flex-wrap gap-2">
+                                    @foreach (var s in subjects)
+                                    {
+                                        var isSelected = Model.SelectedSubjectIds
+                                            .Contains(s.Id);
+                                        <label class="subject-chip @(isSelected ? "selected" : "")"
+                                               data-id="@s.Id">
+                                            <input type="checkbox"
+                                                   name="SelectedSubjectIds"
+                                                   value="@s.Id"
+                                                   @(isSelected ? "checked" : "") />
+                                            <svg width="13" height="13" fill="none"
+                                                 stroke="currentColor"
+                                                 stroke-width="2.5"
+                                                 viewBox="0 0 24 24"
+                                                 class="check-icon"
+                                                 style="@(isSelected ? "" : "display:none")">
+                                                <polyline points="20 6 9 17 4 12"/>
+                                            </svg>
+                                            @s.Name
+                                            <span style="font-size:0.68rem;
+                                                         opacity:0.7;">
+                                                · @s.Level
+                                            </span>
+                                        </label>
+                                    }
+                                </div>
+                                @if (!subjects.Any())
+                                {
+                                    <p style="color:var(--text-muted);
+                                              font-size:0.85rem;margin:0;">
+                                        Chưa có môn học nào. Admin cần thêm môn học trước.
+                                    </p>
+                                }
+                            </div>
+
+                            <!-- Actions -->
+                            <div class="d-flex gap-2 justify-content-end mt-2">
+                                <a asp-action="Dashboard"
+                                   class="btn btn-outline-secondary"
+                                   style="border-radius:var(--radius-md);font-weight:600;">
+                                    Huỷ
+                                </a>
+                                <button type="submit" class="save-btn">
+                                    <svg width="17" height="17" fill="none"
+                                         stroke="currentColor" stroke-width="2.5"
+                                         viewBox="0 0 24 24" class="me-1">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                    Lưu hồ sơ
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+    <script>
+        // Subject chip toggle
+        document.querySelectorAll('.subject-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const cb = chip.querySelector('input[type=checkbox]');
+                const icon = chip.querySelector('.check-icon');
+                cb.checked = !cb.checked;
+                chip.classList.toggle('selected', cb.checked);
+                icon.style.display = cb.checked ? '' : 'none';
+            });
+        });
+
+        // Mode card toggle
+        document.querySelectorAll('.mode-card').forEach(card => {
+            card.addEventListener('click', () => {
+                document.querySelectorAll('.mode-card').forEach(c => {
+                    c.classList.remove('selected');
+                    c.querySelector('.mode-label').style.color = 'var(--text-secondary)';
+                });
+                card.classList.add('selected');
+                card.querySelector('.mode-label').style.color = 'var(--primary)';
+            });
+        });
+
+        // Bio char counter
+        const bioArea  = document.getElementById('Bio');
+        const bioCount = document.getElementById('bioCount');
+        if (bioArea) {
+            bioCount.textContent = bioArea.value.length;
+            bioArea.addEventListener('input', () => {
+                const len = bioArea.value.length;
+                bioCount.textContent = len;
+                bioCount.style.color = len > 450
+                    ? '#DC2626' : 'var(--text-muted)';
+                if (len > 500)
+                    bioArea.value = bioArea.value.slice(0, 500);
+            });
+        }
+    </script>
+}}

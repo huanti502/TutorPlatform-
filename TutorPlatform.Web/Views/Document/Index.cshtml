@@ -1,0 +1,104 @@
+@model List<TutorPlatform.Core.Models.Document>
+@{
+    ViewBag.Title = "Tài liệu học tập";
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"/></svg> Tài liệu học tập</h4>
+        <a href="/Document/Upload" class="btn btn-primary">⬆️ Upload tài liệu</a>
+    </div>
+
+    @* Tìm kiếm *@
+    <form method="get" class="mb-4">
+        <div class="input-group" style="max-width:400px">
+            <input name="search" class="form-control" placeholder="Tìm tài liệu..."
+                   value="@ViewBag.Search" />
+            <button class="btn btn-outline-secondary">🔍</button>
+        </div>
+    </form>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> @TempData["Success"]</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="text-center text-muted py-5">
+            <div style="font-size:4rem">📂</div>
+            <h5>Chưa có tài liệu nào</h5>
+            <a href="/Document/Upload" class="btn btn-primary mt-2">Upload ngay</a>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var doc in Model)
+            {
+                var (icon, color) = doc.FileType switch
+                {
+                    "pdf" => ("📄", "#F44336"),
+                    "word" => ("📝", "#2196F3"),
+                    "powerpoint" => ("<svg width='16' height='16' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24' aria-hidden='true'><path d='M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z'/></svg> ", "#FF5722"),
+                    "excel" => ("📈", "#4CAF50"),
+                    "image" => ("🖼️", "#9C27B0"),
+                    _ => ("📎", "#607D8B")
+                };
+
+                <div class="col-md-6 col-lg-4">
+                    <div class="card  h-100" style="border-radius:14px">
+                        <div class="card-body p-4">
+                            <div class="d-flex gap-3 mb-3">
+                                <div style="font-size:2.5rem">@icon</div>
+                                <div class="flex-grow-1">
+                                    <h6 class="fw-bold mb-0">@doc.Title</h6>
+                                    <small class="text-muted">@doc.FileName</small>
+                                </div>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(doc.Description))
+                            {
+                                <p class="text-muted small mb-2">@doc.Description</p>
+                            }
+
+                            <div class="d-flex justify-content-between align-items-center text-muted small mb-3">
+                                <span><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> @doc.Uploader?.FullName</span>
+                                <span>📥 @doc.DownloadCount lượt</span>
+                            </div>
+                            <div class="text-muted small mb-3">
+                                @(doc.FileSize / 1024 < 1024
+                                    ? $"{doc.FileSize / 1024} KB"
+                                    : $"{doc.FileSize / 1024 / 1024:0.#} MB")
+                                — @doc.CreatedAt.ToString("dd/MM/yyyy")
+                                @if (doc.IsPublic)
+                                {
+                                    <span class="badge bg-success ms-1">🌐 Công khai</span>
+                                }
+                                else
+                                {
+
+                                    <span class="badge bg-secondary ms-1">🔒 Riêng tư</span>
+                                }
+                            </div>
+
+                            <div class="d-flex gap-2">
+                                <a href="/Document/Download/@doc.Id"
+                                   class="btn btn-primary btn-sm flex-grow-1">
+                                    ⬇️ Tải về
+                                </a>
+                                @if (doc.UploaderId == User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value)
+                                {
+                                    <form method="post" action="/Document/Delete/@doc.Id"
+                                          onsubmit="return confirm('Xóa tài liệu này?')">
+                                        <button class="btn btn-outline-danger btn-sm">🗑</button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

@@ -1,0 +1,268 @@
+﻿@model List<TutorPlatform.Core.Models.Subject>
+@{
+    ViewData["Title"] = "AI Tạo Lộ Trình Học";
+}
+
+<div class="container py-4" style="max-width:900px">
+
+    <!-- Hero -->
+    <div class="text-center mb-4">
+        <div style="font-size:3rem"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><line x1="7" y1="15" x2="7" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="17" y1="15" x2="17" y2="15"/></svg> </div>
+        <h2 class="fw-bold">AI Tạo Lộ Trình Học Cá Nhân</h2>
+        <p class="text-muted">Nhập thông tin của bạn, AI sẽ tạo kế hoạch học tập tối ưu và gợi ý gia sư phù hợp</p>
+    </div>
+
+    <!-- Form -->
+    <div class="card  mb-4" id="form-card">
+        <div class="card-body p-4">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">📚 Môn học muốn học</label>
+                    <select class="form-select" id="subjectId">
+                        <option value="">-- Chọn môn học --</option>
+                        @foreach (var s in Model)
+                        {
+                            <option value="@s.Id">@s.Name (@s.Level)</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Ngày thi / Deadline</label>
+                    <input type="date" class="form-control" id="examDate"
+                           min="@DateTime.Now.AddDays(7).ToString("yyyy-MM-dd")"
+                           value="@DateTime.Now.AddMonths(2).ToString("yyyy-MM-dd")">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z"/></svg> Trình độ hiện tại</label>
+                    <div class="d-flex gap-2 flex-wrap">
+                        @foreach (var lv in new[] { "Mất gốc", "Cơ bản", "Trung bình", "Khá", "Nâng cao" })
+                        {
+                            <div class="form-check form-check-inline">
+                                <input class="form-check-input" type="radio" name="level"
+                                       id="lv-@lv" value="@lv" checked="@(lv == "Cơ bản")">
+                                <label class="form-check-label" for="lv-@lv">@lv</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">⏱️ Số giờ học/tuần: <span id="hours-label">6</span>h</label>
+                    <input type="range" class="form-range" id="hoursPerWeek"
+                           min="2" max="20" value="6" step="1"
+                           oninput="document.getElementById('hours-label').textContent=this.value">
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">🎯 Mục tiêu cụ thể</label>
+                    <input type="text" class="form-control" id="goal"
+                           placeholder="VD: Đạt 8 điểm THPTQG, đạt IELTS 7.0, vào được ngành CNTT...">
+                </div>
+                <div class="col-12">
+                    <label class="form-label fw-semibold">⚠️ Điểm yếu cần cải thiện</label>
+                    <input type="text" class="form-control" id="weakPoints"
+                           placeholder="VD: Yếu Hình học, kém Listening, không hiểu con trỏ C++...">
+                </div>
+            </div>
+            <div class="mt-4 text-center">
+                <button class="btn btn-primary btn-lg px-5" onclick="generatePlan()" id="gen-btn">
+                    ✨ Tạo Lộ Trình Ngay
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading -->
+    <div id="loading" class="text-center py-5 d-none">
+        <div class="spinner-border text-primary mb-3" style="width:3rem;height:3rem"></div>
+        <p class="text-muted" id="loading-text"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><line x1="7" y1="15" x2="7" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="17" y1="15" x2="17" y2="15"/></svg> AI đang phân tích và tạo lộ trình...</p>
+    </div>
+
+    <!-- Result -->
+    <div id="result-area" class="d-none"></div>
+</div>
+
+<style>
+    .week-card {
+        border-left: 4px solid #3b82f6;
+        transition: transform .2s;
+    }
+
+        .week-card:hover {
+            transform: translateX(4px);
+        }
+
+    .tag {
+        display: inline-block;
+        background: #eff6ff;
+        color: #3b82f6;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 13px;
+        margin: 2px;
+    }
+
+    .tutor-rec {
+        background: linear-gradient(135deg, #eff6ff, #f0fdf4);
+        border: 1px solid #bfdbfe;
+        border-radius: 12px;
+    }
+
+    .progress-bar-custom {
+        height: 8px;
+        border-radius: 4px;
+        background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+    }
+</style>
+
+<script>
+    async function generatePlan() {
+        const subjectId = document.getElementById('subjectId').value;
+        const examDate = document.getElementById('examDate').value;
+        const level = document.querySelector('input[name="level"]:checked')?.value;
+        const hoursPerWeek = parseInt(document.getElementById('hoursPerWeek').value);
+        const goal = document.getElementById('goal').value;
+        const weakPoints = document.getElementById('weakPoints').value;
+
+        if (!subjectId) { alert('Vui lòng chọn môn học!'); return; }
+        if (!goal.trim()) { alert('Vui lòng nhập mục tiêu!'); return; }
+
+        document.getElementById('loading').classList.remove('d-none');
+        document.getElementById('result-area').classList.add('d-none');
+        document.getElementById('gen-btn').disabled = true;
+
+        const loadingMsgs = [
+            '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><line x1="7" y1="15" x2="7" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="17" y1="15" x2="17" y2="15"/></svg> AI đang phân tích thông tin...',
+            '<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z"/></svg> Đang xây dựng lộ trình theo tuần...',
+            '🔍 Đang tìm gia sư phù hợp trong hệ thống...',
+            '✍️ Đang hoàn thiện kế hoạch học tập...'
+        ];
+        let msgIdx = 0;
+        const msgInterval = setInterval(() => {
+            document.getElementById('loading-text').textContent = loadingMsgs[++msgIdx % loadingMsgs.length];
+        }, 2000);
+
+        try {
+            const res = await fetch('/AI/GenerateStudyPlan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ subjectId: parseInt(subjectId), examDate, currentLevel: level, hoursPerWeek, goal, weakPoints })
+            });
+
+            const data = await res.json();
+            clearInterval(msgInterval);
+            document.getElementById('loading').classList.add('d-none');
+            document.getElementById('gen-btn').disabled = false;
+
+            if (data.error) {
+                alert('Lỗi: ' + data.error);
+                return;
+            }
+
+            const plan = JSON.parse(data.plan);
+            renderPlan(plan);
+        } catch (err) {
+            clearInterval(msgInterval);
+            document.getElementById('loading').classList.add('d-none');
+            document.getElementById('gen-btn').disabled = false;
+            alert('Lỗi kết nối: ' + err.message);
+        }
+    }
+
+    function renderPlan(plan) {
+        const area = document.getElementById('result-area');
+        area.classList.remove('d-none');
+
+        const diffColor = { 'Dễ': '#22c55e', 'Trung bình': '#f59e0b', 'Khó': '#ef4444' };
+
+        let weeksHtml = (plan.weeks || []).map((w, i) => `
+            <div class="card week-card mb-3 ">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <span class="badge bg-primary me-2">Tuần ${w.weekNumber}</span>
+                            <strong>${w.theme}</strong>
+                        </div>
+                        <span class="text-muted small">⏱️ ${w.hours}h</span>
+                    </div>
+                    <div class="mb-2">
+                        ${(w.goals || []).map(g => `<div class="text-success small"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> ${g}</div>`).join('')}
+                    </div>
+                    <div class="mb-2">
+                        ${(w.topics || []).map(t => `<span class="tag">📌 ${t}</span>`).join('')}
+                    </div>
+                    <div class="alert alert-info py-2 mb-0 small">💡 ${w.tips}</div>
+                </div>
+            </div>
+        `).join('');
+
+        let tutorsHtml = (plan.recommendedTutors || []).map(t => `
+            <div class="tutor-rec p-3 mb-2">
+                <div class="fw-semibold">👨‍🏫 ${t.name}</div>
+                <div class="text-muted small mt-1">${t.reason}</div>
+            </div>
+        `).join('');
+
+        let materialsHtml = (plan.materials || []).map(m => `<li>${m}</li>`).join('');
+        let warningsHtml = (plan.warnings || []).map(w => `<li class="text-warning">⚠️ ${w}</li>`).join('');
+
+        area.innerHTML = `
+            <!-- Header -->
+            <div class="card border-0 shadow mb-4" style="background:linear-gradient(135deg,#1e3a5f,#0f3460);color:white">
+                <div class="card-body p-4">
+                    <div class="row align-items-center">
+                        <div class="col-md-8">
+                            <h4 class="mb-2">📋 Lộ Trình Học Của Bạn</h4>
+                            <p class="mb-0 opacity-75">${plan.overview}</p>
+                        </div>
+                        <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                            <div class="d-flex gap-3 justify-content-md-end flex-wrap">
+                                <div class="text-center">
+                                    <div style="font-size:1.8rem;font-weight:700">${plan.totalWeeks}</div>
+                                    <div class="small opacity-75">tuần</div>
+                                </div>
+                                <div class="text-center">
+                                    <div style="font-size:1.8rem;font-weight:700">${plan.hoursTotal}</div>
+                                    <div class="small opacity-75">giờ học</div>
+                                </div>
+                                <div class="text-center">
+                                    <div style="font-size:1.4rem;font-weight:700;color:${diffColor[plan.difficulty] || '#fff'}">${plan.difficulty}</div>
+                                    <div class="small opacity-75">độ khó</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Weeks -->
+                <div class="col-md-8">
+                    <h5 class="fw-bold mb-3"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Lịch Học Theo Tuần</h5>
+                    ${weeksHtml}
+                </div>
+
+                <!-- Sidebar -->
+                <div class="col-md-4">
+                    <h5 class="fw-bold mb-3">👨‍🏫 Gia Sư Được Gợi Ý</h5>
+                    ${tutorsHtml}
+                    <a href="/TutorSearch/Search" class="btn btn-primary w-100 mb-4">Xem tất cả gia sư →</a>
+
+                    <h5 class="fw-bold mb-3">📚 Tài Liệu Học</h5>
+                    <ul class="list-unstyled">${materialsHtml}</ul>
+
+                    ${warningsHtml ? `
+                    <h5 class="fw-bold mb-3 mt-3">⚠️ Lưu Ý Quan Trọng</h5>
+                    <ul class="list-unstyled">${warningsHtml}</ul>` : ''}
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button class="btn btn-outline-primary me-2" onclick="window.print()">🖨️ In lộ trình</button>
+                <button class="btn btn-outline-secondary" onclick="document.getElementById('result-area').classList.add('d-none');document.getElementById('form-card').scrollIntoView()">
+                    ↩️ Tạo lại
+                </button>
+            </div>
+        `;
+
+        area.scrollIntoView({ behavior: 'smooth' });
+    }
+</script>

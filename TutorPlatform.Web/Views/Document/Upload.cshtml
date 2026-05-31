@@ -1,0 +1,66 @@
+﻿@{
+    ViewBag.Title = "Upload tài liệu";
+}
+
+<div class="container py-4" style="max-width:600px">
+    <h4 class="fw-bold mb-4">⬆️ Upload tài liệu học tập</h4>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">⚠️ @TempData["Error"]</div>
+    }
+
+    <div class="card " style="border-radius:var(--radius-lg)">
+        <div class="card-body p-4">
+            <form method="post" enctype="multipart/form-data" action="/Document/Upload">
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">📌 Tiêu đề</label>
+                    <input name="title" class="form-control" required
+                           placeholder="VD: Bài tập Toán chương 3" />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">📝 Mô tả</label>
+                    <textarea name="description" class="form-control" rows="2"
+                              placeholder="Mô tả nội dung tài liệu..."></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">📂 Chọn file</label>
+                    <input type="file" name="file" class="form-control" required
+                           accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.jpg,.jpeg,.png"
+                           onchange="previewFile(this)" />
+                    <div class="form-text">PDF, Word, PowerPoint, Excel, ảnh — tối đa 20MB</div>
+                    <div id="filePreview" class="mt-2"></div>
+                </div>
+                <div class="mb-4">
+                    <div class="form-check form-switch">
+                        <input class="form-check-input" type="checkbox"
+                               name="isPublic" value="true" id="isPublic" />
+                        <label class="form-check-label fw-semibold" for="isPublic">
+                            🌐 Chia sẻ công khai (ai cũng có thể tải)
+                        </label>
+                    </div>
+                    <small class="text-muted">Nếu tắt, chỉ bạn mới xem được.</small>
+                </div>
+                <div class="d-flex gap-3">
+                    <button type="submit" class="btn btn-primary px-4">⬆️ Upload</button>
+                    <a href="/Document/Index" class="btn btn-outline-secondary">Hủy</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    function previewFile(input) {
+        const file = input.files[0];
+        if (!file) return;
+        const sizeKB = file.size / 1024;
+        const size = sizeKB < 1024
+            ? `${sizeKB.toFixed(0)} KB`
+            : `${(sizeKB / 1024).toFixed(1)} MB`;
+        document.getElementById("filePreview").innerHTML = `
+            <div class="alert alert-info py-2 px-3 mb-0">
+                📎 <strong>${file.name}</strong> — ${size}
+            </div>`;
+    }
+</script>

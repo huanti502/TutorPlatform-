@@ -1,0 +1,247 @@
+﻿@{
+    ViewBag.Title = "Đặt lịch học";
+    var tutor = ViewBag.Tutor as TutorPlatform.Core.Models.TutorProfile;
+}
+
+<div class="container py-4" style="max-width:720px">
+    <div class="mb-4">
+        <h4 class="fw-bold"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Đặt lịch học</h4>
+        <p class="text-muted mb-0">
+            Gia sư: <strong>@tutor?.User?.FullName</strong>
+            — 💰 @tutor?.HourlyRate.ToString("N0") VNĐ/giờ
+        </p>
+    </div>
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">⚠️ @TempData["Error"]</div>
+    }
+
+    <div class="card " style="border-radius:var(--radius-lg)">
+        <div class="card-body p-4">
+            <form method="post" action="/Booking/Create" id="bookingForm">
+                <input type="hidden" name="tutorProfileId" value="@tutor?.Id" />
+
+                @* Môn học *@
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">📚 Môn học</label>
+                    <select name="subjectId" class="form-select" required>
+                        <option value="">-- Chọn môn --</option>
+                        @foreach (var ts in tutor?.TutorSubjects ?? Enumerable.Empty<TutorPlatform.Core.Models.TutorSubject>())
+                        {
+                            <option value="@ts.SubjectId">@ts.Subject?.Name (@ts.Subject?.Level)</option>
+                        }
+                    </select>
+                </div>
+
+                @* Chọn ngày *@
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">📆 Chọn ngày</label>
+                    <input type="date" id="pickDate" class="form-control"
+                           min="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")" required />
+                    <div id="availabilityInfo" class="mt-2"></div>
+                </div>
+
+                @* Chọn giờ *@
+                <div class="row g-3 mb-3" id="timeSection" style="display:none!important">
+                    <div class="col-6">
+                        <label class="form-label fw-semibold"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Giờ bắt đầu</label>
+                        <input type="time" id="startTimePicker" class="form-control" step="1800" />
+                        <input type="hidden" name="startTime" id="startTimeHidden" />
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label fw-semibold">🏁 Giờ kết thúc</label>
+                        <input type="time" id="endTimePicker" class="form-control" step="1800" />
+                        <input type="hidden" name="endTime" id="endTimeHidden" />
+                    </div>
+                </div>
+
+                @* Cảnh báo trùng lịch *@
+                <div id="conflictAlert" class="alert alert-danger d-none">
+                    ⚠️ Giờ này đã có người đặt! Vui lòng chọn khung giờ khác.
+                </div>
+                <div id="okAlert" class="alert alert-success d-none">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Khung giờ này còn trống, bạn có thể đặt!
+                </div>
+
+                @* Khung giờ gợi ý *@
+                <div id="suggestedSlots" class="mb-3" style="display:none"></div>
+
+                @* Hình thức *@
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">🖥 Hình thức dạy</label>
+                    <div class="d-flex gap-3">
+                        @if (tutor?.TeachingMode is "Online" or "Both")
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio"
+                                       name="teachingMode" value="Online" id="modeOnline" checked />
+                                <label class="form-check-label" for="modeOnline">🖥 Online</label>
+                            </div>
+                        }
+                        @if (tutor?.TeachingMode is "Offline" or "Both")
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio"
+                                       name="teachingMode" value="Offline" id="modeOffline" />
+                                <label class="form-check-label" for="modeOffline">🏠 Tại nhà</label>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                @* Ghi chú *@
+                <div class="mb-4">
+                    <label class="form-label fw-semibold">📝 Ghi chú (tuỳ chọn)</label>
+                    <textarea name="note" class="form-control" rows="2"
+                              placeholder="VD: Học về phần đạo hàm lớp 12..."></textarea>
+                </div>
+
+                @* Tóm tắt giá *@
+                <div id="priceSummary" class="alert alert-info d-none mb-4">
+                    ⏱ Thời lượng: <strong id="durationText">—</strong> |
+                    💰 Học phí ước tính: <strong id="priceText">—</strong>
+                </div>
+
+                <div class="d-flex gap-3">
+                    <button type="submit" class="btn btn-primary px-5" id="submitBtn" disabled>
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Xác nhận đặt lịch
+                    </button>
+                    <a href="/Tutor/Detail/@tutor?.Id" class="btn btn-outline-secondary">Quay lại</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const TUTOR_ID = @tutor?.Id;
+        const HOURLY = @(tutor?.HourlyRate ?? 0);
+        const dateInput = document.getElementById("pickDate");
+        const startPick = document.getElementById("startTimePicker");
+        const endPick = document.getElementById("endTimePicker");
+        const timeSection = document.getElementById("timeSection");
+        const conflictAlert = document.getElementById("conflictAlert");
+        const okAlert = document.getElementById("okAlert");
+        const priceSummary = document.getElementById("priceSummary");
+        const submitBtn = document.getElementById("submitBtn");
+
+        // Khi chọn ngày → load lịch trống
+        dateInput.addEventListener("change", async () => {
+            const date = dateInput.value;
+            if (!date) return;
+
+            const res = await fetch(`/Booking/GetBusySlots?tutorProfileId=${TUTOR_ID}&date=${date}`);
+            const data = await res.json();
+
+            // Hiển thị khung giờ làm việc
+            const avail = data.availableSlots;
+            const avInfo = document.getElementById("availabilityInfo");
+
+            if (avail.length === 0) {
+                avInfo.innerHTML = `<span class="badge bg-danger"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Gia sư không làm việc ngày này</span>`;
+                timeSection.style.display = "none";
+                return;
+            }
+
+            avInfo.innerHTML = avail.map(a =>
+                `<span class="badge bg-success me-1"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> ${a.start} – ${a.end}</span>`
+            ).join("") + `<small class="text-muted ms-2">(Khung giờ làm việc)</small>`;
+
+            // Hiển thị các giờ bận
+            if (data.busySlots.length > 0) {
+                avInfo.innerHTML += "<br/>" + data.busySlots.map(b =>
+                    `<span class="badge bg-danger me-1">🔴 ${b.start}–${b.end} Đã đặt</span>`
+                ).join("");
+            }
+
+            // Gợi ý khung giờ trống
+            showSuggestedSlots(avail, data.busySlots);
+
+            timeSection.style.removeProperty("display");
+        });
+
+        // Khi chọn giờ → kiểm tra conflict
+        async function checkConflict() {
+            const date = dateInput.value;
+            const start = startPick.value;
+            const end = endPick.value;
+            if (!date || !start || !end || start >= end) return;
+
+            const startDT = `${date}T${start}:00`;
+            const endDT = `${date}T${end}:00`;
+
+            // Cập nhật hidden inputs
+            document.getElementById("startTimeHidden").value = startDT;
+            document.getElementById("endTimeHidden").value = endDT;
+
+            // Tính giá
+            const hours = (new Date(endDT) - new Date(startDT)) / 3600000;
+            document.getElementById("durationText").textContent = `${hours} giờ`;
+            document.getElementById("priceText").textContent =
+                (hours * HOURLY).toLocaleString("vi-VN") + " VNĐ";
+            priceSummary.classList.remove("d-none");
+
+            // Kiểm tra conflict
+            const res = await fetch(`/Booking/CheckConflict?tutorProfileId=${TUTOR_ID}&start=${startDT}&end=${endDT}`);
+            const data = await res.json();
+
+            conflictAlert.classList.toggle("d-none", !data.hasConflict);
+            okAlert.classList.toggle("d-none", data.hasConflict);
+            submitBtn.disabled = data.hasConflict || hours <= 0;
+        }
+
+        startPick.addEventListener("change", checkConflict);
+        endPick.addEventListener("change", checkConflict);
+
+        // Gợi ý các slot trống 1-2 tiếng
+        function showSuggestedSlots(avail, busy) {
+            const box = document.getElementById("suggestedSlots");
+            const slots = [];
+
+            avail.forEach(a => {
+                let cur = toMinutes(a.start);
+                const av_end = toMinutes(a.end);
+                while (cur + 60 <= av_end) {
+                    const s = toTime(cur), e = toTime(cur + 60);
+                    const isBusy = busy.some(b =>
+                        toMinutes(b.start) < cur + 60 && toMinutes(b.end) > cur);
+                    if (!isBusy) slots.push({ s, e });
+                    cur += 30;
+                }
+            });
+
+            if (slots.length === 0) { box.style.display = "none"; return; }
+
+            box.style.display = "block";
+            box.innerHTML = `<label class="form-label fw-semibold">💡 Khung giờ gợi ý còn trống:</label>
+                <div class="d-flex flex-wrap gap-2">
+                ${slots.slice(0, 8).map(sl => `
+                    <button type="button" class="btn btn-outline-success btn-sm slot-btn"
+                            data-start="${sl.s}" data-end="${sl.e}">
+                        ${sl.s} – ${sl.e}
+                    </button>`).join("")}
+                </div>`;
+
+            box.querySelectorAll(".slot-btn").forEach(btn => {
+                btn.onclick = () => {
+                    startPick.value = btn.dataset.start;
+                    endPick.value = btn.dataset.end;
+                    checkConflict();
+                    box.querySelectorAll(".slot-btn").forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active", "btn-success");
+                    btn.classList.remove("btn-outline-success");
+                };
+            });
+        }
+
+        function toMinutes(t) {
+            const [h, m] = t.split(":").map(Number);
+            return h * 60 + m;
+        }
+        function toTime(m) {
+            return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+        }
+    </script>
+}

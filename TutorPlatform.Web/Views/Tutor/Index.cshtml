@@ -1,0 +1,222 @@
+@model IEnumerable<TutorPlatform.Core.Models.TutorProfile>
+@{
+    ViewData["Title"] = "Tìm gia sư";
+    var subjects = ViewBag.Subjects as IEnumerable<TutorPlatform.Core.Models.Subject>;
+}
+
+<!-- ===== HEADER ===== -->
+<section class="page-header">
+    <div class="container">
+        <div class="section-label">Khám phá</div>
+        <h1>Tìm gia sư</h1>
+        <p style="color:var(--text-secondary);margin:0;font-size:0.95rem;">
+            <strong style="color:var(--primary);">@Model.Count()</strong> gia sư đang hoạt động
+        </p>
+    </div>
+</section>
+
+<!-- ===== FILTER + RESULTS ===== -->
+<section class="section-sm">
+    <div class="container">
+        <div class="row g-4">
+
+            <!-- SIDEBAR FILTER -->
+            <div class="col-lg-3">
+                <div class="card" style="position:sticky;top:80px;">
+                    <div class="card-body">
+                        <h6 class="section-label" style="margin-bottom:1.25rem;">
+                            Bộ lọc tìm kiếm
+                        </h6>
+
+                        <form asp-controller="Tutor" asp-action="Index" method="get">
+                            <!-- Keyword -->
+                            <div class="mb-3">
+                                <label class="form-label">Từ khoá</label>
+                                <div style="position:relative;">
+                                    <span style="position:absolute;left:10px;top:50%;
+                                        transform:translateY(-50%);
+                                        color:var(--text-muted);">
+                                        <svg width="15" height="15" fill="none"
+                                             stroke="currentColor" stroke-width="2"
+                                             viewBox="0 0 24 24">
+                                            <circle cx="11" cy="11" r="8" />
+                                            <path d="m21 21-4.35-4.35" />
+                                        </svg>
+                                    </span>
+                                    <input type="text" name="keyword"
+                                           class="form-control"
+                                           style="padding-left:2rem;"
+                                           value="@ViewBag.Keyword"
+                                           placeholder="Tên, môn học..." />
+                                </div>
+                            </div>
+
+                            <!-- Môn học -->
+                            <div class="mb-3">
+                                <label class="form-label">Môn học</label>
+                                <select name="subjectId" class="form-select">
+                                    <option value="">Tất cả môn</option>
+                                    @if (subjects != null)
+                                    {
+                                        @foreach (var s in subjects)
+                                        {
+                                            <option value="@s.Id"
+                                                    selected="@(ViewBag.SubjectId == s.Id)">
+                                                @s.Name
+                                            </option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+
+                            <!-- Khu vực -->
+                            <div class="mb-3">
+                                <label class="form-label">Khu vực</label>
+                                <input type="text" name="area" class="form-control"
+                                       placeholder="VD: Hà Nội, TP.HCM..." />
+                            </div>
+
+                            <!-- Học phí -->
+                            <div class="mb-4">
+                                <label class="form-label">Học phí tối đa / giờ</label>
+                                <input type="number" name="maxRate" class="form-control"
+                                       placeholder="VD: 200000" />
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100">
+                                <svg width="15" height="15" fill="none"
+                                     stroke="currentColor" stroke-width="2"
+                                     viewBox="0 0 24 24">
+                                    <circle cx="11" cy="11" r="8" />
+                                    <path d="m21 21-4.35-4.35" />
+                                </svg>
+                                Tìm kiếm
+                            </button>
+
+                            @if (ViewBag.Keyword != null || ViewBag.SubjectId != null)
+                            {
+                                <a asp-controller="Tutor" asp-action="Index"
+                                   class="btn btn-outline-secondary w-100 mt-2"
+                                   style="font-size:0.85rem;">
+                                    Xoá bộ lọc
+                                </a>
+                            }
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TUTOR GRID -->
+            <div class="col-lg-9">
+                @if (!Model.Any())
+                {
+                    <div class="text-center py-5">
+                        <div style="width:80px;height:80px;border-radius:var(--radius-xl);
+                            background:var(--primary-light);display:flex;align-items:center;
+                            justify-content:center;margin:0 auto 1.5rem;">
+                            <svg width="36" height="36" fill="none"
+                                 stroke="var(--primary)" stroke-width="1.5" viewBox="0 0 24 24">
+                                <circle cx="11" cy="11" r="8" />
+                                <path d="m21 21-4.35-4.35" />
+                            </svg>
+                        </div>
+                        <h5 style="font-weight:700;color:var(--text-primary);">
+                            Không tìm thấy gia sư
+                        </h5>
+                        <p style="color:var(--text-muted);font-size:0.9rem;">
+                            Thử thay đổi bộ lọc hoặc từ khoá tìm kiếm
+                        </p>
+                    </div>
+                }
+                else
+                {
+                    <div class="row g-3">
+                        @foreach (var tutor in Model)
+                        {
+                            var avgRating = tutor.ReceivedReviews.Any()
+                                ? tutor.ReceivedReviews.Average(r => r.Rating)
+                                : 0;
+                            var reviewCount = tutor.ReceivedReviews.Count();
+                            var initial = tutor.User.FullName.FirstOrDefault().ToString().ToUpper();
+
+                            <div class="col-md-6 col-xl-4">
+                                <a asp-controller="Tutor" asp-action="Detail"
+                                   asp-route-id="@tutor.Id"
+                                   class="text-decoration-none">
+                                    <div class="card tutor-card h-100">
+                                        <div class="card-body p-4">
+
+                                            <!-- Avatar + tên -->
+                                            <div class="d-flex align-items-start gap-3 mb-3">
+                                                @if (!string.IsNullOrEmpty(tutor.User?.AvatarUrl))
+                                                {
+                                                    <img src="@tutor.User.AvatarUrl" alt="@tutor.User.FullName"
+                                                         style="width:48px;height:48px;border-radius:50%;object-fit:cover;flex-shrink:0;border:2px solid var(--border);" />
+                                                }
+                                                else
+                                                {
+                                                    <div class="avatar avatar-md flex-shrink-0">@initial</div>
+                                                }
+                                                <div class="flex-grow-1" style="min-width:0;">
+                                                    <div style="font-weight:700;font-size:0.95rem;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                                                        @tutor.User.FullName
+                                                    </div>
+                                                    <div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px;display:flex;align-items:center;gap:4px;">
+                                                        <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                                        @tutor.TeachingArea
+                                                    </div>
+                                                    <!-- Rating -->
+                                                    <div class="d-flex align-items-center gap-1 mt-1">
+                                                        <span class="stars" style="font-size:0.75rem;">
+                                                            @for (int i = 1; i <= 5; i++)
+                                                            {
+                                                                <span style="color:@(i <= Math.Round(avgRating) ? "#F59E0B" : "#E2E8F0");">★</span>
+                                                            }
+                                                        </span>
+                                                        <span style="font-size:0.75rem;color:var(--text-muted);font-weight:500;">
+                                                            @avgRating.ToString("0.#") (@reviewCount)
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                                <span class="badge badge-soft-success" style="flex-shrink:0;font-size:0.68rem;">Đã duyệt</span>
+                                            </div>
+
+                                            <!-- Môn học -->
+                                            <div class="d-flex flex-wrap gap-1 mb-3">
+                                                @foreach (var ts in tutor.TutorSubjects.Take(3))
+                                                {
+                                                    <span class="badge badge-soft-primary">@ts.Subject.Name</span>
+                                                }
+                                                @if (tutor.TutorSubjects.Count() > 3)
+                                                {
+                                                    <span class="badge" style="background:var(--bg-subtle);color:var(--text-muted);">
+                                                        +@(tutor.TutorSubjects.Count() - 3)
+                                                    </span>
+                                                }
+                                            </div>
+
+                                            <!-- Info row -->
+                                            <div style="border-top:1px solid var(--border-subtle);padding-top:0.75rem;display:flex;justify-content:space-between;align-items:center;">
+                                                <div>
+                                                    <div style="font-size:0.7rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">Học phí / giờ</div>
+                                                    <div style="font-weight:800;font-size:1.05rem;color:var(--primary);font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.02em;">
+                                                        @tutor.HourlyRate.ToString("N0")đ
+                                                    </div>
+                                                </div>
+                                                <div style="text-align:right;">
+                                                    <div style="font-size:0.7rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;">Kinh nghiệm</div>
+                                                    <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">@tutor.ExperienceYears năm</div>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</section>

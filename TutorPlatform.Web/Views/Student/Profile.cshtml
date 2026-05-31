@@ -1,0 +1,292 @@
+﻿@model TutorPlatform.Web.ViewModels.StudentProfileViewModel
+@{
+    ViewData["Title"] = "Hồ sơ cá nhân";
+    var initial = (Model.FullName ?? "?").FirstOrDefault().ToString().ToUpper();
+}
+
+<style>
+    .profile-header {
+        background: linear-gradient(135deg, #1E40AF 0%, #3B82F6 60%, #6366F1 100%);
+        padding: 3rem 0 5rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+        .profile-header::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .profile-header::after {
+            content: '';
+            position: absolute;
+            bottom: -80px;
+            left: -40px;
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.04);
+        }
+
+    .avatar-upload-wrap {
+        position: relative;
+        display: inline-block;
+        cursor: pointer;
+    }
+
+    .avatar-upload-overlay {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        background: rgba(0,0,0,0.45);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        opacity: 0;
+        transition: opacity 0.2s;
+    }
+
+    .avatar-upload-wrap:hover .avatar-upload-overlay {
+        opacity: 1;
+    }
+
+    .profile-card-offset {
+        margin-top: -60px;
+        position: relative;
+        z-index: 2;
+    }
+
+    .info-field {
+        background: var(--bg);
+        border-radius: 12px;
+        padding: 0.75rem 1rem;
+        border: 1.5px solid var(--border);
+        transition: border-color 0.2s;
+        font-size: 0.9rem;
+        width: 100%;
+        color: var(--text-primary);
+        font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+
+        .info-field:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+        }
+
+        .info-field:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+            background: var(--border-light);
+        }
+
+    .save-btn {
+        background: linear-gradient(135deg, #1E40AF, #3B82F6);
+        color: #fff;
+        border: none;
+        border-radius: 14px;
+        padding: 0.875rem 2rem;
+        font-weight: 700;
+        font-size: 0.95rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        box-shadow: 0 4px 16px rgba(30,64,175,0.3);
+    }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(30,64,175,0.35);
+        }
+</style>
+
+<!-- ===== HEADER BANNER ===== -->
+<div class="profile-header">
+    <div class="container text-center"
+         style="position:relative;z-index:1;">
+
+        <!-- Avatar -->
+        <div class="avatar-upload-wrap mx-auto mb-3"
+             onclick="document.getElementById('avatarInput').click()"
+             title="Nhấn để đổi ảnh đại diện">
+
+            @if (!string.IsNullOrEmpty(Model.AvatarUrl))
+            {
+                <img id="avatarPreview"
+                     src="@Model.AvatarUrl"
+                     alt="Avatar"
+                     style="width:96px;height:96px;border-radius:50%;
+                object-fit:cover;
+                border:4px solid rgba(255,255,255,0.35);" />
+            }
+            else
+            {
+                <div id="avatarPreview"
+                     class="avatar avatar-xl"
+                     style="border:4px solid rgba(255,255,255,0.35);
+                    font-size:2.2rem;">
+                    @initial
+                </div>
+            }
+
+            <div class="avatar-upload-overlay">
+                <svg width="22" height="22" fill="none" stroke="#fff"
+                     stroke-width="2" viewBox="0 0 24 24">
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8
+                    a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                </svg>
+            </div>
+        </div>
+
+        <h4 style="color:#fff;font-weight:800;margin-bottom:0.25rem;">
+            @Model.FullName
+        </h4>
+        <div style="color:rgba(255,255,255,0.7);font-size:0.875rem;">
+            @Model.Email
+        </div>
+        <div class="mt-2">
+            <span style="background:rgba(255,255,255,0.15);
+                color:#fff;font-size:0.75rem;font-weight:700;
+                padding:0.3em 0.9em;border-radius:100px;
+                letter-spacing:0.04em;">
+                Học viên
+            </span>
+        </div>
+    </div>
+</div>
+
+<!-- ===== FORM ===== -->
+<section style="background:var(--bg);padding-bottom:3rem;">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7">
+                <div class="card profile-card-offset"
+                     style="border-radius:24px;border:none;
+                    box-shadow:var(--shadow-lg);">
+                    <div class="card-body p-4 p-md-5">
+
+                        @if (!ViewData.ModelState.IsValid)
+                        {
+                            <div class="alert alert-danger mb-4"
+                                 style="border-radius:12px;font-size:0.875rem;">
+                                @Html.ValidationSummary(true)
+                            </div>
+                        }
+
+                        <h6 style="font-weight:700;font-size:0.78rem;
+                            text-transform:uppercase;
+                            letter-spacing:0.06em;
+                            color:var(--text-muted);
+                            margin-bottom:1.5rem;">
+                            Thông tin cá nhân
+                        </h6>
+
+                        <form asp-action="Profile" method="post"
+                              enctype="multipart/form-data"
+                              id="profileForm">
+                            @Html.AntiForgeryToken()
+
+                            <!-- Hidden avatar input -->
+                            <input type="file" id="avatarInput"
+                                   name="AvatarFile" accept="image/*"
+                                   class="d-none"
+                                   onchange="previewAndSubmitAvatar(this)" />
+
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Họ và tên</label>
+                                    <input asp-for="FullName"
+                                           class="info-field"
+                                           placeholder="Nguyễn Văn A" />
+                                    <span asp-validation-for="FullName"
+                                          class="text-danger"
+                                          style="font-size:0.78rem;"></span>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Số điện thoại</label>
+                                    <input asp-for="PhoneNumber"
+                                           class="info-field"
+                                           placeholder="0901234567" />
+                                    <span asp-validation-for="PhoneNumber"
+                                          class="text-danger"
+                                          style="font-size:0.78rem;"></span>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input class="info-field"
+                                       value="@Model.Email"
+                                       disabled />
+                                <div style="font-size:0.73rem;
+                                    color:var(--text-muted);
+                                    margin-top:0.3rem;">
+                                    Email không thể thay đổi
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label">Địa chỉ</label>
+                                <input asp-for="Address"
+                                       class="info-field"
+                                       placeholder="Số nhà, đường, quận, thành phố..." />
+                            </div>
+
+                            <div class="d-flex gap-2 justify-content-end">
+                                <a asp-controller="Home" asp-action="Index"
+                                   class="btn btn-outline-secondary"
+                                   style="border-radius:12px;font-weight:600;">
+                                    Huỷ
+                                </a>
+                                <button type="submit" class="save-btn">
+                                    <svg width="17" height="17" fill="none"
+                                         stroke="currentColor" stroke-width="2.5"
+                                         viewBox="0 0 24 24" class="me-1">
+                                        <polyline points="20 6 9 17 4 12" />
+                                    </svg>
+                                    Lưu thay đổi
+                                </button>
+                            </div>
+
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    @await Html.PartialAsync("_ValidationScriptsPartial")
+    <script>
+        function previewAndSubmitAvatar(input) {
+            if (!input.files || !input.files[0]) return;
+            const reader = new FileReader();
+            reader.onload = e => {
+                const preview = document.getElementById('avatarPreview');
+                if (preview.tagName === 'IMG') {
+                    preview.src = e.target.result;
+                } else {
+                    const img = document.createElement('img');
+                    img.id = 'avatarPreview';
+                    img.src = e.target.result;
+                    img.style.cssText =
+                        'width:96px;height:96px;border-radius:50%;' +
+                        'object-fit:cover;' +
+                        'border:4px solid rgba(255,255,255,0.35);';
+                    preview.parentNode.replaceChild(img, preview);
+                }
+                // Auto submit để upload avatar ngay
+                setTimeout(() =>
+                    document.getElementById('profileForm').submit(), 400);
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    </script>
+}

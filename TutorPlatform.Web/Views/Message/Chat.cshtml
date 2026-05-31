@@ -1,0 +1,113 @@
+﻿@model List<TutorPlatform.Core.Models.Message>
+@{
+    ViewBag.Title = "Chat";
+    var partner = ViewBag.Partner as TutorPlatform.Core.Models.AppUser;
+    var currentUserId = ViewBag.CurrentUserId as string;
+}
+
+<div class="d-flex flex-column" style="height:calc(100vh - 64px);">
+
+    <!-- Chat Header -->
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:12px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
+        <a href="/Message" style="color:var(--text-muted);display:flex;align-items:center;" title="Quay lại" aria-label="Quay lại danh sách">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+        </a>
+        <div class="avatar avatar-sm">@partner?.FullName?.FirstOrDefault()</div>
+        <div>
+            <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">@partner?.FullName</div>
+            <div style="font-size:0.75rem;color:var(--success);display:flex;align-items:center;gap:4px;">
+                <span style="width:7px;height:7px;border-radius:50%;background:var(--success);display:inline-block;"></span>
+                Đang hoạt động
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="flex-grow-1 overflow-auto p-3" id="chatBody"
+         style="background:var(--bg);display:flex;flex-direction:column;gap:4px;">
+        @foreach (var msg in Model)
+        {
+            var isOwn = msg.SenderId == currentUserId;
+            <div class="d-flex @(isOwn ? "justify-content-end" : "justify-content-start") mb-1"
+                 data-id="@msg.Id">
+                <div style="max-width:65%;word-break:break-word;padding:10px 14px;
+                            border-radius:@(isOwn ? "18px 18px 4px 18px" : "18px 18px 18px 4px");
+                            background:@(isOwn ? "var(--primary)" : "var(--surface)");
+                            color:@(isOwn ? "#fff" : "var(--text-primary)");
+                            box-shadow:var(--shadow-xs);
+                            border:@(isOwn ? "none" : "1px solid var(--border)");">
+                    <div style="font-size:0.9rem;line-height:1.5;">@msg.Content</div>
+                    <div style="font-size:0.7rem;opacity:0.65;text-align:right;margin-top:3px;">@msg.SentAt.ToString("HH:mm")</div>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Input -->
+    <div style="background:var(--surface);border-top:1px solid var(--border);padding:12px 16px;flex-shrink:0;">
+        <div class="d-flex gap-2 align-items-center">
+            <input id="msgInput" type="text" class="form-control"
+                   placeholder="Nhập tin nhắn..." autocomplete="off"
+                   style="border-radius:var(--radius-full);padding:10px 16px;" />
+            <button id="sendBtn" class="btn btn-primary" style="border-radius:var(--radius-full);width:44px;height:44px;padding:0;flex-shrink:0;" aria-label="Gửi tin nhắn">
+                <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/signalr/dist/browser/signalr.min.js"></script>
+    <script>
+        const ME = "@currentUserId";
+        const PARTNER = "@partner?.Id";
+        const body = document.getElementById("chatBody");
+        const input = document.getElementById("msgInput");
+
+        // Kết nối SignalR
+        const conn = new signalR.HubConnectionBuilder()
+        .withUrl("/chatHub")
+        .withAutomaticReconnect()
+        .build();
+
+        // Nhận tin nhắn mới từ server
+        conn.on("ReceiveMessage", msg => {
+        // Tránh hiển thị 2 lần
+        if (document.querySelector(`[data-id="${msg.id}"]`)) return;
+
+        const isOwn = msg.senderId === ME;
+        const div = document.createElement("div");
+        div.className = `d-flex ${isOwn ? "justify-content-end" : "justify-content-start"} mb-2`;
+        div.dataset.id = msg.id;
+        div.innerHTML = `
+        <div class="px-3 py-2 shadow-sm ${isOwn ? "bg-primary text-white" : "bg-white"}"
+        style="max-width:65%;border-radius:18px;word-break:break-word;">
+        <div>${esc(msg.content)}</div>
+        <small class="${isOwn ? "text-white-50" : "text-muted"} d-block text-end mt-1"
+        style="font-size:11px">${msg.sentAt}</small>
+        </div>`;
+        body.appendChild(div);
+        body.scrollTop = body.scrollHeight;
+        });
+
+        conn.start().catch(e => console.error("SignalR lỗi:", e));
+
+        // Gửi tin nhắn
+        function send() {
+        const content = input.value.trim();
+        if (!content) return;
+        conn.invoke("SendMessage", PARTNER, content);
+        input.value = "";
+        }
+
+        document.getElementById("sendBtn").onclick = send;
+        input.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); send(); } };
+
+        // Tự cuộn xuống cuối
+        body.scrollTop = body.scrollHeight;
+
+        function esc(t) {
+        return t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+    </script>
+}

@@ -1,0 +1,222 @@
+﻿@using System.Security.Claims
+@model TutorPlatform.Core.Models.Post
+@{
+    ViewData["Title"] = Model.Title;
+    var initial = Model.Author?.FullName?.FirstOrDefault().ToString().ToUpper() ?? "U";
+    var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+}
+
+<style>
+    .blog-accent {
+        color: #EC4899;
+    }
+
+    .blog-content {
+        font-size: 1rem;
+        line-height: 1.85;
+        color: var(--text-secondary);
+        white-space: pre-wrap;
+    }
+
+    .comment-card {
+        transition: all 0.2s;
+    }
+
+        .comment-card:hover {
+            background: var(--primary-light) !important;
+        }
+</style>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Libre+Bodoni:wght@400;700&display=swap" rel="stylesheet">
+
+<section class="section-sm">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+
+                <nav class="mb-4" style="font-size:0.85rem;">
+                    <a asp-action="Index"
+                       class="d-inline-flex align-items-center gap-1"
+                       style="color:var(--text-muted);text-decoration:none;font-weight:500;">
+                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path d="m15 18-6-6 6-6" />
+                        </svg>
+                        Trở về Blog
+                    </a>
+                </nav>
+
+                <article class="card"
+                         style="border-radius:20px;border:none;box-shadow:var(--shadow-md);overflow:hidden;margin-bottom:2rem;">
+
+                    @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                    {
+                        <img src="@Model.ImageUrl" alt="@Model.Title" style="width:100%;max-height:400px;object-fit:cover;" />
+                    }
+                    else
+                    {
+                        <div style="height:160px;background:linear-gradient(135deg,#2563EB 0%,#7C3AED 50%,#EC4899 100%);
+                            display:flex;align-items:center;justify-content:center;padding:2rem;">
+                            <h2 style="font-family:'Libre Bodoni',serif;color:rgba(255,255,255,0.3);
+                                font-size:clamp(1.5rem,4vw,2.5rem);font-weight:700;text-align:center;margin:0;line-height:1.2;">
+                                @Model.Title
+                            </h2>
+                        </div>
+                    }
+
+                    <div class="card-body p-4 p-md-5">
+
+                        <div class="d-flex justify-content-between align-items-start mb-4">
+                            <h1 style="font-family:'Libre Bodoni',serif;font-weight:700;font-size:clamp(1.5rem,4vw,2.25rem);
+                                line-height:1.3;color:var(--text-primary);margin:0;">
+                                @Model.Title
+                            </h1>
+
+                            @* Chỉ hiển thị nút Xóa cho Tác giả hoặc Admin *@
+                            @if (User.Identity!.IsAuthenticated && (currentUserId == Model.AuthorId || User.IsInRole("Admin")))
+                            {
+                                <form asp-controller="Blog" asp-action="Delete" asp-route-id="@Model.Id" method="post" class="m-0 ms-3"
+                                      onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết này không? Hành động này không thể hoàn tác.');">
+                                    <button type="submit" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1" style="white-space:nowrap;">
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                        </svg>
+                                        Xóa bài
+                                    </button>
+                                </form>
+                            }
+                        </div>
+
+                        <div class="d-flex align-items-center gap-3 mb-4 pb-4" style="border-bottom:1px solid var(--border);">
+                            @* --- XỬ LÝ AVATAR TÁC GIẢ --- *@
+                            @if (!string.IsNullOrEmpty(Model.Author?.AvatarUrl))
+                            {
+                                <img src="@Model.Author.AvatarUrl" alt="Avatar" class="avatar avatar-md"
+                                     style="border:2.5px solid #FDF2F8; flex-shrink:0; border-radius:50%; object-fit:cover;" />
+                            }
+                            else
+                            {
+                                <div class="avatar avatar-md d-flex align-items-center justify-content-center text-white"
+                                     style="border:2.5px solid #FDF2F8; flex-shrink:0; background:linear-gradient(135deg,#2563EB,#7C3AED); border-radius:50%;">
+                                    @initial
+                                </div>
+                            }
+
+                            <div class="flex-grow-1">
+                                <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">
+                                    @Model.Author?.FullName
+                                </div>
+                                <div style="font-size:0.8rem;color:var(--text-muted);">
+                                    @Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")
+                                </div>
+                            </div>
+                            <div class="d-flex gap-3 ms-auto" style="font-size:0.82rem;color:var(--text-muted);font-weight:600;">
+                                <span class="d-flex align-items-center gap-1">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                        <circle cx="12" cy="12" r="3" />
+                                    </svg>
+                                    @Model.Views lượt xem
+                                </span>
+                                <span class="d-flex align-items-center gap-1">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                    </svg>
+                                    @Model.Comments.Count bình luận
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="blog-content">@Model.Content</div>
+
+                    </div>
+                </article>
+
+                <div class="mb-4">
+                    <h5 style="font-family:'Libre Bodoni',serif;font-weight:700;font-size:1.25rem;margin-bottom:1.25rem;">
+                        Bình luận
+                        <span style="font-family:'Plus Jakarta Sans',sans-serif;font-size:0.9rem;font-weight:600;color:var(--text-muted);margin-left:6px;">
+                            (@Model.Comments.Count)
+                        </span>
+                    </h5>
+
+                    @if (User.Identity!.IsAuthenticated)
+                    {
+                        <div class="card mb-4" style="border-radius:16px;border:2px solid var(--border);box-shadow:none;">
+                            <div class="card-body p-4">
+                                <form asp-action="AddComment" method="post">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="postId" value="@Model.Id" />
+                                    <textarea name="content" class="form-control mb-3" rows="3" placeholder="Chia sẻ suy nghĩ của bạn..."
+                                              style="border-radius:10px;resize:none;border:1.5px solid var(--border);" required></textarea>
+                                    <div class="text-end">
+                                        <button type="submit" class="btn"
+                                                style="background:#EC4899;color:#fff;border-radius:10px;font-weight:700;padding:0.5rem 1.5rem;border:none;">
+                                            Gửi bình luận
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="card mb-4 text-center p-4" style="border-radius:16px;border:2px dashed var(--border);box-shadow:none;background:var(--bg);">
+                            <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">
+                                <a asp-controller="Account" asp-action="Login" style="color:#EC4899;font-weight:700;">Đăng nhập</a> để tham gia bình luận
+                            </p>
+                        </div>
+                    }
+
+                    @if (!Model.Comments.Any())
+                    {
+                        <div class="text-center py-4" style="color:var(--text-muted);font-size:0.875rem;">
+                            Chưa có bình luận nào. Hãy là người đầu tiên!
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-column gap-3">
+                            @foreach (var c in Model.Comments.OrderByDescending(x => x.CreatedAt))
+                            {
+                                var cInitial = c.Author?.FullName?.FirstOrDefault().ToString().ToUpper() ?? "U";
+                                <div class="comment-card d-flex gap-3 p-3" style="background:var(--surface);border-radius:14px;border:1px solid var(--border);">
+
+                                    @* --- XỬ LÝ AVATAR NGƯỜI BÌNH LUẬN --- *@
+                                    @if (!string.IsNullOrEmpty(c.Author?.AvatarUrl))
+                                    {
+                                        <img src="@c.Author.AvatarUrl" alt="Avatar" class="avatar avatar-sm flex-shrink-0"
+                                             style="border-radius:50%; object-fit:cover;" />
+                                    }
+                                    else
+                                    {
+                                        <div class="avatar avatar-sm flex-shrink-0 d-flex align-items-center justify-content-center text-white"
+                                             style="background:linear-gradient(135deg,#EC4899,#7C3AED); border-radius:50%;">
+                                            @cInitial
+                                        </div>
+                                    }
+
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center justify-content-between mb-1">
+                                            <span style="font-weight:700;font-size:0.875rem;color:var(--text-primary);">
+                                                @c.Author?.FullName
+                                            </span>
+                                            <span style="font-size:0.75rem;color:var(--text-muted);">
+                                                @c.CreatedAt.ToString("dd/MM HH:mm")
+                                            </span>
+                                        </div>
+                                        <p style="margin:0;font-size:0.875rem;color:var(--text-secondary);line-height:1.6;white-space:pre-wrap;">
+                                            @c.Content
+                                        </p>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>

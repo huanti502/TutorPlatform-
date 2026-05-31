@@ -1,0 +1,125 @@
+﻿@{
+    ViewData["Title"] = "Báo cáo học tập AI";
+}
+
+<div class="container py-4" style="max-width:800px">
+    <div class="text-center mb-4">
+        <div style="font-size:3rem"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z"/></svg> </div>
+        <h3 class="fw-bold mb-1">Báo cáo tiến độ học tập</h3>
+        <p class="text-muted">Được phân tích bởi AI · @DateTime.Now.ToString("dd/MM/yyyy")</p>
+    </div>
+
+    @if (ViewBag.NoData == true)
+    {
+        <div class="text-center py-5 text-muted">
+            <div style="font-size:4rem">📭</div>
+            <h5>Chưa có dữ liệu học tập</h5>
+            <p>Hãy đặt lịch học đầu tiên để AI có thể phân tích tiến độ của bạn!</p>
+            <a href="/TutorSearch/Search" class="btn btn-primary mt-2">
+                🔍 Tìm gia sư ngay
+            </a>
+        </div>
+    }
+    else if (ViewBag.Error != null)
+    {
+        <div class="alert alert-warning text-center">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><line x1="7" y1="15" x2="7" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="17" y1="15" x2="17" y2="15"/></svg> @ViewBag.Error
+            <br>
+            <a href="/Student/AIReport" class="btn btn-sm btn-warning mt-2">
+                🔄 Thử lại
+            </a>
+        </div>
+    }
+    else
+    {
+        var s = ViewBag.Stats;
+
+        <div class="row g-3 mb-4">
+            <div class="col-6 col-md-3">
+                <div class="card  text-center p-3"
+                     style="border-radius:16px;border-top:3px solid #2196F3">
+                    <div style="font-size:1.8rem"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> </div>
+                    <div class="fw-bold fs-5" style="color:#2196F3">@s.Total</div>
+                    <div class="text-muted small">Tổng buổi học</div>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-3">
+                <div class="card  text-center p-3"
+                     style="border-radius:16px;border-top:3px solid #4CAF50">
+                    <div style="font-size:1.8rem"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> </div>
+                    <div class="fw-bold fs-5" style="color:#4CAF50">@s.Completed</div>
+                    <div class="text-muted small">Đã hoàn thành</div>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-3">
+                <div class="card  text-center p-3"
+                     style="border-radius:16px;border-top:3px solid #FF9800">
+                    <div style="font-size:1.8rem">⏱️</div>
+                    <div class="fw-bold fs-5" style="color:#FF9800">@(s.Hours.ToString("F1"))h</div>
+                    <div class="text-muted small">Tổng giờ học</div>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-3">
+                <div class="card  text-center p-3"
+                     style="border-radius:16px;border-top:3px solid #9C27B0">
+                    <div style="font-size:1.8rem"><svg width="14" height="14" fill="#F59E0B" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> </div>
+                    <div class="fw-bold fs-5" style="color:#9C27B0">@(s.AvgRating.ToString("F1"))/5</div>
+                    <div class="text-muted small">Rating TB</div>
+                </div>
+            </div>
+        </div>
+
+        var subjects = s.Subjects as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+
+        @if (subjects.Any())
+        {
+            <div class="card  mb-4 p-4"
+                 style="border-radius:var(--radius-lg)">
+                <h6 class="fw-bold mb-3">📚 Phân bổ môn học</h6>
+                @foreach (var sub in subjects)
+                {
+                    int pct = s.Completed > 0
+                        ? (int)(sub.Count * 100 / s.Completed) : 0;
+                    <div class="mb-2">
+                        <div class="d-flex justify-content-between small mb-1">
+                            <span class="fw-semibold">@sub.Subject</span>
+                            <span class="text-muted">@sub.Count buổi (@pct%)</span>
+                        </div>
+                        <div class="progress" style="height:8px;border-radius:8px">
+                            <div class="progress-bar bg-primary"
+                                 style="width:@pct%"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+
+        <div class="card "
+             style="border-radius:16px;border-left:4px solid #7c3aed!important">
+            <div class="card-body p-4">
+                <div class="d-flex align-items-center gap-2 mb-4">
+                    <span style="font-size:1.8rem"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><line x1="7" y1="15" x2="7" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="17" y1="15" x2="17" y2="15"/></svg> </span>
+                    <div>
+                        <h5 class="fw-bold mb-0">Nhận xét từ AI</h5>
+                        <small class="text-muted">Powered by AI Assistant</small>
+                    </div>
+                </div>
+                <div style="line-height:1.9;white-space:pre-wrap;font-size:0.95rem">
+                    @ViewBag.Report
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-4">
+            <a href="/Student/AIReport" class="btn btn-outline-primary">
+                🔄 Cập nhật báo cáo mới
+            </a>
+            <a href="/TutorSearch/Search" class="btn btn-primary ms-2">
+                📚 Đặt lịch học ngay
+            </a>
+        </div>
+    }
+</div>

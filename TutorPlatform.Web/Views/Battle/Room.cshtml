@@ -1,0 +1,323 @@
+﻿@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Battle Room";
+}
+
+<style>
+    .battle-wrap {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .scoreboard {
+        display: grid;
+        grid-template-columns: 1fr auto 1fr;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .player-score {
+        text-align: center;
+    }
+
+    .score-num {
+        font-size: 3.5rem;
+        font-weight: 800;
+        line-height: 1;
+    }
+
+    .timer-wrap {
+        text-align: center;
+    }
+
+    .timer-circle {
+        width: 72px;
+        height: 72px;
+        border-radius: 50%;
+        background: #f0f2f5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.6rem;
+        font-weight: 800;
+        margin: 0 auto 4px;
+    }
+
+        .timer-circle.urgent {
+            background: #fee2e2;
+            color: #dc2626;
+            animation: battlePulse .5s infinite;
+        }
+
+    .option-btn {
+        width: 100%;
+        text-align: left;
+        padding: 12px 16px;
+        margin-bottom: 8px;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        background: white;
+        cursor: pointer;
+        font-size: 0.95rem;
+        transition: all .15s;
+    }
+
+        .option-btn:hover {
+            border-color: #6366f1;
+            background: #f5f3ff;
+        }
+
+        .option-btn.correct {
+            border-color: #22c55e;
+            background: #f0fdf4;
+            color: #166534;
+        }
+
+        .option-btn.wrong {
+            border-color: #ef4444;
+            background: #fef2f2;
+            color: #991b1b;
+        }
+
+    .progress-bar-battle {
+        height: 8px;
+        border-radius: 4px;
+        background: #e5e7eb;
+        margin-bottom: 1.5rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        border-radius: 4px;
+        background: #6366f1;
+        transition: width .3s ease;
+    }
+
+    #result-card {
+        display: none;
+    }
+
+    #loading-card {
+        text-align: center;
+        padding: 3rem;
+    }
+
+    @@keyframes battlePulse {
+        0%, 100% {
+            transform: scale(1)
+        }
+
+        50% {
+            transform: scale(1.08)
+        }
+    }
+</style>
+
+<div class="battle-wrap">
+
+    @* Loading *@
+    <div id="loading-card">
+        <div class="spinner-border text-primary mb-3" role="status"></div>
+        <p class="text-muted">Đang kết nối với đối thủ và tải câu hỏi...</p>
+    </div>
+
+    @* Trận đấu *@
+    <div id="battle-card" style="display:none">
+
+        @* Scoreboard *@
+        <div class="scoreboard">
+            <div class="player-score">
+                <div class="fw-bold" id="p1-name">Player 1</div>
+                <div class="score-num text-primary" id="score1">0</div>
+            </div>
+            <div class="timer-wrap">
+                <div class="timer-circle" id="timer-circle">60</div>
+                <small class="text-muted">giây</small>
+                <div class="mt-1 text-muted small" id="q-counter">Câu 1/10</div>
+            </div>
+            <div class="player-score">
+                <div class="fw-bold" id="p2-name">Player 2</div>
+                <div class="score-num text-danger" id="score2">0</div>
+            </div>
+        </div>
+
+        @* Thanh tiến độ câu hỏi *@
+        <div class="progress-bar-battle">
+            <div class="progress-fill" id="q-progress" style="width:10%"></div>
+        </div>
+
+        @* Câu hỏi *@
+        <div class="card shadow-sm mb-3">
+            <div class="card-body">
+                <p class="fw-semibold fs-5 mb-3" id="question-text">Đang tải câu hỏi...</p>
+                <div id="options-wrap"></div>
+            </div>
+        </div>
+    </div>
+
+    @* Kết quả *@
+    <div id="result-card" class="text-center">
+        <div id="result-emoji" style="font-size:4rem" class="mb-2"></div>
+        <h3 class="fw-bold" id="result-title"></h3>
+        <p class="text-muted" id="result-detail"></p>
+        <div class="d-flex justify-content-center gap-3 my-3">
+            <div class="card px-4 py-3 text-center border-primary">
+                <div class="fs-3 fw-bold text-primary" id="final-score1">0</div>
+                <small id="final-p1-name" class="text-muted"></small>
+            </div>
+            <div class="card px-4 py-3 text-center border-danger">
+                <div class="fs-3 fw-bold text-danger" id="final-score2">0</div>
+                <small id="final-p2-name" class="text-muted"></small>
+            </div>
+        </div>
+        <div class="alert alert-success" id="xp-alert" style="display:none"></div>
+        <a href="/Battle" class="btn btn-primary mt-2">⚔️ Trận mới</a>
+        <a href="/Quiz" class="btn btn-outline-secondary mt-2 ms-2">📚 Quiz thường</a>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+    <script>
+        const roomId = '@ViewBag.RoomId';
+        const myId = '@ViewBag.MyId';
+        const myName = '@ViewBag.MyName';
+
+        let questions = [];
+        let currentQ = 0;
+        let answered = false;
+        let timeLeft = 60;
+        let timerHandle = null;
+        let battleInfo = null;
+
+        const conn = new signalR.HubConnectionBuilder()
+        .withUrl("/battleHub")
+        .withAutomaticReconnect()
+        .build();
+
+        conn.on("BattleStarting", info => {
+        battleInfo = info;
+        document.getElementById("p1-name").textContent = info.player1Name;
+        document.getElementById("p2-name").textContent = info.player2Name;
+        document.getElementById("final-p1-name").textContent = info.player1Name;
+        document.getElementById("final-p2-name").textContent = info.player2Name;
+        });
+
+        conn.on("BothReady", async () => {
+        if (myId !== battleInfo?.player1Id) return;
+        const res = await fetch("/Battle/GenerateQuestions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subjectId: battleInfo.subjectId, level: battleInfo.level })
+        });
+        const json = await res.json();
+        if (!json.success) { alert("Lỗi tải câu hỏi: " + json.error); return; }
+        await conn.invoke("BroadcastQuestions", roomId, JSON.stringify(json.data.questions));
+        });
+
+        conn.on("ReceiveQuestions", (questionsJson) => {
+        questions = JSON.parse(questionsJson);
+        document.getElementById("loading-card").style.display = "none";
+        document.getElementById("battle-card").style.display = "block";
+        startBattle();
+        });
+
+        conn.on("ScoreUpdate", ({ score1, score2 }) => {
+        document.getElementById("score1").textContent = score1;
+        document.getElementById("score2").textContent = score2;
+        });
+
+        conn.on("BattleResult", ({ result, winnerName, score1, score2, xpWinner, xpLoser }) => {
+        clearInterval(timerHandle);
+        document.getElementById("battle-card").style.display = "none";
+        document.getElementById("result-card").style.display = "block";
+
+        let emoji, title, detail;
+        if (result === "draw") {
+        emoji = "🤝"; title = "Hòa!"; detail = "Hai bên cân tài nhau!";
+        } else if (winnerName === myName) {
+        emoji = "🏆"; title = "Bạn thắng!"; detail = "Xuất sắc!";
+        } else {
+        emoji = "😤"; title = "Bạn thua!"; detail = `${winnerName} giỏi hơn lần này!`;
+        }
+
+        document.getElementById("result-emoji").textContent = emoji;
+        document.getElementById("result-title").textContent = title;
+        document.getElementById("result-detail").textContent = detail;
+        document.getElementById("final-score1").textContent = score1;
+        document.getElementById("final-score2").textContent = score2;
+
+        const xpGained = (winnerName === myName) ? xpWinner : xpLoser;
+        if (xpGained > 0) {
+        const xpAlert = document.getElementById("xp-alert");
+        xpAlert.textContent = `+${xpGained} XP nhận được!`;
+        xpAlert.style.display = "block";
+        }
+        });
+
+        conn.on("OpponentLeft", () => {
+        clearInterval(timerHandle);
+        alert("Đối thủ đã rời trận. Bạn thắng mặc định!");
+        window.location.href = "/Battle";
+        });
+
+        conn.start().then(() => {
+        conn.invoke("JoinRoom", roomId);
+        });
+
+        function startBattle() {
+        timerHandle = setInterval(() => {
+        timeLeft--;
+        const circle = document.getElementById("timer-circle");
+        circle.textContent = timeLeft;
+        if (timeLeft <= 10) circle.classList.add("urgent");
+        if (timeLeft <= 0) {
+        clearInterval(timerHandle);
+        conn.invoke("FinishBattle", roomId);
+        }
+        }, 1000);
+        renderQuestion();
+        }
+
+        function renderQuestion() {
+        if (currentQ >= questions.length) return;
+        const q = questions[currentQ];
+        answered = false;
+
+        document.getElementById("question-text").textContent = q.question;
+        document.getElementById("q-counter").textContent = `Câu ${currentQ + 1}/${questions.length}`;
+        document.getElementById("q-progress").style.width = `${(currentQ + 1) / questions.length * 100}%`;
+
+        const wrap = document.getElementById("options-wrap");
+        wrap.innerHTML = "";
+        q.options.forEach((opt, i) => {
+        const btn = document.createElement("button");
+        btn.className = "option-btn";
+        btn.textContent = opt;
+        btn.onclick = () => pickAnswer(i, q.correctIndex);
+        wrap.appendChild(btn);
+        });
+        }
+
+        function pickAnswer(chosen, correct) {
+        if (answered) return;
+        answered = true;
+        const isCorrect = chosen === correct;
+
+        document.querySelectorAll(".option-btn").forEach((b, i) => {
+        b.disabled = true;
+        if (i === correct) b.classList.add("correct");
+        else if (i === chosen && !isCorrect) b.classList.add("wrong");
+        });
+
+        conn.invoke("SubmitAnswer", roomId, currentQ, isCorrect);
+
+        setTimeout(() => {
+        currentQ++;
+        if (currentQ < questions.length) renderQuestion();
+        }, 1200);
+        }
+    </script>
+}

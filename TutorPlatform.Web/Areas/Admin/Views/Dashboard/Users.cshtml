@@ -1,0 +1,130 @@
+﻿
+@model IEnumerable<TutorPlatform.Core.Models.AppUser>
+@{
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    ViewData["Title"] = "Quản lý người dùng";
+    var roleStyle = new Dictionary<string,(string bg,string color)>{
+        {"Admin",   ("#FDF4FF","#A855F7")},
+        {"Tutor",   ("#EFF6FF","#2563EB")},
+        {"Student", ("#F0FDF4","#059669")},
+    };
+}
+
+<section class="section-sm">
+    <div class="container">
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <a href="/Admin/Dashboard"
+               style="color:var(--text-muted);text-decoration:none;font-size:0.875rem;">
+                ← Dashboard
+            </a>
+            <div>
+                <h4 style="font-weight:800;margin-bottom:0.2rem;">
+                    Người dùng
+                </h4>
+                <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">
+                    @Model.Count() tài khoản
+                </p>
+            </div>
+        </div>
+
+        <div class="card" style="border-radius:var(--radius-lg);">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th style="padding:1rem 1.25rem;">Người dùng</th>
+                            <th>Role</th>
+                            <th>SĐT</th>
+                            <th>Ngày tạo</th>
+                            <th>Trạng thái</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var u in Model)
+                        {
+                            var initial = u.FullName.FirstOrDefault()
+                                           .ToString().ToUpper();
+                            var (rbg, rcolor) = roleStyle.GetValueOrDefault(
+                                u.Role, ("#F1F5F9","#64748B"));
+                            <tr>
+                                <td style="padding:0.85rem 1.25rem;">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar avatar-sm"
+                                             style="@(u.IsLocked ?
+                                                "background:#E2E8F0;color:#94A3B8;" :
+                                                "")">
+                                            @initial
+                                        </div>
+                                        <div>
+                                            <div style="font-weight:700;
+                                                        font-size:0.875rem;">
+                                                @u.FullName
+                                            </div>
+                                            <div style="font-size:0.75rem;
+                                                        color:var(--text-muted);">
+                                                @u.Email
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge"
+                                          style="background:@rbg;color:@rcolor;">
+                                        @u.Role
+                                    </span>
+                                </td>
+                                <td style="font-size:0.875rem;
+                                           color:var(--text-secondary);">
+                                    @(u.PhoneNumber ?? "—")
+                                </td>
+                                <td style="font-size:0.8rem;
+                                           color:var(--text-muted);">
+                                    @u.CreatedAt.ToString("dd/MM/yyyy")
+                                </td>
+                                <td>
+                                    @if (u.IsLocked)
+                                    {
+                                        <span class="badge"
+                                              style="background:#FEF2F2;
+                                                     color:#DC2626;">
+                                            Đã khoá
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge"
+                                              style="background:#F0FDF4;
+                                                     color:#059669;">
+                                            Hoạt động
+                                        </span>
+                                    }
+                                </td>
+                                <td>
+                                    <form asp-action="ToggleLock" method="post">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id"
+                                               value="@u.Id"/>
+                                        <button type="submit" class="btn btn-sm"
+                                                style="border-radius:8px;
+                                                       font-size:0.78rem;
+                                                       font-weight:600;
+                                                       background:@(u.IsLocked ?
+                                                         "var(--success-light)" :
+                                                         "var(--danger-light)");
+                                                       color:@(u.IsLocked ?
+                                                         "#059669" :
+                                                         "var(--danger)");
+                                                       border:none;">
+                                            @(u.IsLocked ? "Mở khoá" : "Khoá")
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>

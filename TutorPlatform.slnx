@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="TutorPlatform.Core/TutorPlatform.Core.csproj" />
+  <Project Path="TutorPlatform.Infrastructure/TutorPlatform.Infrastructure.csproj" />
+  <Project Path="TutorPlatform.Web/TutorPlatform.Web.csproj" />
+</Solution>
