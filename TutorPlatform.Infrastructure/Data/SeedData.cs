@@ -54,18 +54,8 @@ public static class SeedData
         var missingSubjects = allSubjectDefs.Where(s => !existingSubjectIds.Contains(s.Id)).ToList();
         if (missingSubjects.Any())
         {
-            await db.Database.OpenConnectionAsync();
-            try
-            {
-                await db.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT [Subjects] ON");
-                db.Subjects.AddRange(missingSubjects);
-                await db.SaveChangesAsync();
-                await db.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT [Subjects] OFF");
-            }
-            finally
-            {
-                await db.Database.CloseConnectionAsync();
-            }
+            db.Subjects.AddRange(missingSubjects);
+            await db.SaveChangesAsync();
         }
 
         // ── BADGES ────────────────────────────────────────
