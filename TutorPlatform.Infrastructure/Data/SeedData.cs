@@ -14,11 +14,18 @@ public static class SeedData
     {
         if (await db.TutorProfiles.CountAsync() >= 5) return;
 
-        // ── ROLES ─────────────────────────────────────────
+        var rng = Random.Shared;
+
+        // ════════════════════════════════════════════════════
+        //  ROLES
+        // ════════════════════════════════════════════════════
         foreach (var role in new[] { "Admin", "Tutor", "Student" })
             if (!await roleManager.RoleExistsAsync(role))
                 await roleManager.CreateAsync(new IdentityRole(role));
-        // ── ADMIN ACCOUNT ─────────────────────────────────
+
+        // ════════════════════════════════════════════════════
+        //  ADMIN
+        // ════════════════════════════════════════════════════
         if (await userManager.FindByEmailAsync("admin@tutor.com") == null)
         {
             var admin = new AppUser
@@ -33,10 +40,10 @@ public static class SeedData
             await userManager.CreateAsync(admin, "Admin@123");
             await userManager.AddToRoleAsync(admin, "Admin");
         }
-        // ── SUBJECTS ──────────────────────────────────────
-        // FIX LỖI 1: Không dùng AnyAsync() nữa, thay bằng upsert chỉ môn còn thiếu
-        // Lý do: HasData migration chỉ seed 5 môn (1-5), gia sư dùng môn 6-10
-        // → TutorSubject FK vào môn 6-10 không tồn tại → lỗi FOREIGN KEY
+
+        // ════════════════════════════════════════════════════
+        //  SUBJECTS
+        // ════════════════════════════════════════════════════
         var existingSubjectIds = await db.Subjects.Select(s => s.Id).ToListAsync();
         var allSubjectDefs = new[]
         {
@@ -49,17 +56,14 @@ public static class SeedData
             new Subject { Id = 7,  Name = "Lịch sử",      Level = "THPT",       IsActive = true },
             new Subject { Id = 8,  Name = "Tiếng Nhật",   Level = "Đại học",    IsActive = true },
             new Subject { Id = 9,  Name = "Toán cao cấp", Level = "Đại học",    IsActive = true },
-            new Subject { Id = 10, Name = "IELTS",         Level = "Chứng chỉ", IsActive = true }
+            new Subject { Id = 10, Name = "IELTS",        Level = "Chứng chỉ",  IsActive = true }
         };
-        var missingSubjects = allSubjectDefs.Where(s => !existingSubjectIds.Contains(s.Id)).ToList();
-        if (missingSubjects.Any())
-        {
-            db.Subjects.AddRange(missingSubjects);
-            await db.SaveChangesAsync();
-        }
+        var missing = allSubjectDefs.Where(s => !existingSubjectIds.Contains(s.Id)).ToList();
+        if (missing.Any()) { db.Subjects.AddRange(missing); await db.SaveChangesAsync(); }
 
-        // ── BADGES ────────────────────────────────────────
-        // ── BADGES ────────────────────────────────────────
+        // ════════════════════════════════════════════════════
+        //  BADGES
+        // ════════════════════════════════════════════════════
         if (!await db.Badges.AnyAsync())
         {
             db.Badges.AddRange(
@@ -69,172 +73,103 @@ public static class SeedData
                 new Badge { Id = 4, Name = "Huyền thoại", Description = "Hoàn thành 100 buổi học", Icon = "🏆", Color = "#FFD700", Type = BadgeType.Sessions, RequiredCount = 100 },
                 new Badge { Id = 5, Name = "Được yêu thích", Description = "Nhận được 5 lượt đánh giá", Icon = "⭐", Color = "#FF9800", Type = BadgeType.Reviews, RequiredCount = 5 },
                 new Badge { Id = 6, Name = "Top Rated", Description = "Nhận được 20 lượt đánh giá", Icon = "🌟", Color = "#FF5722", Type = BadgeType.Reviews, RequiredCount = 20 },
-                new Badge { Id = 7, Name = "Gia sư xuất sắc", Description = "Điểm TB ≥ 4.5⭐ (ít nhất 5 đánh giá)", Icon = "💎", Color = "#00BCD4", Type = BadgeType.Rating, RequiredCount = 45 },
-                new Badge { Id = 8, Name = "Hoàn hảo", Description = "Điểm TB ≥ 4.8⭐ (ít nhất 5 đánh giá)", Icon = "👑", Color = "#E91E63", Type = BadgeType.Rating, RequiredCount = 48 },
+                new Badge { Id = 7, Name = "Gia sư xuất sắc", Description = "Điểm TB >= 4.5 sao (it nhat 5 danh gia)", Icon = "💎", Color = "#00BCD4", Type = BadgeType.Rating, RequiredCount = 45 },
+                new Badge { Id = 8, Name = "Hoàn hảo", Description = "Điểm TB >= 4.8 sao (it nhat 5 danh gia)", Icon = "👑", Color = "#E91E63", Type = BadgeType.Rating, RequiredCount = 48 },
                 new Badge { Id = 9, Name = "Đa năng", Description = "Dạy từ 3 môn học trở lên", Icon = "📚", Color = "#607D8B", Type = BadgeType.Subjects, RequiredCount = 3 },
-                new Badge { Id = 10, Name = "Triệu phú", Description = "Tích lũy doanh thu 1,000,000 VNĐ", Icon = "💰", Color = "#795548", Type = BadgeType.Revenue, RequiredCount = 1000 }
+                new Badge { Id = 10, Name = "Triệu phú", Description = "Tích lũy doanh thu 1,000,000 VND", Icon = "💰", Color = "#795548", Type = BadgeType.Revenue, RequiredCount = 1000 }
             );
             await db.SaveChangesAsync();
         }
 
-
-
         // ════════════════════════════════════════════════════
-        //  TẠO GIA SƯ
+        //  TẠO 12 GIA SƯ
         // ════════════════════════════════════════════════════
         var tutorData = new[]
         {
-            new {
-                Email="nguyenvanminh@tutor.com", Pass="Tutor@123",
-                FullName="Nguyễn Văn Minh", Phone="0901234567",
-                Address="Cầu Giấy, Hà Nội",
-                Education="Thạc sĩ Toán học - ĐH Sư phạm Hà Nội",
-                Exp=8, Area="Cầu Giấy, Đống Đa, Ba Đình - Hà Nội",
-                Rate=200000m, Mode="Both",
-                Bio="Thầy Minh có 8 năm kinh nghiệm luyện thi Toán THPT và Đại học. Phương pháp dạy rõ ràng, logic, giúp học sinh hiểu bản chất thay vì học thuộc lòng. Đã có hơn 150 học sinh đậu đại học các trường top.",
-                Subjects=new[]{1,3,9}, Approved=true
-            },
-            new {
-                Email="tranthihuong@tutor.com", Pass="Tutor@123",
-                FullName="Trần Thị Hương", Phone="0912345678",
-                Address="Bình Thạnh, TP.HCM",
-                Education="Cử nhân Ngôn ngữ Anh - ĐH Ngoại ngữ Hà Nội, IELTS 8.0",
-                Exp=6, Area="Bình Thạnh, Gò Vấp, Phú Nhuận - TP.HCM",
-                Rate=250000m, Mode="Online",
-                Bio="Cô Hương chuyên dạy Tiếng Anh giao tiếp và luyện thi IELTS. Đã đạt IELTS 8.0 và có kinh nghiệm 6 năm giúp học viên cải thiện điểm từ 5.0 lên 7.0+.",
-                Subjects=new[]{2,10}, Approved=true
-            },
-            new {
-                Email="lephantrung@tutor.com", Pass="Tutor@123",
-                FullName="Lê Phan Trung", Phone="0923456789",
-                Address="Thủ Đức, TP.HCM",
-                Education="Kỹ sư CNTT - ĐH Bách Khoa TP.HCM, 5 năm kinh nghiệm Dev",
-                Exp=5, Area="TP.HCM (Online toàn quốc)",
-                Rate=300000m, Mode="Online",
-                Bio="Anh Trung là Senior Developer với 5 năm thực chiến. Chuyên dạy lập trình Web (C#, .NET, React, NodeJS). Học xong có thể làm việc ngay.",
-                Subjects=new[]{5,9}, Approved=true
-            },
-            new {
-                Email="phamthilan@tutor.com", Pass="Tutor@123",
-                FullName="Phạm Thị Lan", Phone="0934567890",
-                Address="Thanh Xuân, Hà Nội",
-                Education="Tiến sĩ Hóa học - ĐH Khoa học Tự nhiên Hà Nội",
-                Exp=12, Area="Thanh Xuân, Hoàng Mai, Hà Đông - Hà Nội",
-                Rate=180000m, Mode="Offline",
-                Bio="Cô Lan là Tiến sĩ Hóa học với 12 năm giảng dạy. Chuyên luyện thi Hóa THPTQG, thi học sinh giỏi. Nhiều học sinh đoạt giải Olympic Hóa quốc gia.",
-                Subjects=new[]{4,3}, Approved=true
-            },
-            new {
-                Email="vuthanhlong@tutor.com", Pass="Tutor@123",
-                FullName="Vũ Thành Long", Phone="0945678901",
-                Address="Hải Châu, Đà Nẵng",
-                Education="Cử nhân Sư phạm Ngữ văn - ĐH Đà Nẵng",
-                Exp=7, Area="Hải Châu, Thanh Khê, Sơn Trà - Đà Nẵng",
-                Rate=150000m, Mode="Both",
-                Bio="Thầy Long chuyên dạy Ngữ văn THPT và luyện thi THPTQG. Nhiều học sinh đạt 8-9 điểm Văn kỳ thi THPTQG.",
-                Subjects=new[]{6,7}, Approved=true
-            },
-            new {
-                Email="hoangminhtu@tutor.com", Pass="Tutor@123",
-                FullName="Hoàng Minh Tú", Phone="0956789012",
-                Address="Cần Thơ",
-                Education="Thạc sĩ Vật lý - ĐH Cần Thơ",
-                Exp=9, Area="Ninh Kiều, Bình Thủy - Cần Thơ & Online",
-                Rate=160000m, Mode="Both",
-                Bio="Thầy Tú có 9 năm kinh nghiệm dạy Vật lý. Biết cách truyền đạt các khái niệm phức tạp một cách đơn giản. Tỷ lệ học sinh vào ngành kỹ thuật top cao.",
-                Subjects=new[]{3,1}, Approved=true
-            },
-            new {
-                Email="nguyenthimai@tutor.com", Pass="Tutor@123",
-                FullName="Nguyễn Thị Mai", Phone="0967890123",
-                Address="Đống Đa, Hà Nội",
-                Education="Cử nhân Tiếng Nhật - ĐH Hà Nội, N1 JLPT",
-                Exp=4, Area="Hà Nội & Online toàn quốc",
-                Rate=220000m, Mode="Online",
-                Bio="Cô Mai đạt chứng chỉ N1 JLPT, từng làm việc 2 năm tại Nhật. Dạy tiếng Nhật từ mất gốc đến N1. Nhiều học viên đã đi du học và làm việc tại Nhật.",
-                Subjects=new[]{8,2}, Approved=true
-            },
-            new {
-                Email="tranvanduc@tutor.com", Pass="Tutor@123",
-                FullName="Trần Văn Đức", Phone="0978901234",
-                Address="Long Biên, Hà Nội",
-                Education="Kỹ sư Toán - Tin ĐH Bách Khoa Hà Nội",
-                Exp=3, Area="Long Biên, Gia Lâm - Hà Nội & Online",
-                Rate=140000m, Mode="Both",
-                Bio="Anh Đức tốt nghiệp loại giỏi ĐH Bách Khoa. Nhiệt tình, kiên nhẫn với học sinh yếu. Giá hợp lý, phù hợp học sinh cần học bổ sung.",
-                Subjects=new[]{1,5}, Approved=true
-            },
+            new { Email="nguyenvanminh@tutor.com",  Pass="Tutor@123", FullName="Nguyen Van Minh",   Phone="0901234567", Address="Cau Giay, Ha Noi",       Education="Thac si Toan hoc - DH Su pham Ha Noi",                    Exp=8,  Area="Cau Giay, Dong Da, Ba Dinh - Ha Noi",   Rate=200000m, Mode="Both",    Bio="Thay Minh co 8 nam kinh nghiem luyen thi Toan THPT va Dai hoc. Phuong phap day ro rang, logic, giup hoc sinh hieu ban chat thay vi hoc thuoc long. Da co hon 150 hoc sinh dau dai hoc cac truong top.", Subjects=new[]{1,3,9} },
+            new { Email="tranthihuong@tutor.com",   Pass="Tutor@123", FullName="Tran Thi Huong",    Phone="0912345678", Address="Binh Thanh, TP.HCM",      Education="Cu nhan Ngon ngu Anh - DH Ngoai ngu, IELTS 8.0",          Exp=6,  Area="Binh Thanh, Go Vap, Phu Nhuan - TP.HCM", Rate=250000m, Mode="Online",  Bio="Co Huong chuyen day Tieng Anh giao tiep va luyen thi IELTS. Da dat IELTS 8.0 va co kinh nghiem 6 nam giup hoc vien cai thien diem tu 5.0 len 7.0+.", Subjects=new[]{2,10} },
+            new { Email="lephantrung@tutor.com",    Pass="Tutor@123", FullName="Le Phan Trung",     Phone="0923456789", Address="Thu Duc, TP.HCM",          Education="Ky su CNTT - DH Bach Khoa TP.HCM, 5 nam Dev",             Exp=5,  Area="TP.HCM - Online toan quoc",              Rate=300000m, Mode="Online",  Bio="Anh Trung la Senior Developer voi 5 nam thuc chien. Chuyen day lap trinh Web (C#, .NET, React, NodeJS). Hoc xong co the lam viec ngay.", Subjects=new[]{5,9} },
+            new { Email="phamthilan@tutor.com",     Pass="Tutor@123", FullName="Pham Thi Lan",      Phone="0934567890", Address="Thanh Xuan, Ha Noi",       Education="Tien si Hoa hoc - DH Khoa hoc Tu nhien Ha Noi",            Exp=12, Area="Thanh Xuan, Hoang Mai, Ha Dong - Ha Noi", Rate=180000m, Mode="Offline", Bio="Co Lan la Tien si Hoa hoc voi 12 nam giang day. Chuyen luyen thi Hoa THPTQG, thi hoc sinh gioi. Nhieu hoc sinh doat giai Olympic Hoa quoc gia.", Subjects=new[]{4,3} },
+            new { Email="vuthanhlong@tutor.com",    Pass="Tutor@123", FullName="Vu Thanh Long",     Phone="0945678901", Address="Hai Chau, Da Nang",        Education="Cu nhan Su pham Ngu van - DH Da Nang",                    Exp=7,  Area="Hai Chau, Thanh Khe, Son Tra - Da Nang", Rate=150000m, Mode="Both",    Bio="Thay Long chuyen day Ngu van THPT va luyen thi THPTQG. Nhieu hoc sinh dat 8-9 diem Van ky thi THPTQG.", Subjects=new[]{6,7} },
+            new { Email="hoangminhtu@tutor.com",    Pass="Tutor@123", FullName="Hoang Minh Tu",     Phone="0956789012", Address="Ninh Kieu, Can Tho",       Education="Thac si Vat ly - DH Can Tho",                             Exp=9,  Area="Ninh Kieu, Binh Thuy - Can Tho & Online", Rate=160000m, Mode="Both",    Bio="Thay Tu co 9 nam kinh nghiem day Vat ly. Biet cach truyen dat cac khai niem phuc tap mot cach don gian. Ty le hoc sinh vao nganh ky thuat top cao.", Subjects=new[]{3,1} },
+            new { Email="nguyenthimai@tutor.com",   Pass="Tutor@123", FullName="Nguyen Thi Mai",    Phone="0967890123", Address="Dong Da, Ha Noi",          Education="Cu nhan Tieng Nhat - DH Ha Noi, N1 JLPT",                 Exp=4,  Area="Ha Noi & Online toan quoc",              Rate=220000m, Mode="Online",  Bio="Co Mai dat chung chi N1 JLPT, tung lam viec 2 nam tai Nhat. Day tieng Nhat tu mat goc den N1. Nhieu hoc vien da di du hoc va lam viec tai Nhat.", Subjects=new[]{8,2} },
+            new { Email="tranvanduc@tutor.com",     Pass="Tutor@123", FullName="Tran Van Duc",      Phone="0978901234", Address="Long Bien, Ha Noi",         Education="Ky su Toan - Tin DH Bach Khoa Ha Noi",                    Exp=3,  Area="Long Bien, Gia Lam - Ha Noi & Online",   Rate=140000m, Mode="Both",    Bio="Anh Duc tot nghiep loai gioi DH Bach Khoa. Nhiet tinh, kien nhan voi hoc sinh yeu. Gia hop ly, phu hop hoc sinh can hoc bo sung.", Subjects=new[]{1,5} },
+            new { Email="buithioanh@tutor.com",     Pass="Tutor@123", FullName="Bui Thi Oanh",      Phone="0911223344", Address="Nam Tu Liem, Ha Noi",       Education="Thac si Sinh hoc - DH Su pham Ha Noi",                    Exp=10, Area="Nam Tu Liem, Bac Tu Liem, Cau Giay - HN", Rate=170000m, Mode="Both",    Bio="Co Oanh day Sinh hoc va Hoa hoc THPT 10 nam. Phuong phap day truc quan, nhieu hinh anh minh hoa sinh dong. Hoc sinh yeu thich mon hoc ngay tu buoi dau.", Subjects=new[]{4,3} },
+            new { Email="dovanquang@tutor.com",     Pass="Tutor@123", FullName="Do Van Quang",      Phone="0922334455", Address="Ngu Hanh Son, Da Nang",    Education="Thac si Toan ung dung - DH Bach Khoa Da Nang",            Exp=6,  Area="Da Nang & Online",                       Rate=165000m, Mode="Both",    Bio="Thay Quang chuyen luyen thi Toan dai hoc. Phuong phap tu duy logic, giai nhanh trac nghiem. Ty le hoc sinh dat 8+ diem Toan THPTQG rat cao.", Subjects=new[]{1,9} },
+            new { Email="lehoangyen@tutor.com",     Pass="Tutor@123", FullName="Le Hoang Yen",      Phone="0933445566", Address="Binh Duong",                Education="Cu nhan Ngon ngu Anh - DH Quoc te, TOEIC 950",            Exp=5,  Area="Binh Duong, Thu Dau Mot & Online",        Rate=190000m, Mode="Online",  Bio="Co Yen chuyen luyen thi TOEIC va Tieng Anh doanh nghiep. Da giup hon 200 hoc vien dat TOEIC 700+ trong 3 thang. Phong cach day nang dong, thuc te.", Subjects=new[]{2,10} },
+            new { Email="nguyenducmanh@tutor.com",  Pass="Tutor@123", FullName="Nguyen Duc Manh",   Phone="0944556677", Address="Hai Phong",                 Education="Thac si Vat ly - DH Hai Phong, 7 nam kinh nghiem",        Exp=7,  Area="Hai Phong & Online toan quoc",            Rate=155000m, Mode="Both",    Bio="Thay Manh day Vat ly va Toan THPT tai Hai Phong. Tung doat giai HSG Vat ly quoc gia. Hoc sinh hoc voi Thay thuong cai thien diem ro ret sau 1 thang.", Subjects=new[]{3,1} },
         };
 
         var tutorProfiles = new List<TutorProfile>();
         var tutorUsers = new List<AppUser>();
+        var availDays = new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday };
 
         foreach (var td in tutorData)
         {
             if (await userManager.FindByEmailAsync(td.Email) != null) continue;
-
             var user = new AppUser
             {
                 UserName = td.Email,
                 Email = td.Email,
                 FullName = td.FullName,
-                PhoneNumber = td.Phone,   // FIX LỖI 2: gán số điện thoại
+                PhoneNumber = td.Phone,
                 Address = td.Address,
                 Role = "Tutor",
                 EmailConfirmed = true,
-                CreatedAt = DateTime.UtcNow.AddDays(-Random.Shared.Next(30, 365))
+                CreatedAt = DateTime.UtcNow.AddDays(-rng.Next(60, 500)),
+                XpPoints = rng.Next(200, 2000),
+                XpLevel = "Gia su tich cuc"
             };
             await userManager.CreateAsync(user, td.Pass);
             await userManager.AddToRoleAsync(user, "Tutor");
 
-            // FIX LỖI 2: Gán đầy đủ TeachingMode, ExperienceYears, TeachingArea
             var profile = new TutorProfile
             {
                 UserId = user.Id,
                 Education = td.Education,
                 Bio = td.Bio,
                 HourlyRate = td.Rate,
-                IsApproved = td.Approved,
-                TeachingMode = td.Mode,   // ← thiếu ở bản cũ
-                ExperienceYears = td.Exp,    // ← thiếu ở bản cũ
-                TeachingArea = td.Area    // ← thiếu ở bản cũ
+                IsApproved = true,
+                TeachingMode = td.Mode,
+                ExperienceYears = td.Exp,
+                TeachingArea = td.Area
             };
-
             db.TutorProfiles.Add(profile);
-            await db.SaveChangesAsync(); // lưu trước để có profile.Id
+            await db.SaveChangesAsync();
 
             foreach (var sid in td.Subjects)
                 db.TutorSubjects.Add(new TutorSubject { TutorProfileId = profile.Id, SubjectId = sid });
 
-            db.TutorAvailabilities.Add(new TutorAvailability
+            foreach (var day in availDays.OrderBy(_ => rng.Next()).Take(rng.Next(3, 6)))
             {
-                TutorProfileId = profile.Id,
-                DayOfWeek = DayOfWeek.Monday,
-                StartTime = new TimeSpan(18, 0, 0),
-                EndTime = new TimeSpan(20, 0, 0)
-            });
-
+                db.TutorAvailabilities.Add(new TutorAvailability { TutorProfileId = profile.Id, DayOfWeek = day, StartTime = new TimeSpan(8, 0, 0), EndTime = new TimeSpan(11, 0, 0) });
+                db.TutorAvailabilities.Add(new TutorAvailability { TutorProfileId = profile.Id, DayOfWeek = day, StartTime = new TimeSpan(18, 0, 0), EndTime = new TimeSpan(21, 0, 0) });
+            }
             await db.SaveChangesAsync();
-
             tutorProfiles.Add(profile);
             tutorUsers.Add(user);
         }
 
         // ════════════════════════════════════════════════════
-        //  TẠO HỌC VIÊN
+        //  TẠO 15 HỌC VIÊN
         // ════════════════════════════════════════════════════
         var studentData = new[]
         {
-            new { Email="hocvien1@gmail.com",  Pass="Student@123", FullName="Nguyễn Thị Bảo Châu",  Phone="0321234567", Address="Cầu Giấy, Hà Nội"        },
-            new { Email="hocvien2@gmail.com",  Pass="Student@123", FullName="Trần Minh Khoa",        Phone="0332345678", Address="Bình Thạnh, TP.HCM"       },
-            new { Email="hocvien3@gmail.com",  Pass="Student@123", FullName="Lê Thị Thu Hà",         Phone="0343456789", Address="Đống Đa, Hà Nội"          },
-            new { Email="hocvien4@gmail.com",  Pass="Student@123", FullName="Phạm Quốc Bảo",         Phone="0354567890", Address="Thủ Đức, TP.HCM"          },
-            new { Email="hocvien5@gmail.com",  Pass="Student@123", FullName="Hoàng Thị Yến Nhi",     Phone="0365678901", Address="Hải Châu, Đà Nẵng"        },
-            new { Email="hocvien6@gmail.com",  Pass="Student@123", FullName="Vũ Đình Anh Tuấn",      Phone="0376789012", Address="Long Biên, Hà Nội"         },
-            new { Email="hocvien7@gmail.com",  Pass="Student@123", FullName="Đặng Thị Mỹ Linh",      Phone="0387890123", Address="Ninh Kiều, Cần Thơ"        },
-            new { Email="hocvien8@gmail.com",  Pass="Student@123", FullName="Bùi Thanh Hải",          Phone="0398901234", Address="Thanh Xuân, Hà Nội"       },
-            new { Email="hocvien9@gmail.com",  Pass="Student@123", FullName="Ngô Thị Lan Anh",        Phone="0309012345", Address="Gò Vấp, TP.HCM"           },
-            new { Email="hocvien10@gmail.com", Pass="Student@123", FullName="Đinh Văn Mạnh",          Phone="0310123456", Address="Sơn Trà, Đà Nẵng"         },
+            new { Email="hocvien1@gmail.com",  Pass="Student@123", FullName="Nguyen Thi Bao Chau",  Phone="0321234567", Address="Cau Giay, Ha Noi",    Xp=350  },
+            new { Email="hocvien2@gmail.com",  Pass="Student@123", FullName="Tran Minh Khoa",        Phone="0332345678", Address="Binh Thanh, TP.HCM",  Xp=520  },
+            new { Email="hocvien3@gmail.com",  Pass="Student@123", FullName="Le Thi Thu Ha",         Phone="0343456789", Address="Dong Da, Ha Noi",     Xp=180  },
+            new { Email="hocvien4@gmail.com",  Pass="Student@123", FullName="Pham Quoc Bao",         Phone="0354567890", Address="Thu Duc, TP.HCM",     Xp=740  },
+            new { Email="hocvien5@gmail.com",  Pass="Student@123", FullName="Hoang Thi Yen Nhi",     Phone="0365678901", Address="Hai Chau, Da Nang",   Xp=290  },
+            new { Email="hocvien6@gmail.com",  Pass="Student@123", FullName="Vu Dinh Anh Tuan",      Phone="0376789012", Address="Long Bien, Ha Noi",   Xp=610  },
+            new { Email="hocvien7@gmail.com",  Pass="Student@123", FullName="Dang Thi My Linh",      Phone="0387890123", Address="Ninh Kieu, Can Tho",  Xp=430  },
+            new { Email="hocvien8@gmail.com",  Pass="Student@123", FullName="Bui Thanh Hai",         Phone="0398901234", Address="Thanh Xuan, Ha Noi",  Xp=820  },
+            new { Email="hocvien9@gmail.com",  Pass="Student@123", FullName="Ngo Thi Lan Anh",       Phone="0309012345", Address="Go Vap, TP.HCM",      Xp=160  },
+            new { Email="hocvien10@gmail.com", Pass="Student@123", FullName="Dinh Van Manh",         Phone="0310123456", Address="Son Tra, Da Nang",    Xp=950  },
+            new { Email="hocvien11@gmail.com", Pass="Student@123", FullName="Cao Thi Minh Nguyet",   Phone="0311234567", Address="Hai Phong",           Xp=275  },
+            new { Email="hocvien12@gmail.com", Pass="Student@123", FullName="Trinh Van Hung",        Phone="0312345678", Address="Nha Trang, Khanh Hoa", Xp=490 },
+            new { Email="hocvien13@gmail.com", Pass="Student@123", FullName="Phan Thi Thanh Thao",   Phone="0313456789", Address="Bien Hoa, Dong Nai",  Xp=330  },
+            new { Email="hocvien14@gmail.com", Pass="Student@123", FullName="Ly Minh Tuan",          Phone="0314567890", Address="Quan 7, TP.HCM",      Xp=680  },
+            new { Email="hocvien15@gmail.com", Pass="Student@123", FullName="Vo Thi Ngoc Ha",        Phone="0315678901", Address="Hue, Thua Thien Hue", Xp=210  },
         };
 
         var studentUsers = new List<AppUser>();
@@ -249,8 +184,10 @@ public static class SeedData
                 PhoneNumber = sd.Phone,
                 Address = sd.Address,
                 Role = "Student",
-                CreatedAt = DateTime.UtcNow.AddDays(-Random.Shared.Next(10, 200)),
-                EmailConfirmed = true
+                CreatedAt = DateTime.UtcNow.AddDays(-rng.Next(10, 300)),
+                EmailConfirmed = true,
+                XpPoints = sd.Xp,
+                XpLevel = sd.Xp > 500 ? "Hoc vien cham chi" : "Hoc vien moi"
             };
             await userManager.CreateAsync(user, sd.Pass);
             await userManager.AddToRoleAsync(user, "Student");
@@ -259,8 +196,8 @@ public static class SeedData
 
         if (!tutorProfiles.Any() || !studentUsers.Any())
         {
-            tutorProfiles = await db.TutorProfiles.Include(t => t.TutorSubjects).Take(8).ToListAsync();
-            studentUsers = await db.Users.Where(u => u.Role == "Student").Take(10).ToListAsync();
+            tutorProfiles = await db.TutorProfiles.Include(t => t.TutorSubjects).ToListAsync();
+            studentUsers = await db.Users.Where(u => u.Role == "Student").ToListAsync();
             tutorUsers = new List<AppUser>();
             foreach (var p in tutorProfiles)
             {
@@ -270,128 +207,249 @@ public static class SeedData
         }
 
         // ════════════════════════════════════════════════════
-        //  TẠO BOOKING + REVIEW
+        //  BOOKINGS + REVIEWS + REVIEW REPLIES
         // ════════════════════════════════════════════════════
-        var rng = Random.Shared;
-        var comments = new[]
+        var reviewComments = new[]
         {
-            "Thầy/Cô dạy rất dễ hiểu, tôi tiến bộ rõ rệt sau vài buổi học!",
-            "Phương pháp giảng dạy rất hay, bài tập phong phú và sát đề thi.",
-            "Giải thích rõ ràng từng bước, kiên nhẫn với học sinh. Rất hài lòng!",
-            "Nội dung học được chuẩn bị kỹ, đúng trọng tâm cần ôn thi.",
-            "Thầy/Cô nhiệt tình, luôn giải đáp thắc mắc kể cả ngoài giờ học.",
-            "Học với Thầy/Cô tiến bộ nhanh hơn hẳn tự học. Rất recommend!",
-            "Giá cả hợp lý, chất lượng dạy tốt. Sẽ tiếp tục học dài hạn.",
-            "Buổi học đầu tiên đã thấy rõ sự khác biệt so với học thêm ở trường.",
-            "Thầy/Cô có nhiều mẹo hay giúp tôi nhớ công thức nhanh hơn.",
-            "Phong cách dạy sinh động, không nhàm chán, học rất vào."
+            "Thay/Co day rat de hieu, toi tien bo ro ret sau vai buoi hoc!",
+            "Phuong phap giang day rat hay, bai tap phong phu va sat de thi.",
+            "Giai thich ro rang tung buoc, kien nhan voi hoc sinh. Rat hai long!",
+            "Noi dung hoc duoc chuan bi ky, dung trong tam can on thi.",
+            "Thay/Co nhiet tinh, luon giai dap thac mac ke ca ngoai gio hoc.",
+            "Hoc voi Thay/Co tien bo nhanh hon han tu hoc. Rat recommend!",
+            "Gia ca hop ly, chat luong day tot. Se tiep tuc hoc dai han.",
+            "Buoi hoc dau tien da thay ro su khac biet so voi hoc them o truong.",
+            "Thay/Co co nhieu meo hay giup toi nho cong thuc nhanh hon.",
+            "Phong cach day sinh dong, khong nham chan, hoc rat vao.",
+            "Cam on Thay/Co rat nhieu, diem thi cua toi tang tu 5 len 8!",
+            "Bai giang co cau truc ro rang, de theo doi va ghi chep.",
+            "Thay/Co luon chia se tai lieu bo ich sau moi buoi hoc.",
+            "Rat hai long voi cach Thay/Co to chuc buoi hoc. Khoa hoc va hieu qua.",
+            "Hoc phi hop ly ma chat luong rat tot. Toi da gioi thieu cho ban be."
         };
 
-        int bookingIdCounter = 1;
+        var replyTexts = new[]
+        {
+            "Cam on em da tin tuong va de lai danh gia! Chuc em hoc tot nhe!",
+            "Thay/Co rat vui khi em co tien bo. Co gang len em nhe!",
+            "Cam on em! Neu co gi can ho tro them em cu nhan tin cho Thay/Co nhe.",
+            "That vui khi duoc dong hanh cung em. Chuc em dat ket qua tot trong ky thi!",
+            "Cam on em rat nhieu! Thay/Co se tiep tuc chuan bi bai tot hon cho em.",
+            "Em co gang on tap them o nha nhe. Thay/Co luon san sang ho tro em!",
+            "Rat vui duoc day em. Neu can luyen them phan nao em cu bao Thay/Co nhe!"
+        };
 
-        for (int ti = 0; ti < Math.Min(tutorProfiles.Count, 8); ti++)
+        var modes = new[] { "Online", "Offline" };
+        var noteOptions = new[]
+        {
+            "Can on tap phan dao ham va tich phan",
+            "Muon luyen Speaking va Writing IELTS",
+            "Hoc lap trinh Web tu co ban",
+            "Can giai bai tap Hoa huu co",
+            "On thi THPTQG phan Vat ly song",
+            "Luyen viet van nghi luan xa hoi",
+            "Hoc Toan cao cap tu dau",
+            "Can luyen nghe tieng Nhat N3",
+            "On tap Lich su the gioi can dai",
+            "Luyen TOEIC Reading va Listening",
+            null
+        };
+
+        var savedReviews = new List<(Review review, string tutorUserId)>();
+
+        for (int ti = 0; ti < tutorProfiles.Count; ti++)
         {
             var tutor = tutorProfiles[ti];
-            int bookingCount = rng.Next(8, 16);
+            var tUser = tutorUsers.Count > ti ? tutorUsers[ti] : null;
             var subId = tutor.TutorSubjects.FirstOrDefault()?.SubjectId ?? 1;
+            int bCount = rng.Next(20, 35);
 
-            for (int bi = 0; bi < bookingCount; bi++)
+            for (int bi = 0; bi < bCount; bi++)
             {
                 var student = studentUsers[rng.Next(studentUsers.Count)];
-                int daysAgo = rng.Next(-7, 90);
-                var startTime = DateTime.Now.AddDays(-daysAgo).Date
-                    .AddHours(rng.Next(17, 20)).AddMinutes(rng.Next(0, 2) * 30);
-                var endTime = startTime.AddHours(rng.Next(1, 3));
+                int daysAgo = rng.Next(-10, 150);
+                var start = DateTime.Now.AddDays(-daysAgo).Date.AddHours(rng.Next(7, 20)).AddMinutes(rng.Next(0, 2) * 30);
+                var end = start.AddHours(rng.Next(1, 3));
 
-                string status;
-                string? meetingRoomId = null;
-                if (daysAgo > 14)
-                    status = rng.Next(10) < 8 ? "Completed" : "Cancelled";
-                else if (daysAgo > 2)
-                {
-                    status = rng.Next(10) < 7 ? "Confirmed" : "Completed";
-                    meetingRoomId = $"TutorPlatform-{bookingIdCounter}-{Guid.NewGuid().ToString("N")[..8]}";
-                }
-                else if (daysAgo < 0)
-                    status = "Pending";
-                else
-                    status = rng.Next(2) == 0 ? "Confirmed" : "Pending";
-
-                if (status == "Confirmed")
-                    meetingRoomId = $"TutorPlatform-{bookingIdCounter}-{Guid.NewGuid().ToString("N")[..8]}";
-
-                var modes = new[] { "Online", "Offline" };
-                var notes = new[] {
-                    "Cần ôn tập phần đạo hàm và tích phân",
-                    "Muốn luyện Speaking và Writing IELTS",
-                    "Học lập trình Web từ cơ bản",
-                    "Cần giải bài tập Hóa hữu cơ",
-                    "Ôn thi THPTQG phần Vật lý sóng",
-                    "Luyện viết văn nghị luận xã hội",
-                    null
-                };
+                string status; string? roomId = null;
+                if (daysAgo > 20) status = rng.Next(10) < 8 ? "Completed" : "Cancelled";
+                else if (daysAgo > 3) { status = rng.Next(10) < 6 ? "Confirmed" : "Completed"; roomId = $"Room-{ti}-{bi}-{Guid.NewGuid().ToString("N")[..6]}"; }
+                else if (daysAgo < 0) status = "Pending";
+                else status = rng.Next(2) == 0 ? "Confirmed" : "Pending";
+                if (status == "Confirmed") roomId = $"Room-{ti}-{bi}-{Guid.NewGuid().ToString("N")[..6]}";
 
                 var booking = new Booking
                 {
                     StudentId = student.Id,
                     TutorProfileId = tutor.Id,
                     SubjectId = subId,
-                    StartTime = startTime,
-                    EndTime = endTime,
+                    StartTime = start,
+                    EndTime = end,
                     Status = status,
-                    TeachingMode = tutor.TeachingMode == "Both"
-                        ? modes[rng.Next(modes.Length)]
-                        : (tutor.TeachingMode == "Online" ? "Online" : "Offline"),
-                    Note = notes[rng.Next(notes.Length)],
-                    MeetingRoomId = meetingRoomId,
-                    CreatedAt = startTime.AddDays(-rng.Next(1, 7))
+                    TeachingMode = tutor.TeachingMode == "Both" ? modes[rng.Next(2)] : (tutor.TeachingMode == "Online" ? "Online" : "Offline"),
+                    Note = noteOptions[rng.Next(noteOptions.Length)],
+                    MeetingRoomId = roomId,
+                    CreatedAt = start.AddDays(-rng.Next(1, 10)),
+                    IsPaid = status == "Completed"
                 };
                 db.Bookings.Add(booking);
                 await db.SaveChangesAsync();
-                bookingIdCounter++;
 
-                if (status == "Completed" && rng.Next(10) < 8)
+                if (status == "Completed" && rng.Next(100) < 92)
                 {
-                    int rating = rng.Next(10) < 7 ? rng.Next(4, 6) : rng.Next(3, 5);
-                    db.Reviews.Add(new Review
+                    int rating = rng.Next(100) < 75 ? rng.Next(4, 6) : rng.Next(3, 5);
+                    var review = new Review
                     {
                         StudentId = student.Id,
                         TutorProfileId = tutor.Id,
                         BookingId = booking.Id,
                         Rating = rating,
-                        Comment = comments[rng.Next(comments.Length)],
-                        CreatedAt = endTime.AddHours(rng.Next(1, 48))
-                    });
+                        Comment = reviewComments[rng.Next(reviewComments.Length)],
+                        CreatedAt = end.AddHours(rng.Next(1, 72))
+                    };
+                    db.Reviews.Add(review);
+                    await db.SaveChangesAsync();
+                    if (tUser != null) savedReviews.Add((review, tUser.Id));
                 }
             }
             await db.SaveChangesAsync();
         }
 
+        // ReviewReply: 65% review duoc tra loi
+        foreach (var (review, tutorUserId) in savedReviews.OrderBy(_ => rng.Next()).Take(savedReviews.Count * 65 / 100))
+        {
+            if (!await db.ReviewReplies.AnyAsync(r => r.ReviewId == review.Id))
+                db.ReviewReplies.Add(new ReviewReply
+                {
+                    ReviewId = review.Id,
+                    AuthorId = tutorUserId,
+                    Content = replyTexts[rng.Next(replyTexts.Length)],
+                    CreatedAt = review.CreatedAt.AddHours(rng.Next(1, 96))
+                });
+        }
+        await db.SaveChangesAsync();
+
         // ════════════════════════════════════════════════════
-        //  TẠO BADGES CHO GIA SƯ
+        //  CERTIFICATES (2-3 chung chi moi gia su)
+        // ════════════════════════════════════════════════════
+        if (!await db.Certificates.AnyAsync())
+        {
+            var certMap = new (string title, CertificateType type)[][]
+            {
+                new[] { ("Bang Thac si Toan hoc - DH Su pham Ha Noi", CertificateType.Degree), ("Chung chi Su pham quoc te Cambridge", CertificateType.Certificate) },
+                new[] { ("Bang Cu nhan Ngon ngu Anh", CertificateType.Degree), ("Chung chi IELTS 8.0", CertificateType.Certificate), ("Chung chi TESOL", CertificateType.Certificate) },
+                new[] { ("Bang Ky su CNTT - DH Bach Khoa", CertificateType.Degree), ("Chung chi AWS Developer", CertificateType.Certificate), ("Chung chi Microsoft Azure", CertificateType.Certificate) },
+                new[] { ("Bang Tien si Hoa hoc", CertificateType.Degree), ("Chung chi Nghien cuu Hoa hoc quoc te", CertificateType.Certificate) },
+                new[] { ("Bang Cu nhan Su pham Ngu van", CertificateType.Degree), ("Chung chi Huong dan vien du lich", CertificateType.Certificate) },
+                new[] { ("Bang Thac si Vat ly - DH Can Tho", CertificateType.Degree), ("Chung chi Giang vien Vat ly quoc gia", CertificateType.Certificate) },
+                new[] { ("Bang Cu nhan Tieng Nhat", CertificateType.Degree), ("Chung chi JLPT N1", CertificateType.Certificate), ("Chung chi Kinh doanh tieng Nhat BJT", CertificateType.Certificate) },
+                new[] { ("Bang Ky su Toan - Tin DH Bach Khoa", CertificateType.Degree), ("Chung chi Lap trinh Python", CertificateType.Certificate) },
+                new[] { ("Bang Thac si Sinh hoc", CertificateType.Degree), ("Chung chi Su pham", CertificateType.Certificate) },
+                new[] { ("Bang Thac si Toan ung dung", CertificateType.Degree), ("Chung chi Giang vien Toan", CertificateType.Certificate) },
+                new[] { ("Bang Cu nhan Ngon ngu Anh", CertificateType.Degree), ("Chung chi TOEIC 950", CertificateType.Certificate), ("Chung chi TESOL quoc te", CertificateType.Certificate) },
+                new[] { ("Bang Thac si Vat ly - DH Hai Phong", CertificateType.Degree), ("Huy chuong HSG Vat ly Quoc gia", CertificateType.Certificate) },
+            };
+
+            for (int i = 0; i < Math.Min(tutorProfiles.Count, certMap.Length); i++)
+                foreach (var (title, certType) in certMap[i])
+                    db.Certificates.Add(new Certificate
+                    {
+                        TutorProfileId = tutorProfiles[i].Id,
+                        Title = title,
+                        FilePath = $"/uploads/certificates/cert_{i + 1}_{Math.Abs(title.GetHashCode()) % 99999:D5}.jpg",
+                        FileType = "image",
+                        Type = certType,
+                        IsVerified = rng.Next(10) < 8,
+                        UploadedAt = DateTime.UtcNow.AddDays(-rng.Next(10, 180))
+                    });
+            await db.SaveChangesAsync();
+        }
+
+        // ════════════════════════════════════════════════════
+        //  DOCUMENTS
+        // ════════════════════════════════════════════════════
+        if (!await db.Documents.AnyAsync())
+        {
+            var docDefs = new[]
+            {
+                new { Title="Tong hop cong thuc Toan THPT",          Desc="Toan bo cong thuc Toan lop 10-12.", Type="pdf", Size=1024000L, TutorIdx=0  },
+                new { Title="100 de Toan thi thu THPTQG 2024",       Desc="Bo 100 de thi thu co dap an.",      Type="pdf", Size=5120000L, TutorIdx=0  },
+                new { Title="IELTS Writing Task 2 - 50 mau hay",     Desc="50 bai mau Writing Task 2 band 7+", Type="pdf", Size=2048000L, TutorIdx=1  },
+                new { Title="Tu vung IELTS theo chu de",              Desc="1500 tu vung IELTS theo 20 chu de", Type="pdf", Size=768000L,  TutorIdx=1  },
+                new { Title="Lo trinh hoc C# .NET tu 0",             Desc="Huong dan hoc lap trinh C# tu co ban", Type="pdf", Size=3072000L, TutorIdx=2 },
+                new { Title="Source code du an Web ASP.NET MVC",     Desc="Code mau du an quan ly sinh vien",   Type="pdf", Size=4096000L, TutorIdx=2  },
+                new { Title="Hoa huu co - So do tu duy day du",      Desc="Toan bo Hoa huu co lop 11-12",       Type="pdf", Size=6144000L, TutorIdx=3  },
+                new { Title="200 bai tap Hoa huu co co loi giai",    Desc="200 bai tap tu co ban den nang cao", Type="pdf", Size=2560000L, TutorIdx=3  },
+                new { Title="Van mau nghi luan xa hoi lop 12",       Desc="50 bai van mau dat 8-9 diem",        Type="pdf", Size=1536000L, TutorIdx=4  },
+                new { Title="Vat ly - Cong thuc va phuong phap giai",Desc="He thong cong thuc Vat ly THPT",     Type="pdf", Size=2048000L, TutorIdx=5  },
+                new { Title="Tieng Nhat N4 - Giao trinh Minna",      Desc="Tom tat ngu phap Minna no Nihongo",  Type="pdf", Size=3584000L, TutorIdx=6  },
+                new { Title="TOEIC 900 - Chien luoc lam bai",        Desc="Bi quyet dat 900 TOEIC",             Type="pdf", Size=1792000L, TutorIdx=10 },
+            };
+
+            foreach (var d in docDefs)
+                if (d.TutorIdx < tutorUsers.Count)
+                    db.Documents.Add(new Document
+                    {
+                        Title = d.Title,
+                        Description = d.Desc,
+                        FilePath = $"/uploads/documents/{Math.Abs(d.Title.GetHashCode()) % 99999:D5}.{d.Type}",
+                        FileName = $"{d.Title}.{d.Type}",
+                        FileType = d.Type,
+                        FileSize = d.Size,
+                        UploaderId = tutorUsers[d.TutorIdx].Id,
+                        IsPublic = true,
+                        DownloadCount = rng.Next(10, 300),
+                        CreatedAt = DateTime.UtcNow.AddDays(-rng.Next(5, 120))
+                    });
+            await db.SaveChangesAsync();
+        }
+
+        // ════════════════════════════════════════════════════
+        //  QUIZ ATTEMPTS
+        // ════════════════════════════════════════════════════
+        if (!await db.QuizAttempts.AnyAsync())
+        {
+            var levels = new[] { "Co ban", "Trung binh", "Nang cao" };
+            var subjectIds = new[] { 1, 2, 3, 4, 5, 6, 8, 9 };
+            foreach (var student in studentUsers)
+            {
+                int attempts = rng.Next(5, 15);
+                for (int a = 0; a < attempts; a++)
+                    db.QuizAttempts.Add(new QuizAttempt
+                    {
+                        UserId = student.Id,
+                        SubjectId = subjectIds[rng.Next(subjectIds.Length)],
+                        Level = levels[rng.Next(levels.Length)],
+                        Score = rng.Next(4, 11),
+                        TotalQuestions = 10,
+                        CreatedAt = DateTime.UtcNow.AddDays(-rng.Next(1, 90))
+                    });
+            }
+            await db.SaveChangesAsync();
+        }
+
+        // ════════════════════════════════════════════════════
+        //  BADGES CHO GIA SU
         // ════════════════════════════════════════════════════
         var allBadges = await db.Badges.ToListAsync();
         var allProfiles = await db.TutorProfiles
-            .Include(t => t.Bookings)
-            .Include(t => t.ReceivedReviews)
-            .Include(t => t.TutorSubjects)
+            .Include(t => t.Bookings).Include(t => t.ReceivedReviews).Include(t => t.TutorSubjects)
             .ToListAsync();
 
         foreach (var profile in allProfiles)
         {
-            var completedCount = profile.Bookings.Count(b => b.Status == "Completed");
+            var completed = profile.Bookings.Count(b => b.Status == "Completed");
             var reviewCount = profile.ReceivedReviews.Count;
             var avgRating = reviewCount > 0 ? profile.ReceivedReviews.Average(r => r.Rating) : 0;
             var subjectCount = profile.TutorSubjects.Count;
-            var revenue = profile.Bookings
-                .Where(b => b.Status == "Completed")
-                .Sum(b => (decimal)(b.EndTime - b.StartTime).TotalHours * profile.HourlyRate);
+            var revenue = profile.Bookings.Where(b => b.Status == "Completed")
+                                .Sum(b => (decimal)(b.EndTime - b.StartTime).TotalHours * profile.HourlyRate);
 
             foreach (var badge in allBadges)
             {
                 bool qualified = badge.Type switch
                 {
-                    BadgeType.Sessions => completedCount >= badge.RequiredCount,
+                    BadgeType.Sessions => completed >= badge.RequiredCount,
                     BadgeType.Reviews => reviewCount >= badge.RequiredCount,
                     BadgeType.Subjects => subjectCount >= badge.RequiredCount,
                     BadgeType.Revenue => revenue >= badge.RequiredCount * 1000,
@@ -399,166 +457,93 @@ public static class SeedData
                     _ => false
                 };
                 if (!qualified) continue;
-
-                var exists = await db.TutorBadges.AnyAsync(tb =>
-                    tb.TutorProfileId == profile.Id && tb.BadgeId == badge.Id);
-                if (!exists)
-                    db.TutorBadges.Add(new TutorBadge
-                    {
-                        TutorProfileId = profile.Id,
-                        BadgeId = badge.Id,
-                        EarnedAt = DateTime.UtcNow.AddDays(-rng.Next(1, 30))
-                    });
+                if (!await db.TutorBadges.AnyAsync(tb => tb.TutorProfileId == profile.Id && tb.BadgeId == badge.Id))
+                    db.TutorBadges.Add(new TutorBadge { TutorProfileId = profile.Id, BadgeId = badge.Id, EarnedAt = DateTime.UtcNow.AddDays(-rng.Next(1, 60)) });
             }
         }
         await db.SaveChangesAsync();
 
         // ════════════════════════════════════════════════════
-        //  TẠO BLOG POSTS
+        //  BLOG POSTS + COMMENTS + LIKES
         // ════════════════════════════════════════════════════
         if (tutorUsers.Count >= 7 && !await db.Posts.AnyAsync())
         {
-            var posts = new[]
-            {
-                new Post {
-                    AuthorId    = tutorUsers[0].Id,
-                    Title       = "5 phương pháp học Toán hiệu quả cho kỳ thi THPTQG",
-                    Summary     = "Chia sẻ từ gia sư 8 năm kinh nghiệm: Cách học Toán hiệu quả, tránh học vẹt và tăng điểm nhanh.",
-                    Content     = "Nhiều học sinh học Toán theo kiểu thuộc lòng công thức mà không hiểu bản chất...\n\n**1. Hiểu gốc rễ trước khi giải bài**\nThay vì vội vào bài tập, hãy dành 20% thời gian hiểu lý thuyết thật sâu...\n\n**2. Phân loại dạng bài**\nMỗi chương có 4-6 dạng bài chuẩn. Hãy tổng hợp và thuộc phương pháp giải từng dạng...\n\n**3. Luyện đề theo thời gian thực**\nLàm đề thi thử trong đúng 90 phút, không tra cứu...\n\n**4. Review sai lầm hàng ngày**\nMỗi tối dành 10 phút xem lại các bài làm sai trong ngày...\n\n**5. Học theo nhóm nhỏ**\nGiải thích cho bạn bè là cách học hiệu quả nhất.",
-                    IsPublished = true,
-                    CreatedAt   = DateTime.Now.AddDays(-45)
-                },
-                new Post {
-                    AuthorId    = tutorUsers[1].Id,
-                    Title       = "Roadmap học IELTS từ 0 lên 7.0 trong 6 tháng",
-                    Summary     = "Lộ trình học IELTS chi tiết theo từng tháng, kèm tài liệu và app học miễn phí.",
-                    Content     = "IELTS 7.0 không phải mục tiêu xa vời nếu bạn có lộ trình đúng...\n\n**Tháng 1-2: Xây nền tảng**\n- Từ vựng: Học 10 từ/ngày với Anki\n- Ngữ pháp: Cambridge Grammar in Use\n\n**Tháng 3-4: Luyện kỹ năng**\n- Reading: Cambridge IELTS 14, 15, 16\n- Writing: Practice Task 1 và Task 2 mỗi ngày\n\n**Tháng 5-6: Mock Test**\n- Làm full test mỗi tuần\n- Đăng ký thi thật",
-                    IsPublished = true,
-                    CreatedAt   = DateTime.Now.AddDays(-32)
-                },
-                new Post {
-                    AuthorId    = tutorUsers[2].Id,
-                    Title       = "Học lập trình Web năm 2025: Nên bắt đầu từ đâu?",
-                    Summary     = "Hướng dẫn toàn diện cho người mới muốn học lập trình Web, từ HTML đến Full-stack.",
-                    Content     = "Lập trình Web là ngành hot nhất hiện tại với mức lương hấp dẫn...\n\n**Bước 1: HTML & CSS (2-4 tuần)**\n**Bước 2: JavaScript (4-8 tuần)**\n**Bước 3: Chọn hướng**\n- Frontend: React, Vue\n- Backend: NodeJS, C# .NET\n**Bước 4: Làm Project thực tế**",
-                    IsPublished = true,
-                    CreatedAt   = DateTime.Now.AddDays(-20)
-                },
-                new Post {
-                    AuthorId    = tutorUsers[3].Id,
-                    Title       = "Bí quyết học Hóa hữu cơ không bao giờ quên",
-                    Summary     = "TS Hóa học chia sẻ cách học Hóa hữu cơ một lần nhớ mãi, không cần học thuộc.",
-                    Content     = "Hóa hữu cơ khiến nhiều học sinh sợ vì quá nhiều phản ứng cần nhớ...\n\n**Nguyên tắc 1: Hiểu cơ chế phản ứng**\n**Nguyên tắc 2: Vẽ sơ đồ tư duy**\n**Nguyên tắc 3: Học từ ví dụ thực tế**\n**Nguyên tắc 4: Luyện bài tập nhận biết**",
-                    IsPublished = true,
-                    CreatedAt   = DateTime.Now.AddDays(-15)
-                },
-                new Post {
-                    AuthorId    = tutorUsers[4].Id,
-                    Title       = "Cách viết mở bài - kết bài Văn nghị luận gây ấn tượng",
-                    Summary     = "Bí quyết viết mở bài sáng tạo và kết bài đọng lại cảm xúc.",
-                    Content     = "Mở bài và kết bài chiếm 15-20% điểm bài văn...\n\n**3 kiểu mở bài hiệu quả:**\n1. Mở bài bằng câu hỏi tu từ\n2. Mở bài bằng trích dẫn\n3. Mở bài bằng tình huống giả định\n\n**Kết bài gây đọng lại:**\nMở ra hướng suy nghĩ mới cho người đọc.",
-                    IsPublished = true,
-                    CreatedAt   = DateTime.Now.AddDays(-10)
-                },
-                new Post {
-                    AuthorId    = tutorUsers[1].Id,
-                    Title       = "Top 10 app học tiếng Anh miễn phí tốt nhất 2025",
-                    Summary     = "Tổng hợp các app học tiếng Anh hiệu quả nhất, từ người mới đến nâng cao.",
-                    Content     = "Học tiếng Anh không nhất thiết phải tốn nhiều tiền...\n\n1. Duolingo\n2. Anki\n3. BBC Learning English\n4. Elsa Speak\n5. Cake\n6. HelloTalk\n7. Coursera\n8. TED\n9. Grammarly\n10. DeepL",
-                    IsPublished = true,
-                    CreatedAt   = DateTime.Now.AddDays(-5)
-                },
-                new Post {
-                    AuthorId    = tutorUsers[6].Id,
-                    Title       = "Tại sao nên học tiếng Nhật và cơ hội việc làm năm 2025",
-                    Summary     = "Thị trường lao động Nhật Bản đang mở rộng, cơ hội rất lớn cho người biết tiếng Nhật.",
-                    Content     = "Nhật Bản đang thiếu lao động và đang tìm kiếm nhân lực từ Việt Nam...\n\n**Lý do học tiếng Nhật:**\n- Lương kỹ sư IT tại Nhật: 80-150 triệu/tháng\n- Chi phí du học hợp lý hơn Mỹ/Úc\n\n**Lộ trình:** N5 → N4 → N3 → N2 → N1",
-                    IsPublished = true,
-                    CreatedAt   = DateTime.Now.AddDays(-3)
-                },
-            };
+            var posts = new List<Post>();
+            if (tutorUsers.Count > 0) posts.Add(new Post { AuthorId = tutorUsers[0].Id, Title = "5 phuong phap hoc Toan hieu qua cho ky thi THPTQG", Summary = "Chia se tu gia su 8 nam kinh nghiem: Cach hoc Toan hieu qua.", Content = "Nhieu hoc sinh hoc Toan theo kieu thuoc long...\n\n1. Hieu goc re truoc khi giai bai\n2. Phan loai dang bai\n3. Luyen de theo thoi gian thuc\n4. Review sai lam hang ngay\n5. Hoc theo nhom nho", IsPublished = true, Views = rng.Next(800, 2000), CreatedAt = DateTime.Now.AddDays(-45) });
+            if (tutorUsers.Count > 1) posts.Add(new Post { AuthorId = tutorUsers[1].Id, Title = "Roadmap hoc IELTS tu 0 len 7.0 trong 6 thang", Summary = "Lo trinh hoc IELTS chi tiet theo tung thang, kem tai lieu mien phi.", Content = "IELTS 7.0 khong phai muc tieu xa voi...\n\nThang 1-2: Xay nen tang\nThang 3-4: Luyen ky nang\nThang 5-6: Mock test & dang ky thi", IsPublished = true, Views = rng.Next(1200, 3000), CreatedAt = DateTime.Now.AddDays(-32) });
+            if (tutorUsers.Count > 2) posts.Add(new Post { AuthorId = tutorUsers[2].Id, Title = "Hoc lap trinh Web nam 2025: Nen bat dau tu dau?", Summary = "Huong dan toan dien cho nguoi moi muon hoc lap trinh Web.", Content = "Lap trinh Web la nganh hot nhat...\n\nBuoc 1: HTML & CSS\nBuoc 2: JavaScript\nBuoc 3: Chon Frontend hoac Backend\nBuoc 4: Lam Project thuc te", IsPublished = true, Views = rng.Next(900, 2500), CreatedAt = DateTime.Now.AddDays(-20) });
+            if (tutorUsers.Count > 3) posts.Add(new Post { AuthorId = tutorUsers[3].Id, Title = "Bi quyet hoc Hoa huu co khong bao gio quen", Summary = "TS Hoa hoc chia se cach hoc Hoa huu co mot lan nho mai.", Content = "Hoa huu co khien nhieu hoc sinh so...\n\n1. Hieu co che phan ung\n2. Ve so do tu duy\n3. Hoc tu vi du thuc te\n4. Luyen bai tap nhan biet", IsPublished = true, Views = rng.Next(600, 1800), CreatedAt = DateTime.Now.AddDays(-15) });
+            if (tutorUsers.Count > 4) posts.Add(new Post { AuthorId = tutorUsers[4].Id, Title = "Cach viet mo bai - ket bai Van nghi luan gay an tuong", Summary = "Bi quyet viet mo bai sang tao va ket bai dong lai cam xuc.", Content = "Mo bai va ket bai chiem 15-20% diem...\n\n3 kieu mo bai hieu qua:\n1. Cau hoi tu tu\n2. Trich dan\n3. Tinh huong gia dinh", IsPublished = true, Views = rng.Next(500, 1500), CreatedAt = DateTime.Now.AddDays(-10) });
+            if (tutorUsers.Count > 1) posts.Add(new Post { AuthorId = tutorUsers[1].Id, Title = "Top 10 app hoc tieng Anh mien phi tot nhat 2025", Summary = "Tong hop cac app hoc tieng Anh hieu qua nhat, tu nguoi moi.", Content = "Hoc tieng Anh khong nhat thiet ton tien...\n\n1. Duolingo\n2. Anki\n3. BBC Learning English\n4. Elsa Speak\n5. Cake\n6. HelloTalk\n7. Coursera\n8. TED\n9. Grammarly\n10. DeepL", IsPublished = true, Views = rng.Next(700, 2200), CreatedAt = DateTime.Now.AddDays(-5) });
+            if (tutorUsers.Count > 6) posts.Add(new Post { AuthorId = tutorUsers[6].Id, Title = "Tai sao nen hoc tieng Nhat va co hoi viec lam nam 2025", Summary = "Thi truong lao dong Nhat Ban dang mo rong, co hoi rat lon.", Content = "Nhat Ban dang thieu lao dong...\n\nLy do hoc tieng Nhat:\n- Luong IT tai Nhat: 80-150 trieu/thang\n- Du hoc chi phi hop ly\n\nLo trinh: N5->N4->N3->N2->N1", IsPublished = true, Views = rng.Next(400, 1200), CreatedAt = DateTime.Now.AddDays(-3) });
+            if (tutorUsers.Count > 5) posts.Add(new Post { AuthorId = tutorUsers[5].Id, Title = "Tai sao Vat ly khong kho nhu ban nghi", Summary = "Thay Tu chia se cach tiep can Vat ly bang hinh anh, vi du thuc te.", Content = "Vat ly khong kho nhu ban nghi...\n\nMeo 1: Lien he cong thuc voi thuc te\nMeo 2: Ve hinh minh hoa truoc khi giai\nMeo 3: Kiem tra don vi sau moi phep tinh", IsPublished = true, Views = rng.Next(550, 1600), CreatedAt = DateTime.Now.AddDays(-8) });
+            if (tutorUsers.Count > 9) posts.Add(new Post { AuthorId = tutorUsers[9].Id, Title = "Chien thuat lam bai Toan trac nghiem dat 9-10 diem", Summary = "Bi quyet lam bai Toan trac nghiem nhanh va chinh xac.", Content = "Toan trac nghiem can toc do va do chinh xac...\n\nChien thuat thoi gian:\n- Cau de: <=1 phut\n- Cau trung binh: 1-2 phut\n- Cau kho: bo qua, quay lai sau", IsPublished = true, Views = rng.Next(650, 1900), CreatedAt = DateTime.Now.AddDays(-12) });
+            if (tutorUsers.Count > 10) posts.Add(new Post { AuthorId = tutorUsers[10].Id, Title = "TOEIC 900+ khong kho neu ban biet cach hoc dung", Summary = "Chien luoc hoc TOEIC dat 900+ trong 3 thang tu co Yen - TOEIC 950.", Content = "TOEIC 900+ trong 3 thang la hoan toan kha thi...\n\nListening (495 diem):\n- Part 1-2: Thuan thuc trong 2 tuan\n- Part 3-4: Luyen du doan truoc khi nghe\n\nReading (495 diem):\n- Part 5-6: On ngu phap trong diem", IsPublished = true, Views = rng.Next(750, 2100), CreatedAt = DateTime.Now.AddDays(-18) });
 
-            foreach (var post in posts)
-                db.Posts.Add(post);
+            foreach (var post in posts) db.Posts.Add(post);
             await db.SaveChangesAsync();
 
-            var allPosts = await db.Posts.ToListAsync();
             var commentTexts = new[]
             {
-                "Bài viết rất hữu ích! Cảm ơn thầy/cô đã chia sẻ.",
-                "Tôi đang áp dụng phương pháp này và thấy hiệu quả hơn hẳn.",
-                "Cho tôi hỏi thêm về tài liệu để luyện tập được không ạ?",
-                "Bài này nên pin lại để đọc lại nhiều lần!",
-                "Chia sẻ rất thực tế và chi tiết. Cảm ơn nhiều!",
-                "Tôi đã thử theo phương pháp này được 2 tuần, điểm tăng rõ rệt.",
-                "Thông tin rất bổ ích cho kỳ thi sắp tới của tôi.",
-                "Mong thầy/cô ra thêm nhiều bài viết như thế này!"
+                "Bai viet rat huu ich! Cam on thay/co da chia se.",
+                "Toi dang ap dung phuong phap nay va thay hieu qua hon han.",
+                "Cho toi hoi them ve tai lieu luyen tap duoc khong a?",
+                "Bai nay nen pin lai de doc lai nhieu lan!",
+                "Chia se rat thuc te va chi tiet. Cam on nhieu!",
+                "Toi da thu theo phuong phap nay duoc 2 tuan, diem tang ro ret.",
+                "Thong tin rat bo ich cho ky thi sap toi.",
+                "Mong thay/co ra them nhieu bai viet nhu the nay!",
+                "Hay qua! Chia se them ve phan luyen de duoc khong a?",
+                "Em dang chuan bi thi nen bai nay rat dung luc.",
+                "Ap dung duoc ngay, khong can ton tien mua tai lieu ngoai.",
+                "Thay/co co day truc tiep khong? Em muon dang ky hoc."
             };
 
-            foreach (var post in allPosts)
+            var allSavedPosts = await db.Posts.ToListAsync();
+            foreach (var post in allSavedPosts)
             {
-                int numComments = rng.Next(2, 6);
-                for (int c = 0; c < numComments; c++)
-                {
-                    var commenter = studentUsers[rng.Next(studentUsers.Count)];
-                    db.Comments.Add(new Comment
-                    {
-                        PostId = post.Id,
-                        AuthorId = commenter.Id,
-                        Content = commentTexts[rng.Next(commentTexts.Length)],
-                        CreatedAt = post.CreatedAt.AddDays(rng.Next(1, 10))
-                    });
-                }
+                int numCmts = rng.Next(4, 11);
+                for (int c = 0; c < numCmts; c++)
+                    db.Comments.Add(new Comment { PostId = post.Id, AuthorId = studentUsers[rng.Next(studentUsers.Count)].Id, Content = commentTexts[rng.Next(commentTexts.Length)], CreatedAt = post.CreatedAt.AddDays(rng.Next(1, 15)) });
 
-                var likedBy = studentUsers.OrderBy(_ => rng.Next()).Take(rng.Next(3, 9));
-                foreach (var liker in likedBy)
-                {
-                    var existsLike = await db.PostLikes.AnyAsync(pl =>
-                        pl.PostId == post.Id && pl.UserId == liker.Id);
-                    if (!existsLike)
-                        db.PostLikes.Add(new PostLike
-                        {
-                            PostId = post.Id,
-                            UserId = liker.Id,
-                            CreatedAt = post.CreatedAt.AddDays(rng.Next(1, 5))
-                        });
-                }
+                foreach (var liker in studentUsers.OrderBy(_ => rng.Next()).Take(rng.Next(6, 14)))
+                    if (!await db.PostLikes.AnyAsync(pl => pl.PostId == post.Id && pl.UserId == liker.Id))
+                        db.PostLikes.Add(new PostLike { PostId = post.Id, UserId = liker.Id, CreatedAt = post.CreatedAt.AddDays(rng.Next(1, 10)) });
             }
             await db.SaveChangesAsync();
         }
 
         // ════════════════════════════════════════════════════
-        //  TẠO TIN NHẮN
+        //  TIN NHAN
         // ════════════════════════════════════════════════════
         if (!await db.Messages.AnyAsync())
         {
-            var msgTexts = new[,]
+            var convs = new[]
             {
-                { "Xin chào thầy/cô, tôi muốn đặt lịch học Toán ạ!", "" },
-                { "", "Chào em! Thầy/Cô đang có lịch trống vào tối thứ 2 và thứ 4. Em muốn học thời gian nào?" },
-                { "Dạ em muốn học tối thứ 4 lúc 19h ạ. Học phí một buổi bao nhiêu ạ?", "" },
-                { "", "Em học 2 tiếng là 400,000đ nhé. Thầy/Cô sẽ chuẩn bị bài tập theo đề cương của em." },
-                { "Dạ vâng ạ. Em đã đặt lịch rồi ạ, thầy/cô xác nhận giúp em nhé!", "" },
-                { "", "Thầy/Cô xác nhận rồi em nhé. Hẹn gặp em tối thứ 4!" },
+                new[] { ("s","Xin chao thay/co! Em muon hoi ve lich hoc a."), ("t","Chao em! Thay/Co co lich trong toi thu 2, 4, 6. Em muon hoc ngay nao?"), ("s","Da em muon hoc toi thu 4 luc 19h a."), ("t","Ok em nhe! Thay/Co se chuan bi bai tap theo de cuong cua em."), ("s","Da cam on thay/co! Em da dat lich roi a."), ("t","Thay/Co xac nhan roi. Hen gap em toi thu 4!") },
+                new[] { ("s","Thay/co oi, em dang gap kho khan voi bai tap chuong nay a."), ("t","Em gap kho o phan nao? Thay/Co se giai thich them cho em nhe."), ("s","Da em chua hieu cach ap dung cong thuc vao bai tap a."), ("t","Thay/Co se cho em bai tap tu co ban den nang cao de luyen dan nhe."), ("s","Da em cam on thay/co nhieu a!"), ("t","Co gang len em! Buoi toi minh se on ky phan nay.") },
+                new[] { ("s","Thay/co cho em hoi hoc phi mot thang la bao nhieu a?"), ("t","Em hoc 2 buoi/tuan thi mot thang khoang 8 buoi, tong khoang 1.6 trieu nhe."), ("s","Da hop ly a. Em muon dang ky hoc thu 1 buoi truoc duoc khong a?"), ("t","Duoc chu em! Thay/Co se cho em hoc thu mien phi buoi dau tien."), ("s","Wow, tuyet voi qua a! Em dang ky ngay."), ("t","Thay/Co cho em dat lich nhe. Hen gap em som!") },
             };
 
-            for (int ti = 0; ti < Math.Min(tutorUsers.Count, 4); ti++)
+            for (int ti = 0; ti < Math.Min(tutorUsers.Count, 8); ti++)
             {
-                var tUser2 = tutorUsers[ti];
-                for (int si = 0; si < Math.Min(3, studentUsers.Count); si++)
+                var tUser = tutorUsers[ti];
+                for (int si = 0; si < Math.Min(4, studentUsers.Count); si++)
                 {
-                    var sUser = studentUsers[(ti + si) % studentUsers.Count];
-                    for (int mi = 0; mi < msgTexts.GetLength(0); mi++)
+                    var sUser = studentUsers[(ti * 2 + si) % studentUsers.Count];
+                    var conv = convs[rng.Next(convs.Length)];
+                    var baseT = DateTime.UtcNow.AddDays(-rng.Next(1, 20)).AddHours(-rng.Next(1, 48));
+                    for (int mi = 0; mi < conv.Length; mi++)
                     {
-                        var studentMsg = msgTexts[mi, 0];
-                        var tutorMsg = msgTexts[mi, 1];
-                        var baseTime = DateTime.UtcNow.AddDays(-rng.Next(1, 14)).AddHours(-rng.Next(1, 48));
-
-                        if (!string.IsNullOrEmpty(studentMsg))
-                            db.Messages.Add(new Message { SenderId = sUser.Id, ReceiverId = tUser2.Id, Content = studentMsg, SentAt = baseTime.AddMinutes(mi * 5), IsRead = true });
-
-                        if (!string.IsNullOrEmpty(tutorMsg))
-                            db.Messages.Add(new Message { SenderId = tUser2.Id, ReceiverId = sUser.Id, Content = tutorMsg, SentAt = baseTime.AddMinutes(mi * 5 + 2), IsRead = mi < msgTexts.GetLength(0) - 1 });
+                        bool isStudent = conv[mi].Item1 == "s";
+                        db.Messages.Add(new Message
+                        {
+                            SenderId = isStudent ? sUser.Id : tUser.Id,
+                            ReceiverId = isStudent ? tUser.Id : sUser.Id,
+                            Content = conv[mi].Item2,
+                            SentAt = baseT.AddMinutes(mi * rng.Next(3, 15)),
+                            IsRead = mi < conv.Length - 2
+                        });
                     }
                 }
             }
@@ -566,40 +551,31 @@ public static class SeedData
         }
 
         // ════════════════════════════════════════════════════
-        //  TẠO THÔNG BÁO
+        //  NOTIFICATIONS
         // ════════════════════════════════════════════════════
         if (!await db.Notifications.AnyAsync())
         {
-            var notifData = new List<(string UserId, string Title, string Content, string Link)>();
-
-            foreach (var student in studentUsers.Take(5))
+            var notifs = new List<Notification>();
+            foreach (var student in studentUsers)
             {
-                notifData.Add((student.Id, "✅ Lịch học được xác nhận!", "Gia sư đã xác nhận lịch học của bạn. Chuẩn bị đồ dùng và đúng giờ nhé!", "/Booking/MyBookings"));
-                notifData.Add((student.Id, "⏰ Nhắc lịch học ngày mai", "Bạn có buổi học lúc 19:00 ngày mai. Đừng quên chuẩn bị bài nhé!", "/Booking/MyBookings"));
-                notifData.Add((student.Id, "💡 AI gợi ý gia sư mới cho bạn", "Dựa trên lịch sử học tập, chúng tôi tìm được 3 gia sư phù hợp hơn cho bạn!", "/TutorSearch/Search"));
+                notifs.Add(new Notification { UserId = student.Id, Title = "Lich hoc duoc xac nhan!", Content = "Gia su da xac nhan lich hoc cua ban. Chuan bi do dung va dung gio nhe!", Link = "/Booking/MyBookings", IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(1, 24)) });
+                notifs.Add(new Notification { UserId = student.Id, Title = "Nhac lich hoc ngay mai", Content = "Ban co buoi hoc luc 19:00 ngay mai. Dung quen chuan bi bai nhe!", Link = "/Booking/MyBookings", IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(2, 48)) });
+                notifs.Add(new Notification { UserId = student.Id, Title = "AI goi y gia su phu hop", Content = "Dua tren lich su hoc tap, chung toi tim duoc 3 gia su phu hop hon!", Link = "/TutorSearch/Search", IsRead = rng.Next(2) == 0, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(10, 72)) });
+                notifs.Add(new Notification { UserId = student.Id, Title = "Hoan thanh Quiz xuat sac!", Content = "Ban dat 9/10 trong bai Quiz Toan hoc. Tiep tuc phat huy nhe!", Link = "/Quiz", IsRead = rng.Next(2) == 0, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(5, 60)) });
+                notifs.Add(new Notification { UserId = student.Id, Title = "Tai lieu moi duoc chia se", Content = "Gia su cua ban vua chia se tai lieu hoc tap moi. Tai ve va on tap ngay!", Link = "/Document", IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(3, 36)) });
             }
-
-            foreach (var tUser3 in tutorUsers.Take(4))
+            foreach (var tUser in tutorUsers)
             {
-                notifData.Add((tUser3.Id, "📅 Yêu cầu đặt lịch mới!", "Một học viên vừa gửi yêu cầu đặt lịch học. Hãy xem và xác nhận sớm!", "/Booking/TutorRequests"));
-                notifData.Add((tUser3.Id, "⭐ Bạn vừa nhận đánh giá mới!", "Học viên đã để lại đánh giá 5 sao cho buổi học. Xem ngay!", "/Tutor/Dashboard"));
-                notifData.Add((tUser3.Id, "🏆 Huy hiệu mới: Gia sư xuất sắc!", "Chúc mừng! Bạn vừa đạt huy hiệu 'Được yêu thích' với 5 lượt đánh giá.", "/Tutor/Dashboard"));
+                notifs.Add(new Notification { UserId = tUser.Id, Title = "Yeu cau dat lich moi!", Content = "Mot hoc vien vua gui yeu cau dat lich hoc. Hay xem va xac nhan som!", Link = "/Booking/TutorRequests", IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(1, 12)) });
+                notifs.Add(new Notification { UserId = tUser.Id, Title = "Ban vua nhan danh gia moi!", Content = "Hoc vien da de lai danh gia 5 sao cho buoi hoc vua roi. Xem ngay!", Link = "/Tutor/Dashboard", IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(2, 48)) });
+                notifs.Add(new Notification { UserId = tUser.Id, Title = "Huy hieu moi duoc mo khoa!", Content = "Chuc mung! Ban vua dat huy hieu 'Duoc yeu thich' voi 5 luot danh gia.", Link = "/Tutor/Dashboard", IsRead = rng.Next(2) == 0, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(5, 72)) });
+                notifs.Add(new Notification { UserId = tUser.Id, Title = "Doanh thu thang nay tang 20%!", Content = "Thang nay ban co them 8 buoi day so voi thang truoc. Xuat sac lam!", Link = "/Tutor/Dashboard", IsRead = rng.Next(2) == 0, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(20, 120)) });
+                notifs.Add(new Notification { UserId = tUser.Id, Title = "Hoc vien nhan tin cho ban", Content = "Ban co tin nhan moi tu hoc vien. Hay tra loi som de giu tuong tac tot!", Link = "/Message", IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(1, 24)) });
             }
-
-            foreach (var (uid, title, content, link) in notifData)
-                db.Notifications.Add(new Notification
-                {
-                    UserId = uid,
-                    Title = title,
-                    Content = content,
-                    Link = link,
-                    IsRead = false,
-                    CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(1, 72))
-                });
-
+            db.Notifications.AddRange(notifs);
             await db.SaveChangesAsync();
         }
 
-        Console.WriteLine("✅ Seed data hoàn thành!");
+        Console.WriteLine("Seed data hoan thanh! Da tao day du du lieu demo.");
     }
 }
