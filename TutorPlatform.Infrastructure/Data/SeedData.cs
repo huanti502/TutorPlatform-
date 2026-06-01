@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TutorPlatform.Core.Models;
 using TutorPlatform.Infrastructure.Data;
@@ -30,12 +30,9 @@ public static class SeedData
         {
             var admin = new AppUser
             {
-                UserName = "admin@tutor.com",
-                Email = "admin@tutor.com",
-                FullName = "Quản trị viên",
-                Role = "Admin",
-                EmailConfirmed = true,
-                CreatedAt = DateTime.UtcNow
+                UserName = "admin@tutor.com", Email = "admin@tutor.com",
+                FullName = "Quản trị viên", Role = "Admin",
+                EmailConfirmed = true, CreatedAt = DateTime.UtcNow
             };
             await userManager.CreateAsync(admin, "Admin@123");
             await userManager.AddToRoleAsync(admin, "Admin");
@@ -67,16 +64,16 @@ public static class SeedData
         if (!await db.Badges.AnyAsync())
         {
             db.Badges.AddRange(
-                new Badge { Id = 1, Name = "Khởi đầu", Description = "Hoàn thành buổi học đầu tiên", Icon = "🌱", Color = "#4CAF50", Type = BadgeType.Sessions, RequiredCount = 1 },
-                new Badge { Id = 2, Name = "Đang lên", Description = "Hoàn thành 10 buổi học", Icon = "⚡", Color = "#2196F3", Type = BadgeType.Sessions, RequiredCount = 10 },
-                new Badge { Id = 3, Name = "Chuyên nghiệp", Description = "Hoàn thành 50 buổi học", Icon = "🎯", Color = "#9C27B0", Type = BadgeType.Sessions, RequiredCount = 50 },
-                new Badge { Id = 4, Name = "Huyền thoại", Description = "Hoàn thành 100 buổi học", Icon = "🏆", Color = "#FFD700", Type = BadgeType.Sessions, RequiredCount = 100 },
-                new Badge { Id = 5, Name = "Được yêu thích", Description = "Nhận được 5 lượt đánh giá", Icon = "⭐", Color = "#FF9800", Type = BadgeType.Reviews, RequiredCount = 5 },
-                new Badge { Id = 6, Name = "Top Rated", Description = "Nhận được 20 lượt đánh giá", Icon = "🌟", Color = "#FF5722", Type = BadgeType.Reviews, RequiredCount = 20 },
-                new Badge { Id = 7, Name = "Gia sư xuất sắc", Description = "Điểm TB >= 4.5 sao (it nhat 5 danh gia)", Icon = "💎", Color = "#00BCD4", Type = BadgeType.Rating, RequiredCount = 45 },
-                new Badge { Id = 8, Name = "Hoàn hảo", Description = "Điểm TB >= 4.8 sao (it nhat 5 danh gia)", Icon = "👑", Color = "#E91E63", Type = BadgeType.Rating, RequiredCount = 48 },
-                new Badge { Id = 9, Name = "Đa năng", Description = "Dạy từ 3 môn học trở lên", Icon = "📚", Color = "#607D8B", Type = BadgeType.Subjects, RequiredCount = 3 },
-                new Badge { Id = 10, Name = "Triệu phú", Description = "Tích lũy doanh thu 1,000,000 VND", Icon = "💰", Color = "#795548", Type = BadgeType.Revenue, RequiredCount = 1000 }
+                new Badge { Id = 1,  Name = "Khởi đầu",       Description = "Hoàn thành buổi học đầu tiên",          Icon = "🌱", Color = "#4CAF50", Type = BadgeType.Sessions, RequiredCount = 1    },
+                new Badge { Id = 2,  Name = "Đang lên",        Description = "Hoàn thành 10 buổi học",                Icon = "⚡", Color = "#2196F3", Type = BadgeType.Sessions, RequiredCount = 10   },
+                new Badge { Id = 3,  Name = "Chuyên nghiệp",   Description = "Hoàn thành 50 buổi học",                Icon = "🎯", Color = "#9C27B0", Type = BadgeType.Sessions, RequiredCount = 50   },
+                new Badge { Id = 4,  Name = "Huyền thoại",     Description = "Hoàn thành 100 buổi học",               Icon = "🏆", Color = "#FFD700", Type = BadgeType.Sessions, RequiredCount = 100  },
+                new Badge { Id = 5,  Name = "Được yêu thích",  Description = "Nhận được 5 lượt đánh giá",             Icon = "⭐", Color = "#FF9800", Type = BadgeType.Reviews,  RequiredCount = 5    },
+                new Badge { Id = 6,  Name = "Top Rated",       Description = "Nhận được 20 lượt đánh giá",            Icon = "🌟", Color = "#FF5722", Type = BadgeType.Reviews,  RequiredCount = 20   },
+                new Badge { Id = 7,  Name = "Gia sư xuất sắc", Description = "Điểm TB >= 4.5 sao (it nhat 5 danh gia)", Icon = "💎", Color = "#00BCD4", Type = BadgeType.Rating, RequiredCount = 45   },
+                new Badge { Id = 8,  Name = "Hoàn hảo",        Description = "Điểm TB >= 4.8 sao (it nhat 5 danh gia)", Icon = "👑", Color = "#E91E63", Type = BadgeType.Rating, RequiredCount = 48   },
+                new Badge { Id = 9,  Name = "Đa năng",         Description = "Dạy từ 3 môn học trở lên",             Icon = "📚", Color = "#607D8B", Type = BadgeType.Subjects, RequiredCount = 3    },
+                new Badge { Id = 10, Name = "Triệu phú",       Description = "Tích lũy doanh thu 1,000,000 VND",      Icon = "💰", Color = "#795548", Type = BadgeType.Revenue,  RequiredCount = 1000 }
             );
             await db.SaveChangesAsync();
         }
@@ -101,38 +98,27 @@ public static class SeedData
         };
 
         var tutorProfiles = new List<TutorProfile>();
-        var tutorUsers = new List<AppUser>();
-        var availDays = new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday };
+        var tutorUsers    = new List<AppUser>();
+        var availDays     = new[] { DayOfWeek.Monday, DayOfWeek.Tuesday, DayOfWeek.Wednesday, DayOfWeek.Thursday, DayOfWeek.Friday, DayOfWeek.Saturday, DayOfWeek.Sunday };
 
         foreach (var td in tutorData)
         {
             if (await userManager.FindByEmailAsync(td.Email) != null) continue;
             var user = new AppUser
             {
-                UserName = td.Email,
-                Email = td.Email,
-                FullName = td.FullName,
-                PhoneNumber = td.Phone,
-                Address = td.Address,
-                Role = "Tutor",
-                EmailConfirmed = true,
-                CreatedAt = DateTime.UtcNow.AddDays(-rng.Next(60, 500)),
-                XpPoints = rng.Next(200, 2000),
-                XpLevel = "Gia su tich cuc"
+                UserName = td.Email, Email = td.Email, FullName = td.FullName,
+                PhoneNumber = td.Phone, Address = td.Address, Role = "Tutor",
+                EmailConfirmed = true, CreatedAt = DateTime.UtcNow.AddDays(-rng.Next(60, 500)),
+                XpPoints = rng.Next(200, 2000), XpLevel = "Gia su tich cuc"
             };
             await userManager.CreateAsync(user, td.Pass);
             await userManager.AddToRoleAsync(user, "Tutor");
 
             var profile = new TutorProfile
             {
-                UserId = user.Id,
-                Education = td.Education,
-                Bio = td.Bio,
-                HourlyRate = td.Rate,
-                IsApproved = true,
-                TeachingMode = td.Mode,
-                ExperienceYears = td.Exp,
-                TeachingArea = td.Area
+                UserId = user.Id, Education = td.Education, Bio = td.Bio,
+                HourlyRate = td.Rate, IsApproved = true,
+                TeachingMode = td.Mode, ExperienceYears = td.Exp, TeachingArea = td.Area
             };
             db.TutorProfiles.Add(profile);
             await db.SaveChangesAsync();
@@ -142,7 +128,7 @@ public static class SeedData
 
             foreach (var day in availDays.OrderBy(_ => rng.Next()).Take(rng.Next(3, 6)))
             {
-                db.TutorAvailabilities.Add(new TutorAvailability { TutorProfileId = profile.Id, DayOfWeek = day, StartTime = new TimeSpan(8, 0, 0), EndTime = new TimeSpan(11, 0, 0) });
+                db.TutorAvailabilities.Add(new TutorAvailability { TutorProfileId = profile.Id, DayOfWeek = day, StartTime = new TimeSpan(8, 0, 0),  EndTime = new TimeSpan(11, 0, 0) });
                 db.TutorAvailabilities.Add(new TutorAvailability { TutorProfileId = profile.Id, DayOfWeek = day, StartTime = new TimeSpan(18, 0, 0), EndTime = new TimeSpan(21, 0, 0) });
             }
             await db.SaveChangesAsync();
@@ -178,16 +164,10 @@ public static class SeedData
             if (await userManager.FindByEmailAsync(sd.Email) != null) continue;
             var user = new AppUser
             {
-                UserName = sd.Email,
-                Email = sd.Email,
-                FullName = sd.FullName,
-                PhoneNumber = sd.Phone,
-                Address = sd.Address,
-                Role = "Student",
-                CreatedAt = DateTime.UtcNow.AddDays(-rng.Next(10, 300)),
-                EmailConfirmed = true,
-                XpPoints = sd.Xp,
-                XpLevel = sd.Xp > 500 ? "Hoc vien cham chi" : "Hoc vien moi"
+                UserName = sd.Email, Email = sd.Email, FullName = sd.FullName,
+                PhoneNumber = sd.Phone, Address = sd.Address, Role = "Student",
+                CreatedAt = DateTime.UtcNow.AddDays(-rng.Next(10, 300)), EmailConfirmed = true,
+                XpPoints = sd.Xp, XpLevel = sd.Xp > 500 ? "Hoc vien cham chi" : "Hoc vien moi"
             };
             await userManager.CreateAsync(user, sd.Pass);
             await userManager.AddToRoleAsync(user, "Student");
@@ -197,8 +177,8 @@ public static class SeedData
         if (!tutorProfiles.Any() || !studentUsers.Any())
         {
             tutorProfiles = await db.TutorProfiles.Include(t => t.TutorSubjects).ToListAsync();
-            studentUsers = await db.Users.Where(u => u.Role == "Student").ToListAsync();
-            tutorUsers = new List<AppUser>();
+            studentUsers  = await db.Users.Where(u => u.Role == "Student").ToListAsync();
+            tutorUsers    = new List<AppUser>();
             foreach (var p in tutorProfiles)
             {
                 var u = await userManager.FindByIdAsync(p.UserId);
@@ -206,9 +186,9 @@ public static class SeedData
             }
         }
 
-        // ═══════════════════════════════════════════════════
+        // ════════════════════════════════════════════════════
         //  BOOKINGS + REVIEWS + REVIEW REPLIES
-        // ═══════════════════════════════════════════════════
+        // ════════════════════════════════════════════════════
         var reviewComments = new[]
         {
             "Thay/Co day rat de hieu, toi tien bo ro ret sau vai buoi hoc!",
@@ -239,7 +219,7 @@ public static class SeedData
             "Rat vui duoc day em. Neu can luyen them phan nao em cu bao Thay/Co nhe!"
         };
 
-        var modes = new[] { "Online", "Offline" };
+        var modes       = new[] { "Online", "Offline" };
         var noteOptions = new[]
         {
             "Can on tap phan dao ham va tich phan",
@@ -268,29 +248,25 @@ public static class SeedData
             {
                 var student = studentUsers[rng.Next(studentUsers.Count)];
                 int daysAgo = rng.Next(-10, 150);
-                var start = DateTime.Now.AddDays(-daysAgo).Date.AddHours(rng.Next(7, 20)).AddMinutes(rng.Next(0, 2) * 30);
-                var end = start.AddHours(rng.Next(1, 3));
+                var start   = DateTime.Now.AddDays(-daysAgo).Date.AddHours(rng.Next(7, 20)).AddMinutes(rng.Next(0, 2) * 30);
+                var end     = start.AddHours(rng.Next(1, 3));
 
                 string status; string? roomId = null;
-                if (daysAgo > 20) status = rng.Next(10) < 8 ? "Completed" : "Cancelled";
-                else if (daysAgo > 3) { status = rng.Next(10) < 6 ? "Confirmed" : "Completed"; roomId = $"Room-{ti}-{bi}-{Guid.NewGuid().ToString("N")[..6]}"; }
-                else if (daysAgo < 0) status = "Pending";
-                else status = rng.Next(2) == 0 ? "Confirmed" : "Pending";
+                if      (daysAgo > 20) status = rng.Next(10) < 8 ? "Completed" : "Cancelled";
+                else if (daysAgo > 3)  { status = rng.Next(10) < 6 ? "Confirmed" : "Completed"; roomId = $"Room-{ti}-{bi}-{Guid.NewGuid().ToString("N")[..6]}"; }
+                else if (daysAgo < 0)  status = "Pending";
+                else                   status = rng.Next(2) == 0 ? "Confirmed" : "Pending";
                 if (status == "Confirmed") roomId = $"Room-{ti}-{bi}-{Guid.NewGuid().ToString("N")[..6]}";
 
                 var booking = new Booking
                 {
-                    StudentId = student.Id,
-                    TutorProfileId = tutor.Id,
-                    SubjectId = subId,
-                    StartTime = start,
-                    EndTime = end,
-                    Status = status,
-                    TeachingMode = tutor.TeachingMode == "Both" ? modes[rng.Next(2)] : (tutor.TeachingMode == "Online" ? "Online" : "Offline"),
-                    Note = noteOptions[rng.Next(noteOptions.Length)],
+                    StudentId = student.Id, TutorProfileId = tutor.Id, SubjectId = subId,
+                    StartTime = start, EndTime = end, Status = status,
+                    TeachingMode  = tutor.TeachingMode == "Both" ? modes[rng.Next(2)] : (tutor.TeachingMode == "Online" ? "Online" : "Offline"),
+                    Note          = noteOptions[rng.Next(noteOptions.Length)],
                     MeetingRoomId = roomId,
-                    CreatedAt = start.AddDays(-rng.Next(1, 10)),
-                    IsPaid = status == "Completed"
+                    CreatedAt     = start.AddDays(-rng.Next(1, 10)),
+                    IsPaid        = status == "Completed"
                 };
                 db.Bookings.Add(booking);
                 await db.SaveChangesAsync();
@@ -300,11 +276,8 @@ public static class SeedData
                     int rating = rng.Next(100) < 75 ? rng.Next(4, 6) : rng.Next(3, 5);
                     var review = new Review
                     {
-                        StudentId = student.Id,
-                        TutorProfileId = tutor.Id,
-                        BookingId = booking.Id,
-                        Rating = rating,
-                        Comment = reviewComments[rng.Next(reviewComments.Length)],
+                        StudentId = student.Id, TutorProfileId = tutor.Id, BookingId = booking.Id,
+                        Rating = rating, Comment = reviewComments[rng.Next(reviewComments.Length)],
                         CreatedAt = end.AddHours(rng.Next(1, 72))
                     };
                     db.Reviews.Add(review);
@@ -321,9 +294,8 @@ public static class SeedData
             if (!await db.ReviewReplies.AnyAsync(r => r.ReviewId == review.Id))
                 db.ReviewReplies.Add(new ReviewReply
                 {
-                    ReviewId = review.Id,
-                    AuthorId = tutorUserId,
-                    Content = replyTexts[rng.Next(replyTexts.Length)],
+                    ReviewId = review.Id, AuthorId = tutorUserId,
+                    Content  = replyTexts[rng.Next(replyTexts.Length)],
                     CreatedAt = review.CreatedAt.AddHours(rng.Next(1, 96))
                 });
         }
@@ -354,11 +326,9 @@ public static class SeedData
                 foreach (var (title, certType) in certMap[i])
                     db.Certificates.Add(new Certificate
                     {
-                        TutorProfileId = tutorProfiles[i].Id,
-                        Title = title,
+                        TutorProfileId = tutorProfiles[i].Id, Title = title,
                         FilePath = $"/uploads/certificates/cert_{i + 1}_{Math.Abs(title.GetHashCode()) % 99999:D5}.jpg",
-                        FileType = "image",
-                        Type = certType,
+                        FileType = "image", Type = certType,
                         IsVerified = rng.Next(10) < 8,
                         UploadedAt = DateTime.UtcNow.AddDays(-rng.Next(10, 180))
                     });
@@ -390,14 +360,10 @@ public static class SeedData
                 if (d.TutorIdx < tutorUsers.Count)
                     db.Documents.Add(new Document
                     {
-                        Title = d.Title,
-                        Description = d.Desc,
+                        Title = d.Title, Description = d.Desc,
                         FilePath = $"/uploads/documents/{Math.Abs(d.Title.GetHashCode()) % 99999:D5}.{d.Type}",
-                        FileName = $"{d.Title}.{d.Type}",
-                        FileType = d.Type,
-                        FileSize = d.Size,
-                        UploaderId = tutorUsers[d.TutorIdx].Id,
-                        IsPublic = true,
+                        FileName = $"{d.Title}.{d.Type}", FileType = d.Type, FileSize = d.Size,
+                        UploaderId = tutorUsers[d.TutorIdx].Id, IsPublic = true,
                         DownloadCount = rng.Next(10, 300),
                         CreatedAt = DateTime.UtcNow.AddDays(-rng.Next(5, 120))
                     });
@@ -409,7 +375,7 @@ public static class SeedData
         // ════════════════════════════════════════════════════
         if (!await db.QuizAttempts.AnyAsync())
         {
-            var levels = new[] { "Co ban", "Trung binh", "Nang cao" };
+            var levels     = new[] { "Co ban", "Trung binh", "Nang cao" };
             var subjectIds = new[] { 1, 2, 3, 4, 5, 6, 8, 9 };
             foreach (var student in studentUsers)
             {
@@ -417,12 +383,9 @@ public static class SeedData
                 for (int a = 0; a < attempts; a++)
                     db.QuizAttempts.Add(new QuizAttempt
                     {
-                        UserId = student.Id,
-                        SubjectId = subjectIds[rng.Next(subjectIds.Length)],
-                        Level = levels[rng.Next(levels.Length)],
-                        Score = rng.Next(4, 11),
-                        TotalQuestions = 10,
-                        CreatedAt = DateTime.UtcNow.AddDays(-rng.Next(1, 90))
+                        UserId = student.Id, SubjectId = subjectIds[rng.Next(subjectIds.Length)],
+                        Level = levels[rng.Next(levels.Length)], Score = rng.Next(4, 11),
+                        TotalQuestions = 10, CreatedAt = DateTime.UtcNow.AddDays(-rng.Next(1, 90))
                     });
             }
             await db.SaveChangesAsync();
@@ -431,30 +394,30 @@ public static class SeedData
         // ════════════════════════════════════════════════════
         //  BADGES CHO GIA SU
         // ════════════════════════════════════════════════════
-        var allBadges = await db.Badges.ToListAsync();
+        var allBadges   = await db.Badges.ToListAsync();
         var allProfiles = await db.TutorProfiles
             .Include(t => t.Bookings).Include(t => t.ReceivedReviews).Include(t => t.TutorSubjects)
             .ToListAsync();
 
         foreach (var profile in allProfiles)
         {
-            var completed = profile.Bookings.Count(b => b.Status == "Completed");
-            var reviewCount = profile.ReceivedReviews.Count;
-            var avgRating = reviewCount > 0 ? profile.ReceivedReviews.Average(r => r.Rating) : 0;
+            var completed    = profile.Bookings.Count(b => b.Status == "Completed");
+            var reviewCount  = profile.ReceivedReviews.Count;
+            var avgRating    = reviewCount > 0 ? profile.ReceivedReviews.Average(r => r.Rating) : 0;
             var subjectCount = profile.TutorSubjects.Count;
-            var revenue = profile.Bookings.Where(b => b.Status == "Completed")
+            var revenue      = profile.Bookings.Where(b => b.Status == "Completed")
                                 .Sum(b => (decimal)(b.EndTime - b.StartTime).TotalHours * profile.HourlyRate);
 
             foreach (var badge in allBadges)
             {
                 bool qualified = badge.Type switch
                 {
-                    BadgeType.Sessions => completed >= badge.RequiredCount,
-                    BadgeType.Reviews => reviewCount >= badge.RequiredCount,
+                    BadgeType.Sessions => completed    >= badge.RequiredCount,
+                    BadgeType.Reviews  => reviewCount  >= badge.RequiredCount,
                     BadgeType.Subjects => subjectCount >= badge.RequiredCount,
-                    BadgeType.Revenue => revenue >= badge.RequiredCount * 1000,
-                    BadgeType.Rating => reviewCount >= 3 && avgRating * 10 >= badge.RequiredCount,
-                    _ => false
+                    BadgeType.Revenue  => revenue      >= badge.RequiredCount * 1000,
+                    BadgeType.Rating   => reviewCount >= 3 && avgRating * 10 >= badge.RequiredCount,
+                    _                  => false
                 };
                 if (!qualified) continue;
                 if (!await db.TutorBadges.AnyAsync(tb => tb.TutorProfileId == profile.Id && tb.BadgeId == badge.Id))
@@ -469,16 +432,16 @@ public static class SeedData
         if (tutorUsers.Count >= 7 && !await db.Posts.AnyAsync())
         {
             var posts = new List<Post>();
-            if (tutorUsers.Count > 0) posts.Add(new Post { AuthorId = tutorUsers[0].Id, Title = "5 phuong phap hoc Toan hieu qua cho ky thi THPTQG", Summary = "Chia se tu gia su 8 nam kinh nghiem: Cach hoc Toan hieu qua.", Content = "Nhieu hoc sinh hoc Toan theo kieu thuoc long...\n\n1. Hieu goc re truoc khi giai bai\n2. Phan loai dang bai\n3. Luyen de theo thoi gian thuc\n4. Review sai lam hang ngay\n5. Hoc theo nhom nho", IsPublished = true, Views = rng.Next(800, 2000), CreatedAt = DateTime.Now.AddDays(-45) });
-            if (tutorUsers.Count > 1) posts.Add(new Post { AuthorId = tutorUsers[1].Id, Title = "Roadmap hoc IELTS tu 0 len 7.0 trong 6 thang", Summary = "Lo trinh hoc IELTS chi tiet theo tung thang, kem tai lieu mien phi.", Content = "IELTS 7.0 khong phai muc tieu xa voi...\n\nThang 1-2: Xay nen tang\nThang 3-4: Luyen ky nang\nThang 5-6: Mock test & dang ky thi", IsPublished = true, Views = rng.Next(1200, 3000), CreatedAt = DateTime.Now.AddDays(-32) });
-            if (tutorUsers.Count > 2) posts.Add(new Post { AuthorId = tutorUsers[2].Id, Title = "Hoc lap trinh Web nam 2025: Nen bat dau tu dau?", Summary = "Huong dan toan dien cho nguoi moi muon hoc lap trinh Web.", Content = "Lap trinh Web la nganh hot nhat...\n\nBuoc 1: HTML & CSS\nBuoc 2: JavaScript\nBuoc 3: Chon Frontend hoac Backend\nBuoc 4: Lam Project thuc te", IsPublished = true, Views = rng.Next(900, 2500), CreatedAt = DateTime.Now.AddDays(-20) });
-            if (tutorUsers.Count > 3) posts.Add(new Post { AuthorId = tutorUsers[3].Id, Title = "Bi quyet hoc Hoa huu co khong bao gio quen", Summary = "TS Hoa hoc chia se cach hoc Hoa huu co mot lan nho mai.", Content = "Hoa huu co khien nhieu hoc sinh so...\n\n1. Hieu co che phan ung\n2. Ve so do tu duy\n3. Hoc tu vi du thuc te\n4. Luyen bai tap nhan biet", IsPublished = true, Views = rng.Next(600, 1800), CreatedAt = DateTime.Now.AddDays(-15) });
-            if (tutorUsers.Count > 4) posts.Add(new Post { AuthorId = tutorUsers[4].Id, Title = "Cach viet mo bai - ket bai Van nghi luan gay an tuong", Summary = "Bi quyet viet mo bai sang tao va ket bai dong lai cam xuc.", Content = "Mo bai va ket bai chiem 15-20% diem...\n\n3 kieu mo bai hieu qua:\n1. Cau hoi tu tu\n2. Trich dan\n3. Tinh huong gia dinh", IsPublished = true, Views = rng.Next(500, 1500), CreatedAt = DateTime.Now.AddDays(-10) });
-            if (tutorUsers.Count > 1) posts.Add(new Post { AuthorId = tutorUsers[1].Id, Title = "Top 10 app hoc tieng Anh mien phi tot nhat 2025", Summary = "Tong hop cac app hoc tieng Anh hieu qua nhat, tu nguoi moi.", Content = "Hoc tieng Anh khong nhat thiet ton tien...\n\n1. Duolingo\n2. Anki\n3. BBC Learning English\n4. Elsa Speak\n5. Cake\n6. HelloTalk\n7. Coursera\n8. TED\n9. Grammarly\n10. DeepL", IsPublished = true, Views = rng.Next(700, 2200), CreatedAt = DateTime.Now.AddDays(-5) });
-            if (tutorUsers.Count > 6) posts.Add(new Post { AuthorId = tutorUsers[6].Id, Title = "Tai sao nen hoc tieng Nhat va co hoi viec lam nam 2025", Summary = "Thi truong lao dong Nhat Ban dang mo rong, co hoi rat lon.", Content = "Nhat Ban dang thieu lao dong...\n\nLy do hoc tieng Nhat:\n- Luong IT tai Nhat: 80-150 trieu/thang\n- Du hoc chi phi hop ly\n\nLo trinh: N5->N4->N3->N2->N1", IsPublished = true, Views = rng.Next(400, 1200), CreatedAt = DateTime.Now.AddDays(-3) });
-            if (tutorUsers.Count > 5) posts.Add(new Post { AuthorId = tutorUsers[5].Id, Title = "Tai sao Vat ly khong kho nhu ban nghi", Summary = "Thay Tu chia se cach tiep can Vat ly bang hinh anh, vi du thuc te.", Content = "Vat ly khong kho nhu ban nghi...\n\nMeo 1: Lien he cong thuc voi thuc te\nMeo 2: Ve hinh minh hoa truoc khi giai\nMeo 3: Kiem tra don vi sau moi phep tinh", IsPublished = true, Views = rng.Next(550, 1600), CreatedAt = DateTime.Now.AddDays(-8) });
-            if (tutorUsers.Count > 9) posts.Add(new Post { AuthorId = tutorUsers[9].Id, Title = "Chien thuat lam bai Toan trac nghiem dat 9-10 diem", Summary = "Bi quyet lam bai Toan trac nghiem nhanh va chinh xac.", Content = "Toan trac nghiem can toc do va do chinh xac...\n\nChien thuat thoi gian:\n- Cau de: <=1 phut\n- Cau trung binh: 1-2 phut\n- Cau kho: bo qua, quay lai sau", IsPublished = true, Views = rng.Next(650, 1900), CreatedAt = DateTime.Now.AddDays(-12) });
-            if (tutorUsers.Count > 10) posts.Add(new Post { AuthorId = tutorUsers[10].Id, Title = "TOEIC 900+ khong kho neu ban biet cach hoc dung", Summary = "Chien luoc hoc TOEIC dat 900+ trong 3 thang tu co Yen - TOEIC 950.", Content = "TOEIC 900+ trong 3 thang la hoan toan kha thi...\n\nListening (495 diem):\n- Part 1-2: Thuan thuc trong 2 tuan\n- Part 3-4: Luyen du doan truoc khi nghe\n\nReading (495 diem):\n- Part 5-6: On ngu phap trong diem", IsPublished = true, Views = rng.Next(750, 2100), CreatedAt = DateTime.Now.AddDays(-18) });
+            if (tutorUsers.Count > 0)  posts.Add(new Post { AuthorId = tutorUsers[0].Id,  Title = "5 phuong phap hoc Toan hieu qua cho ky thi THPTQG",        Summary = "Chia se tu gia su 8 nam kinh nghiem: Cach hoc Toan hieu qua.",        Content = "Nhieu hoc sinh hoc Toan theo kieu thuoc long...\n\n1. Hieu goc re truoc khi giai bai\n2. Phan loai dang bai\n3. Luyen de theo thoi gian thuc\n4. Review sai lam hang ngay\n5. Hoc theo nhom nho", IsPublished = true, Views = rng.Next(800,2000),  CreatedAt = DateTime.Now.AddDays(-45) });
+            if (tutorUsers.Count > 1)  posts.Add(new Post { AuthorId = tutorUsers[1].Id,  Title = "Roadmap hoc IELTS tu 0 len 7.0 trong 6 thang",             Summary = "Lo trinh hoc IELTS chi tiet theo tung thang, kem tai lieu mien phi.", Content = "IELTS 7.0 khong phai muc tieu xa voi...\n\nThang 1-2: Xay nen tang\nThang 3-4: Luyen ky nang\nThang 5-6: Mock test & dang ky thi",             IsPublished = true, Views = rng.Next(1200,3000), CreatedAt = DateTime.Now.AddDays(-32) });
+            if (tutorUsers.Count > 2)  posts.Add(new Post { AuthorId = tutorUsers[2].Id,  Title = "Hoc lap trinh Web nam 2025: Nen bat dau tu dau?",           Summary = "Huong dan toan dien cho nguoi moi muon hoc lap trinh Web.",           Content = "Lap trinh Web la nganh hot nhat...\n\nBuoc 1: HTML & CSS\nBuoc 2: JavaScript\nBuoc 3: Chon Frontend hoac Backend\nBuoc 4: Lam Project thuc te",    IsPublished = true, Views = rng.Next(900,2500),  CreatedAt = DateTime.Now.AddDays(-20) });
+            if (tutorUsers.Count > 3)  posts.Add(new Post { AuthorId = tutorUsers[3].Id,  Title = "Bi quyet hoc Hoa huu co khong bao gio quen",                Summary = "TS Hoa hoc chia se cach hoc Hoa huu co mot lan nho mai.",             Content = "Hoa huu co khien nhieu hoc sinh so...\n\n1. Hieu co che phan ung\n2. Ve so do tu duy\n3. Hoc tu vi du thuc te\n4. Luyen bai tap nhan biet",          IsPublished = true, Views = rng.Next(600,1800),  CreatedAt = DateTime.Now.AddDays(-15) });
+            if (tutorUsers.Count > 4)  posts.Add(new Post { AuthorId = tutorUsers[4].Id,  Title = "Cach viet mo bai - ket bai Van nghi luan gay an tuong",     Summary = "Bi quyet viet mo bai sang tao va ket bai dong lai cam xuc.",          Content = "Mo bai va ket bai chiem 15-20% diem...\n\n3 kieu mo bai hieu qua:\n1. Cau hoi tu tu\n2. Trich dan\n3. Tinh huong gia dinh",                         IsPublished = true, Views = rng.Next(500,1500),  CreatedAt = DateTime.Now.AddDays(-10) });
+            if (tutorUsers.Count > 1)  posts.Add(new Post { AuthorId = tutorUsers[1].Id,  Title = "Top 10 app hoc tieng Anh mien phi tot nhat 2025",           Summary = "Tong hop cac app hoc tieng Anh hieu qua nhat, tu nguoi moi.",         Content = "Hoc tieng Anh khong nhat thiet ton tien...\n\n1. Duolingo\n2. Anki\n3. BBC Learning English\n4. Elsa Speak\n5. Cake\n6. HelloTalk\n7. Coursera\n8. TED\n9. Grammarly\n10. DeepL", IsPublished = true, Views = rng.Next(700,2200), CreatedAt = DateTime.Now.AddDays(-5) });
+            if (tutorUsers.Count > 6)  posts.Add(new Post { AuthorId = tutorUsers[6].Id,  Title = "Tai sao nen hoc tieng Nhat va co hoi viec lam nam 2025",    Summary = "Thi truong lao dong Nhat Ban dang mo rong, co hoi rat lon.",          Content = "Nhat Ban dang thieu lao dong...\n\nLy do hoc tieng Nhat:\n- Luong IT tai Nhat: 80-150 trieu/thang\n- Du hoc chi phi hop ly\n\nLo trinh: N5->N4->N3->N2->N1", IsPublished = true, Views = rng.Next(400,1200), CreatedAt = DateTime.Now.AddDays(-3) });
+            if (tutorUsers.Count > 5)  posts.Add(new Post { AuthorId = tutorUsers[5].Id,  Title = "Tai sao Vat ly khong kho nhu ban nghi",                     Summary = "Thay Tu chia se cach tiep can Vat ly bang hinh anh, vi du thuc te.",  Content = "Vat ly khong kho nhu ban nghi...\n\nMeo 1: Lien he cong thuc voi thuc te\nMeo 2: Ve hinh minh hoa truoc khi giai\nMeo 3: Kiem tra don vi sau moi phep tinh", IsPublished = true, Views = rng.Next(550,1600), CreatedAt = DateTime.Now.AddDays(-8) });
+            if (tutorUsers.Count > 9)  posts.Add(new Post { AuthorId = tutorUsers[9].Id,  Title = "Chien thuat lam bai Toan trac nghiem dat 9-10 diem",        Summary = "Bi quyet lam bai Toan trac nghiem nhanh va chinh xac.",              Content = "Toan trac nghiem can toc do va do chinh xac...\n\nChien thuat thoi gian:\n- Cau de: <=1 phut\n- Cau trung binh: 1-2 phut\n- Cau kho: bo qua, quay lai sau", IsPublished = true, Views = rng.Next(650,1900), CreatedAt = DateTime.Now.AddDays(-12) });
+            if (tutorUsers.Count > 10) posts.Add(new Post { AuthorId = tutorUsers[10].Id, Title = "TOEIC 900+ khong kho neu ban biet cach hoc dung",            Summary = "Chien luoc hoc TOEIC dat 900+ trong 3 thang tu co Yen - TOEIC 950.", Content = "TOEIC 900+ trong 3 thang la hoan toan kha thi...\n\nListening (495 diem):\n- Part 1-2: Thuan thuc trong 2 tuan\n- Part 3-4: Luyen du doan truoc khi nghe\n\nReading (495 diem):\n- Part 5-6: On ngu phap trong diem", IsPublished = true, Views = rng.Next(750,2100), CreatedAt = DateTime.Now.AddDays(-18) });
 
             foreach (var post in posts) db.Posts.Add(post);
             await db.SaveChangesAsync();
@@ -513,9 +476,9 @@ public static class SeedData
             await db.SaveChangesAsync();
         }
 
-        // ═══════════════════════════
+        // ════════════════════════════════════════════════════
         //  TIN NHAN
-        // ═══════════════════════════
+        // ════════════════════════════════════════════════════
         if (!await db.Messages.AnyAsync())
         {
             var convs = new[]
@@ -531,18 +494,18 @@ public static class SeedData
                 for (int si = 0; si < Math.Min(4, studentUsers.Count); si++)
                 {
                     var sUser = studentUsers[(ti * 2 + si) % studentUsers.Count];
-                    var conv = convs[rng.Next(convs.Length)];
+                    var conv  = convs[rng.Next(convs.Length)];
                     var baseT = DateTime.UtcNow.AddDays(-rng.Next(1, 20)).AddHours(-rng.Next(1, 48));
                     for (int mi = 0; mi < conv.Length; mi++)
                     {
                         bool isStudent = conv[mi].Item1 == "s";
                         db.Messages.Add(new Message
                         {
-                            SenderId = isStudent ? sUser.Id : tUser.Id,
+                            SenderId   = isStudent ? sUser.Id : tUser.Id,
                             ReceiverId = isStudent ? tUser.Id : sUser.Id,
-                            Content = conv[mi].Item2,
-                            SentAt = baseT.AddMinutes(mi * rng.Next(3, 15)),
-                            IsRead = mi < conv.Length - 2
+                            Content    = conv[mi].Item2,
+                            SentAt     = baseT.AddMinutes(mi * rng.Next(3, 15)),
+                            IsRead     = mi < conv.Length - 2
                         });
                     }
                 }
@@ -550,27 +513,27 @@ public static class SeedData
             await db.SaveChangesAsync();
         }
 
-        // ═══════════════════════════════════
+        // ════════════════════════════════════════════════════
         //  NOTIFICATIONS
-        // ═══════════════════════════════════
+        // ════════════════════════════════════════════════════
         if (!await db.Notifications.AnyAsync())
         {
             var notifs = new List<Notification>();
             foreach (var student in studentUsers)
             {
-                notifs.Add(new Notification { UserId = student.Id, Title = "Lich hoc duoc xac nhan!", Content = "Gia su da xac nhan lich hoc cua ban. Chuan bi do dung va dung gio nhe!", Link = "/Booking/MyBookings", IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(1, 24)) });
-                notifs.Add(new Notification { UserId = student.Id, Title = "Nhac lich hoc ngay mai", Content = "Ban co buoi hoc luc 19:00 ngay mai. Dung quen chuan bi bai nhe!", Link = "/Booking/MyBookings", IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(2, 48)) });
-                notifs.Add(new Notification { UserId = student.Id, Title = "AI goi y gia su phu hop", Content = "Dua tren lich su hoc tap, chung toi tim duoc 3 gia su phu hop hon!", Link = "/TutorSearch/Search", IsRead = rng.Next(2) == 0, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(10, 72)) });
-                notifs.Add(new Notification { UserId = student.Id, Title = "Hoan thanh Quiz xuat sac!", Content = "Ban dat 9/10 trong bai Quiz Toan hoc. Tiep tuc phat huy nhe!", Link = "/Quiz", IsRead = rng.Next(2) == 0, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(5, 60)) });
-                notifs.Add(new Notification { UserId = student.Id, Title = "Tai lieu moi duoc chia se", Content = "Gia su cua ban vua chia se tai lieu hoc tap moi. Tai ve va on tap ngay!", Link = "/Document", IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(3, 36)) });
+                notifs.Add(new Notification { UserId = student.Id, Title = "Lich hoc duoc xac nhan!",       Content = "Gia su da xac nhan lich hoc cua ban. Chuan bi do dung va dung gio nhe!", Link = "/Booking/MyBookings", IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(1, 24))  });
+                notifs.Add(new Notification { UserId = student.Id, Title = "Nhac lich hoc ngay mai",        Content = "Ban co buoi hoc luc 19:00 ngay mai. Dung quen chuan bi bai nhe!",         Link = "/Booking/MyBookings", IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(2, 48))  });
+                notifs.Add(new Notification { UserId = student.Id, Title = "AI goi y gia su phu hop",       Content = "Dua tren lich su hoc tap, chung toi tim duoc 3 gia su phu hop hon!",       Link = "/TutorSearch/Search", IsRead = rng.Next(2)==0, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(10,72)) });
+                notifs.Add(new Notification { UserId = student.Id, Title = "Hoan thanh Quiz xuat sac!",     Content = "Ban dat 9/10 trong bai Quiz Toan hoc. Tiep tuc phat huy nhe!",             Link = "/Quiz",               IsRead = rng.Next(2)==0, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(5, 60)) });
+                notifs.Add(new Notification { UserId = student.Id, Title = "Tai lieu moi duoc chia se",     Content = "Gia su cua ban vua chia se tai lieu hoc tap moi. Tai ve va on tap ngay!",  Link = "/Document",           IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(3, 36))  });
             }
             foreach (var tUser in tutorUsers)
             {
-                notifs.Add(new Notification { UserId = tUser.Id, Title = "Yeu cau dat lich moi!", Content = "Mot hoc vien vua gui yeu cau dat lich hoc. Hay xem va xac nhan som!", Link = "/Booking/TutorRequests", IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(1, 12)) });
-                notifs.Add(new Notification { UserId = tUser.Id, Title = "Ban vua nhan danh gia moi!", Content = "Hoc vien da de lai danh gia 5 sao cho buoi hoc vua roi. Xem ngay!", Link = "/Tutor/Dashboard", IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(2, 48)) });
-                notifs.Add(new Notification { UserId = tUser.Id, Title = "Huy hieu moi duoc mo khoa!", Content = "Chuc mung! Ban vua dat huy hieu 'Duoc yeu thich' voi 5 luot danh gia.", Link = "/Tutor/Dashboard", IsRead = rng.Next(2) == 0, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(5, 72)) });
-                notifs.Add(new Notification { UserId = tUser.Id, Title = "Doanh thu thang nay tang 20%!", Content = "Thang nay ban co them 8 buoi day so voi thang truoc. Xuat sac lam!", Link = "/Tutor/Dashboard", IsRead = rng.Next(2) == 0, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(20, 120)) });
-                notifs.Add(new Notification { UserId = tUser.Id, Title = "Hoc vien nhan tin cho ban", Content = "Ban co tin nhan moi tu hoc vien. Hay tra loi som de giu tuong tac tot!", Link = "/Message", IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(1, 24)) });
+                notifs.Add(new Notification { UserId = tUser.Id, Title = "Yeu cau dat lich moi!",           Content = "Mot hoc vien vua gui yeu cau dat lich hoc. Hay xem va xac nhan som!",     Link = "/Booking/TutorRequests", IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(1, 12))   });
+                notifs.Add(new Notification { UserId = tUser.Id, Title = "Ban vua nhan danh gia moi!",      Content = "Hoc vien da de lai danh gia 5 sao cho buoi hoc vua roi. Xem ngay!",       Link = "/Tutor/Dashboard",       IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(2, 48))   });
+                notifs.Add(new Notification { UserId = tUser.Id, Title = "Huy hieu moi duoc mo khoa!",      Content = "Chuc mung! Ban vua dat huy hieu 'Duoc yeu thich' voi 5 luot danh gia.",   Link = "/Tutor/Dashboard",       IsRead = rng.Next(2)==0, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(5, 72)) });
+                notifs.Add(new Notification { UserId = tUser.Id, Title = "Doanh thu thang nay tang 20%!",   Content = "Thang nay ban co them 8 buoi day so voi thang truoc. Xuat sac lam!",      Link = "/Tutor/Dashboard",       IsRead = rng.Next(2)==0, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(20,120)) });
+                notifs.Add(new Notification { UserId = tUser.Id, Title = "Hoc vien nhan tin cho ban",       Content = "Ban co tin nhan moi tu hoc vien. Hay tra loi som de giu tuong tac tot!",  Link = "/Message",               IsRead = false, CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(1, 24))   });
             }
             db.Notifications.AddRange(notifs);
             await db.SaveChangesAsync();
