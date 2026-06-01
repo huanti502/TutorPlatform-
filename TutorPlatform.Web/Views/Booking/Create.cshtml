@@ -42,16 +42,23 @@
                     <div id="availabilityInfo" class="mt-2"></div>
                 </div>
 
-                @* Chọn giờ - luôn hiển thị *@
+                @* Gợi ý khung giờ - hiện sau khi chọn ngày *@
+                <div id="suggestedSlots" class="mb-3" style="display:none"></div>
+
+                @* Chọn giờ - dùng select thay vì input time để tránh lỗi AM/PM *@
                 <div class="row g-3 mb-3" id="timeSection">
                     <div class="col-6">
                         <label class="form-label fw-semibold">🕐 Giờ bắt đầu</label>
-                        <input type="time" id="startTimePicker" class="form-control" step="1800" />
+                        <select id="startTimePicker" class="form-select">
+                            <option value="">-- Chọn giờ --</option>
+                        </select>
                         <input type="hidden" name="startTime" id="startTimeHidden" />
                     </div>
                     <div class="col-6">
                         <label class="form-label fw-semibold">🏁 Giờ kết thúc</label>
-                        <input type="time" id="endTimePicker" class="form-control" step="1800" />
+                        <select id="endTimePicker" class="form-select">
+                            <option value="">-- Chọn giờ --</option>
+                        </select>
                         <input type="hidden" name="endTime" id="endTimeHidden" />
                     </div>
                     <div class="col-12">
@@ -60,15 +67,10 @@
                 </div>
 
                 @* Cảnh báo trùng lịch *@
-                <div id="conflictAlert" class="alert alert-danger d-none">
-                    ⚠️ Giờ này đã có người đặt! Vui lòng chọn khung giờ khác.
-                </div>
+                <div id="conflictAlert" class="alert alert-danger d-none"></div>
                 <div id="okAlert" class="alert alert-success d-none">
                     ✅ Khung giờ này còn trống, bạn có thể đặt!
                 </div>
-
-                @* Khung giờ gợi ý *@
-                <div id="suggestedSlots" class="mb-3" style="display:none"></div>
 
                 @* Hình thức *@
                 <div class="mb-3">
@@ -106,7 +108,7 @@
                     💰 Học phí ước tính: <strong id="priceText">—</strong>
                 </div>
 
-                @* Hướng dẫn nếu chưa chọn giờ *@
+                @* Hint *@
                 <div id="selectTimeHint" class="alert alert-warning mb-3">
                     ⚠️ Vui lòng <strong>chọn ngày</strong> và <strong>giờ bắt đầu/kết thúc</strong> để kích hoạt nút đặt lịch.
                 </div>
@@ -125,51 +127,151 @@
 @section Scripts {
     <script>
         const TUTOR_ID = @tutor?.Id;
-        const HOURLY = @(tutor?.HourlyRate ?? 0);
-        const dateInput = document.getElementById("pickDate");
-        const startPick = document.getElementById("startTimePicker");
-        const endPick   = document.getElementById("endTimePicker");
+        const HOURLY   = @(tutor?.HourlyRate ?? 0);
+
+        const dateInput     = document.getElementById("pickDate");
+        const startPicker   = document.getElementById("startTimePicker");
+        const endPicker     = document.getElementById("endTimePicker");
         const conflictAlert = document.getElementById("conflictAlert");
         const okAlert       = document.getElementById("okAlert");
         const priceSummary  = document.getElementById("priceSummary");
         const submitBtn     = document.getElementById("submitBtn");
         const hint          = document.getElementById("selectTimeHint");
 
-        // Khi chọn ngày → load lịch trống
+        // Tạo danh sách giờ từ 06:00 đến 22:00, bước 30 phút
+        function buildTimeOptions(selectEl, startHour = 6, endHour = 22) {
+            selectEl.innerHTML = "<option value=''>-- Chọn giờ --</option>";
+            for (let h = startHour; h <= endHour; h++) {
+                for (let m of [0, 30]) {
+                    if (h === endHour && m > 0) break;
+                    const hh = String(h).padStart(2, "0");
+                    const mm = String(m).padStart(2, "0");
+                    const val = `${hh}:${mm}`;
+                    const opt = document.createElement("option");
+                    opt.value = val;
+                    opt.textContent = val;
+                    selectEl.appendChild(opt);
+                }
+            }
+        }
+
+        buildTimeOptions(startPicker);
+        buildTimeOptions(endPicker);
+
+        // Khi chọn ngày → load lịch trống gia sư
         dateInput.addEventListener("change", async () => {
             const date = dateInput.value;
             if (!date) return;
 
-            const res  = await fetch(`/Booking/GetBusySlots?tutorProfileId=${TUTOR_ID}&date=${date}`);
-            const data = await res.json();
+            try {
+                const res  = await fetch(`/Booking/GetBusySlots?tutorProfileId=${TUTOR_ID}&date=${date}`);
+                const data = await res.json();
+                const avail = data.availableSlots;
+                const avInfo = document.getElementById("availabilityInfo");
 
-            const avail  = data.availableSlots;
-            const avInfo = document.getElementById("availabilityInfo");
+                if (avail.length === 0) {
+                    avInfo.innerHTML = `<span class="badge bg-danger">❌ Gia sư không làm việc ngày này</span>`;
+                    document.getElementById("suggestedSlots").style.display = "none";
+                    submitBtn.disabled = true;
+                    return;
+                }
 
-            if (avail.length === 0) {
-                avInfo.innerHTML = `<span class="badge bg-danger">❌ Gia sư không làm việc ngày này</span>`;
-                submitBtn.disabled = true;
-                return;
+                // Hiển thị khung giờ làm việc
+                avInfo.innerHTML = "<strong>✅ Khung giờ làm việc:</strong> " +
+                    avail.map(a => `<span class="badge bg-success me-1">${a.start} – ${a.end}</span>`).join("");
+
+                // Hiển thị giờ bận
+                if (data.busySlots.length > 0) {
+                    avInfo.innerHTML += " &nbsp; <strong>🔴 Đã đặt:</strong> " +
+                        data.busySlots.map(b => `<span class="badge bg-danger me-1">${b.start}–${b.end}</span>`).join("");
+                }
+
+                // Lọc options trong select chỉ cho phép giờ trong khung làm việc
+                filterTimeOptions(avail, data.busySlots);
+
+                // Gợi ý slot trống
+                showSuggestedSlots(avail, data.busySlots);
+            } catch (e) {
+                console.error("Lỗi load lịch:", e);
             }
-
-            avInfo.innerHTML = avail.map(a =>
-                `<span class="badge bg-success me-1">✅ ${a.start} – ${a.end}</span>`
-            ).join("") + `<small class="text-muted ms-2">(Khung giờ làm việc)</small>`;
-
-            if (data.busySlots.length > 0) {
-                avInfo.innerHTML += "<br/>" + data.busySlots.map(b =>
-                    `<span class="badge bg-danger me-1">🔴 ${b.start}–${b.end} Đã đặt</span>`
-                ).join("");
-            }
-
-            showSuggestedSlots(avail, data.busySlots);
         });
 
-        // Khi chọn giờ → kiểm tra conflict
+        // Lọc select chỉ hiện giờ trong khung làm việc
+        function filterTimeOptions(avail, busy) {
+            buildTimeOptions(startPicker);
+            buildTimeOptions(endPicker);
+
+            // Tính tập hợp phút hợp lệ
+            const validMins = new Set();
+            avail.forEach(a => {
+                let cur = toMinutes(a.start);
+                const end = toMinutes(a.end);
+                while (cur < end) { validMins.add(cur); cur += 30; }
+            });
+
+            // Ẩn option không hợp lệ
+            [startPicker, endPicker].forEach(sel => {
+                Array.from(sel.options).forEach(opt => {
+                    if (!opt.value) return;
+                    if (!validMins.has(toMinutes(opt.value))) {
+                        opt.disabled = true;
+                        opt.style.color = "#ccc";
+                    }
+                });
+            });
+        }
+
+        // Gợi ý slot 1 tiếng còn trống
+        function showSuggestedSlots(avail, busy) {
+            const box   = document.getElementById("suggestedSlots");
+            const slots = [];
+
+            avail.forEach(a => {
+                let cur      = toMinutes(a.start);
+                const av_end = toMinutes(a.end);
+                while (cur + 60 <= av_end) {
+                    const s = toTime(cur), e = toTime(cur + 60);
+                    const isBusy = busy.some(b =>
+                        toMinutes(b.start) < cur + 60 && toMinutes(b.end) > cur);
+                    if (!isBusy) slots.push({ s, e });
+                    cur += 30;
+                }
+            });
+
+            if (slots.length === 0) { box.style.display = "none"; return; }
+
+            box.style.display = "block";
+            box.innerHTML = `
+                <label class="form-label fw-semibold">💡 Khung giờ gợi ý còn trống:</label>
+                <div class="d-flex flex-wrap gap-2">
+                ${slots.slice(0, 8).map(sl => `
+                    <button type="button" class="btn btn-outline-success btn-sm slot-btn"
+                            data-start="${sl.s}" data-end="${sl.e}">
+                        ${sl.s} – ${sl.e}
+                    </button>`).join("")}
+                </div>`;
+
+            box.querySelectorAll(".slot-btn").forEach(btn => {
+                btn.onclick = () => {
+                    startPicker.value = btn.dataset.start;
+                    endPicker.value   = btn.dataset.end;
+                    checkConflict();
+                    box.querySelectorAll(".slot-btn").forEach(b => {
+                        b.classList.remove("active", "btn-success");
+                        b.classList.add("btn-outline-success");
+                    });
+                    btn.classList.add("active", "btn-success");
+                    btn.classList.remove("btn-outline-success");
+                };
+            });
+        }
+
+        // Kiểm tra conflict khi chọn giờ
         async function checkConflict() {
             const date  = dateInput.value;
-            const start = startPick.value;
-            const end   = endPick.value;
+            const start = startPicker.value;
+            const end   = endPicker.value;
+
             if (!date || !start || !end) return;
 
             if (start >= end) {
@@ -192,62 +294,30 @@
             document.getElementById("priceText").textContent =
                 (hours * HOURLY).toLocaleString("vi-VN") + " VNĐ";
             priceSummary.classList.remove("d-none");
-
-            // Ẩn hint
             hint.classList.add("d-none");
 
-            // Kiểm tra conflict
-            const res  = await fetch(`/Booking/CheckConflict?tutorProfileId=${TUTOR_ID}&start=${startDT}&end=${endDT}`);
-            const data = await res.json();
+            // Gọi API kiểm tra
+            try {
+                const res  = await fetch(`/Booking/CheckConflict?tutorProfileId=${TUTOR_ID}&start=${startDT}&end=${endDT}`);
+                const data = await res.json();
 
-            conflictAlert.classList.toggle("d-none", !data.hasConflict);
-            okAlert.classList.toggle("d-none", data.hasConflict);
-            submitBtn.disabled = data.hasConflict || hours <= 0;
-        }
-
-        startPick.addEventListener("change", checkConflict);
-        endPick.addEventListener("change", checkConflict);
-
-        // Gợi ý các slot trống 1 tiếng
-        function showSuggestedSlots(avail, busy) {
-            const box   = document.getElementById("suggestedSlots");
-            const slots = [];
-
-            avail.forEach(a => {
-                let cur      = toMinutes(a.start);
-                const av_end = toMinutes(a.end);
-                while (cur + 60 <= av_end) {
-                    const s = toTime(cur), e = toTime(cur + 60);
-                    const isBusy = busy.some(b =>
-                        toMinutes(b.start) < cur + 60 && toMinutes(b.end) > cur);
-                    if (!isBusy) slots.push({ s, e });
-                    cur += 30;
+                if (data.hasConflict) {
+                    conflictAlert.textContent = "⚠️ Giờ này đã có người đặt! Vui lòng chọn khung giờ khác.";
+                    conflictAlert.classList.remove("d-none");
+                    okAlert.classList.add("d-none");
+                    submitBtn.disabled = true;
+                } else {
+                    conflictAlert.classList.add("d-none");
+                    okAlert.classList.remove("d-none");
+                    submitBtn.disabled = false;
                 }
-            });
-
-            if (slots.length === 0) { box.style.display = "none"; return; }
-
-            box.style.display = "block";
-            box.innerHTML = `<label class="form-label fw-semibold">💡 Khung giờ gợi ý còn trống:</label>
-                <div class="d-flex flex-wrap gap-2">
-                ${slots.slice(0, 8).map(sl => `
-                    <button type="button" class="btn btn-outline-success btn-sm slot-btn"
-                            data-start="${sl.s}" data-end="${sl.e}">
-                        ${sl.s} – ${sl.e}
-                    </button>`).join("")}
-                </div>`;
-
-            box.querySelectorAll(".slot-btn").forEach(btn => {
-                btn.onclick = () => {
-                    startPick.value = btn.dataset.start;
-                    endPick.value   = btn.dataset.end;
-                    checkConflict();
-                    box.querySelectorAll(".slot-btn").forEach(b => b.classList.remove("active", "btn-success"));
-                    btn.classList.add("active", "btn-success");
-                    btn.classList.remove("btn-outline-success");
-                };
-            });
+            } catch (e) {
+                console.error("Lỗi check conflict:", e);
+            }
         }
+
+        startPicker.addEventListener("change", checkConflict);
+        endPicker.addEventListener("change", checkConflict);
 
         function toMinutes(t) {
             const [h, m] = t.split(":").map(Number);
