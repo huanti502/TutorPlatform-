@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using TutorPlatform.Core.Models;
 using TutorPlatform.Infrastructure.Data;
 using TutorPlatform.Web.Services;
+using UglyToad.PdfPig;
 
 namespace TutorPlatform.Web.Controllers;
 
@@ -137,7 +138,11 @@ public class DocumentController : Controller
         if (!doc.IsPublic && doc.UploaderId != user!.Id) return Forbid();
 
         var fullPath = Path.Combine(_env.WebRootPath, doc.FilePath.TrimStart('/'));
-        if (!System.IO.File.Exists(fullPath)) return NotFound();
+               if (!System.IO.File.Exists(fullPath))
+        {
+            TempData["Error"] = "File không còn tồn tại trên server (server đã restart). Vui lòng yêu cầu người upload tải lại.";
+            return RedirectToAction("Index");
+        }
 
         doc.DownloadCount++;
         await _db.SaveChangesAsync();

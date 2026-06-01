@@ -5,7 +5,7 @@
 
 <div class="container py-4" style="max-width:720px">
     <div class="mb-4">
-        <h4 class="fw-bold"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Đặt lịch học</h4>
+        <h4 class="fw-bold"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg> Đặt lịch học</h4>
         <p class="text-muted mb-0">
             Gia sư: <strong>@tutor?.User?.FullName</strong>
             — 💰 @tutor?.HourlyRate.ToString("N0") VNĐ/giờ
@@ -45,7 +45,7 @@
                 @* Chọn giờ *@
                 <div class="row g-3 mb-3" id="timeSection" style="display:none!important">
                     <div class="col-6">
-                        <label class="form-label fw-semibold"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> Giờ bắt đầu</label>
+                        <label class="form-label fw-semibold"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg> Giờ bắt đầu</label>
                         <input type="time" id="startTimePicker" class="form-control" step="1800" />
                         <input type="hidden" name="startTime" id="startTimeHidden" />
                     </div>
@@ -61,7 +61,7 @@
                     ⚠️ Giờ này đã có người đặt! Vui lòng chọn khung giờ khác.
                 </div>
                 <div id="okAlert" class="alert alert-success d-none">
-                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Khung giờ này còn trống, bạn có thể đặt!
+                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg> Khung giờ này còn trống, bạn có thể đặt!
                 </div>
 
                 @* Khung giờ gợi ý *@
@@ -105,7 +105,7 @@
 
                 <div class="d-flex gap-3">
                     <button type="submit" class="btn btn-primary px-5" id="submitBtn" disabled>
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Xác nhận đặt lịch
+                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg> Xác nhận đặt lịch
                     </button>
                     <a href="/Tutor/Detail/@tutor?.Id" class="btn btn-outline-secondary">Quay lại</a>
                 </div>
