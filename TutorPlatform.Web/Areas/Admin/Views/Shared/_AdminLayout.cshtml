@@ -143,24 +143,24 @@
         <nav class="mt-2 flex-1">
             <div class="nav-section">Tổng quan</div>
             <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Index" ? "active" : "")"
-               href="/Admin/Dashboard">
+               asp-area="Admin" asp-controller="Dashboard" asp-action="Index">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
                 Dashboard
             </a>
 
             <div class="nav-section">Quản lý</div>
-            <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "PendingTutors" ? "active" : "")"
-               href="/Admin/PendingTutors">
+            <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "ApproveTutors" ? "active" : "")"
+               asp-area="Admin" asp-controller="Dashboard" asp-action="ApproveTutors">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" /><polyline points="16 11 18 13 22 9" /></svg>
                 Duyệt Gia sư
             </a>
             <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Users" ? "active" : "")"
-               href="/Admin/Users">
+               asp-area="Admin" asp-controller="Dashboard" asp-action="Users">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87m-4-12a4 4 0 0 1 0 7.75" /></svg>
                 Người dùng
             </a>
             <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Subjects" ? "active" : "")"
-               href="/Admin/Dashboard/Subjects">
+               asp-area="Admin" asp-controller="Dashboard" asp-action="Subjects">
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" /><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" /></svg>
                 Môn học
             </a>
