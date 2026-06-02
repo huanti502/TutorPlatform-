@@ -38,9 +38,10 @@ public class DashboardController : Controller
         var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
         ViewBag.BookingsThisMonth = await _db.Bookings.CountAsync(b => b.CreatedAt >= monthStart);
         var completed = await _db.Bookings.Include(b => b.TutorProfile)
-            .Where(b => b.Status == "Completed").ToListAsync();
-        ViewBag.TotalRevenue = completed.Sum(b =>
-            (decimal)(b.EndTime - b.StartTime).TotalHours * b.TutorProfile.HourlyRate);
+    .Where(b => b.Status == "Completed").ToListAsync();
+        ViewBag.TotalRevenue = completed
+            .Where(b => b.TutorProfile != null)
+            .Sum(b => (decimal)(b.EndTime - b.StartTime).TotalHours * b.TutorProfile!.HourlyRate);
         ViewBag.TopTutors = await _db.TutorProfiles
             .Include(t => t.User).Include(t => t.Bookings).Include(t => t.ReceivedReviews)
             .Where(t => t.IsApproved)
