@@ -588,6 +588,64 @@ public static class SeedData
         }
 
         // ════════════════════════════════════════════════════
+        //  TẠO TÀI LIỆU HỌC TẬP (DOCUMENTS)
+        // ════════════════════════════════════════════════════
+        if (!await db.Documents.AnyAsync() && tutorUsers.Any())
+        {
+            var docTitles = new[]
+            {
+                ("Đề cương ôn tập Toán 12 - Học kỳ 2", "Tài liệu ôn tập bám sát cấu trúc đề thi THPT Quốc gia môn Toán."),
+                ("500 câu trắc nghiệm Hóa Hữu cơ có đáp án", "Tuyển tập câu hỏi trắc nghiệm phân loại học sinh khá giỏi."),
+                ("Tổng hợp Từ vựng IELTS Band 7.0+", "Danh sách từ vựng Academic thường gặp trong IELTS Reading & Writing."),
+                ("Slide bài giảng C# và ASP.NET Core", "Bài giảng chi tiết về lập trình web thực chiến với .NET Core."),
+                ("Đề thi thử THPT Quốc gia môn Vật lý 2025", "Đề thi bám sát cấu trúc mới nhất của Bộ GD&ĐT."),
+                ("Ngữ pháp Tiếng Nhật N3 căn bản", "Tổng hợp 150 cấu trúc ngữ pháp N3 trọng tâm."),
+                ("Tài liệu luyện thi Toán Cao Cấp đại học", "Giải chi tiết bài tập tích phân, ma trận, không gian vector."),
+                ("Các bài văn mẫu nghị luận xã hội lớp 12", "Tuyển tập 50 bài văn nghị luận xã hội xuất sắc đạt điểm cao.")
+            };
+
+            foreach (var item in docTitles)
+            {
+                // Chọn ngẫu nhiên 1 gia sư làm người upload
+                var uploader = tutorUsers[rng.Next(tutorUsers.Count)];
+
+                // Tỷ lệ 50% tài liệu này được gắn với một buổi học cụ thể
+                int? bookingId = null;
+                if (rng.Next(2) == 0)
+                {
+                    var uploaderProfile = await db.TutorProfiles.FirstOrDefaultAsync(t => t.UserId == uploader.Id);
+                    if (uploaderProfile != null)
+                    {
+                        var randomBooking = await db.Bookings.FirstOrDefaultAsync(b => b.TutorProfileId == uploaderProfile.Id);
+                        bookingId = randomBooking?.Id;
+                    }
+                }
+
+                var randomString = Guid.NewGuid().ToString("N")[..6];
+                var fileName = $"TaiLieu_{randomString}.pdf";
+
+                var doc = new Document
+                {
+                    Title = item.Item1,
+                    Description = item.Item2,
+                    FileName = fileName,
+                    FilePath = $"/uploads/documents/{fileName}",
+                    FileType = "pdf",
+                    FileSize = rng.Next(1024000, 15360000), // Random size từ 1MB đến 15MB (đơn vị bytes)
+                    UploaderId = uploader.Id,
+                    BookingId = bookingId,
+                    IsPublic = true, // Public để ai vào trang Tài liệu cũng thấy
+                    DownloadCount = rng.Next(5, 150),
+                    CreatedAt = DateTime.UtcNow.AddDays(-rng.Next(1, 30))
+                };
+
+                db.Documents.Add(doc);
+            }
+            await db.SaveChangesAsync();
+        }
+
+
+        // ════════════════════════════════════════════════════
         //  TẠO THÔNG BÁO
         // ════════════════════════════════════════════════════
         if (!await db.Notifications.AnyAsync())
