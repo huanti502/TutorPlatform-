@@ -22,56 +22,43 @@ public class AdminController : Controller
     public async Task<IActionResult> Index()
     {
         var now = DateTime.UtcNow;
-        ViewBag.TotalUsers      = await _db.Users.CountAsync();
-        ViewBag.TotalStudents   = await _db.Users.CountAsync(u => u.Role == "Student");
-        ViewBag.TotalTutors     = await _db.TutorProfiles.CountAsync();
-        ViewBag.PendingTutors   = await _db.TutorProfiles.CountAsync(t => !t.IsApproved);
-        ViewBag.TotalBookings   = await _db.Bookings.CountAsync();
+        ViewBag.TotalUsers = await _db.Users.CountAsync();
+        ViewBag.TotalStudents = await _db.Users.CountAsync(u => u.Role == "Student");
+        ViewBag.TotalTutors = await _db.TutorProfiles.CountAsync();
+        ViewBag.PendingTutors = await _db.TutorProfiles.CountAsync(t => !t.IsApproved);
+        ViewBag.TotalBookings = await _db.Bookings.CountAsync();
         ViewBag.CompletedBookings = await _db.Bookings.CountAsync(b => b.Status == "Completed");
-        ViewBag.TotalReviews    = await _db.Reviews.CountAsync();
+        ViewBag.TotalReviews = await _db.Reviews.CountAsync();
 
-        // ── FIX: Load vào memory trước rồi GroupBy ──────────────
         var sixMonthsAgo = now.AddMonths(-6);
-        var completedBookings = await _db.Bookings
+        var monthlyData = await _db.Bookings
             .Include(b => b.TutorProfile)
             .Where(b => b.Status == "Completed" && b.CreatedAt >= sixMonthsAgo)
-            .ToListAsync(); // Load vào memory
-
-        var monthlyData = completedBookings
             .GroupBy(b => new { b.CreatedAt.Year, b.CreatedAt.Month })
-            .Select(g => new
-            {
-                g.Key.Year, g.Key.Month,
-                Count   = g.Count(),
-                Revenue = g.Sum(b => (decimal)(b.EndTime - b.StartTime).TotalHours * b.TutorProfile.HourlyRate)
-            })
+            .Select(g => new { g.Key.Year, g.Key.Month, Count = g.Count(), Revenue = g.Sum(b => b.TutorProfile.HourlyRate) })
             .OrderBy(x => x.Year).ThenBy(x => x.Month)
-            .ToList();
+            .ToListAsync();
 
-        ViewBag.MonthlyLabels  = monthlyData.Select(m => $"{m.Month}/{m.Year}").ToList();
+        ViewBag.MonthlyLabels = monthlyData.Select(m => $"{m.Month}/{m.Year}").ToList();
         ViewBag.MonthlyRevenue = monthlyData.Select(m => (long)m.Revenue).ToList();
-        ViewBag.MonthlyCount   = monthlyData.Select(m => m.Count).ToList();
+        ViewBag.MonthlyCount = monthlyData.Select(m => m.Count).ToList();
 
-        ViewBag.NewUsers = await _db.Users
+        var newUsers = await _db.Users
             .Where(u => u.CreatedAt >= now.AddDays(-30))
             .OrderByDescending(u => u.CreatedAt).Take(10).ToListAsync();
+        ViewBag.NewUsers = newUsers;
 
-        // ── FIX: Load vào memory trước rồi OrderBy Average ──────
-        var tutorList = await _db.TutorProfiles
-            .Include(t => t.User)
-            .Include(t => t.ReceivedReviews)
-            .Where(t => t.IsApproved)
-            .ToListAsync(); // Load vào memory
-
-        ViewBag.TopTutors = tutorList
-            .Where(t => t.ReceivedReviews.Any())
+        var topTutors = await _db.TutorProfiles
+            .Include(t => t.User).Include(t => t.ReceivedReviews)
+            .Where(t => t.IsApproved && t.ReceivedReviews.Any())
             .OrderByDescending(t => t.ReceivedReviews.Average(r => r.Rating))
-            .Take(5)
-            .ToList();
+            .Take(5).ToListAsync();
+        ViewBag.TopTutors = topTutors;
 
         return View();
     }
 
+    // GET /Admin/Users
     public async Task<IActionResult> Users(string? search, string? role)
     {
         var query = _db.Users.AsQueryable();
@@ -82,10 +69,11 @@ public class AdminController : Controller
 
         var users = await query.OrderByDescending(u => u.CreatedAt).Take(50).ToListAsync();
         ViewBag.Search = search;
-        ViewBag.Role   = role;
+        ViewBag.Role = role;
         return View(users);
     }
 
+    // GET /Admin/UserDetail/{id}
     public async Task<IActionResult> UserDetail(string id)
     {
         if (string.IsNullOrEmpty(id)) return NotFound();
@@ -100,17 +88,21 @@ public class AdminController : Controller
             .Include(t => t.ReceivedReviews)
             .FirstOrDefaultAsync(t => t.UserId == id);
 
-        ViewBag.TutorProfile  = tutorProfile;
-        ViewBag.BookingCount  = tutorProfile != null
+        var bookingCount = tutorProfile != null
             ? tutorProfile.Bookings.Count
             : await _db.Bookings.CountAsync(b => b.StudentId == id);
-        ViewBag.ReviewCount   = tutorProfile != null
+
+        var reviewCount = tutorProfile != null
             ? tutorProfile.ReceivedReviews.Count
             : await _db.Reviews.CountAsync(r => r.StudentId == id);
 
+        ViewBag.TutorProfile = tutorProfile;
+        ViewBag.BookingCount = bookingCount;
+        ViewBag.ReviewCount = reviewCount;
         return View(user);
     }
 
+    // POST /Admin/ToggleLock
     [ValidateAntiForgeryToken]
     [HttpPost]
     public async Task<IActionResult> ToggleLock(string userId)
@@ -121,19 +113,25 @@ public class AdminController : Controller
         user.IsLocked = !user.IsLocked;
         await _userManager.UpdateAsync(user);
 
+        // Nếu đang khóa → đăng xuất ngay lập tức bằng cách đặt Security Stamp mới
+        // (buộc tất cả cookie/session hiện tại của user đó vô hiệu hóa)
         if (user.IsLocked)
             await _userManager.UpdateSecurityStampAsync(user);
 
-        TempData[user.IsLocked ? "Success" : "Info"] = user.IsLocked
-            ? $"Đã khoá tài khoản {user.Email}."
-            : $"Đã mở khoá tài khoản {user.Email}.";
+        TempData[user.IsLocked ? "Success" : "Info"] =
+            user.IsLocked
+                ? $"Đã khoá tài khoản {user.Email}. Người dùng sẽ bị đăng xuất ngay."
+                : $"Đã mở khoá tài khoản {user.Email}.";
 
+        // Quay lại trang chi tiết nếu có referer là UserDetail, không thì về Users
         var referer = Request.Headers["Referer"].ToString();
-        return referer.Contains("UserDetail")
-            ? RedirectToAction("UserDetail", new { id = userId })
-            : RedirectToAction("Users");
+        if (referer.Contains("UserDetail"))
+            return RedirectToAction("UserDetail", new { id = userId });
+
+        return RedirectToAction("Users");
     }
 
+    // GET /Admin/PendingTutors
     public async Task<IActionResult> PendingTutors()
     {
         var pending = await _db.TutorProfiles
@@ -146,6 +144,7 @@ public class AdminController : Controller
         return View(pending);
     }
 
+    // POST /Admin/ApproveTutor
     [ValidateAntiForgeryToken]
     [HttpPost]
     public async Task<IActionResult> ApproveTutor(int tutorId)
@@ -158,16 +157,17 @@ public class AdminController : Controller
 
         _db.Notifications.Add(new Notification
         {
-            UserId    = tutor.UserId,
-            Title     = "Hồ sơ đã được duyệt ✅",
-            Content   = "Chúc mừng! Hồ sơ gia sư của bạn đã được Admin duyệt.",
+            UserId = tutor.UserId,
+            Title = "Hồ sơ đã được duyệt ✅",
+            Content = "Chúc mừng! Hồ sơ gia sư của bạn đã được Admin duyệt. Bạn có thể nhận học viên ngay bây giờ.",
             CreatedAt = DateTime.UtcNow,
-            IsRead    = false
+            IsRead = false
         });
         await _db.SaveChangesAsync();
         return RedirectToAction("PendingTutors");
     }
 
+    // POST /Admin/RejectTutor
     [ValidateAntiForgeryToken]
     [HttpPost]
     public async Task<IActionResult> RejectTutor(int tutorId, string reason)
@@ -191,24 +191,21 @@ public class AdminController : Controller
         return RedirectToAction("PendingTutors");
     }
 
+    // GET /Admin/Stats/Api
     [HttpGet]
     public async Task<IActionResult> StatsApi()
     {
-        // FIX: GroupBy với Include → load vào memory trước
         var bookingsByStatus = await _db.Bookings
             .GroupBy(b => b.Status)
             .Select(g => new { status = g.Key, count = g.Count() })
             .ToListAsync();
 
-        var tutorSubjects = await _db.TutorSubjects
+        var subjectPopularity = await _db.TutorSubjects
             .Include(ts => ts.Subject)
-            .ToListAsync(); // Load vào memory
-
-        var subjectPopularity = tutorSubjects
-            .GroupBy(ts => ts.Subject?.Name ?? "Khác")
+            .GroupBy(ts => ts.Subject!.Name)
             .Select(g => new { subject = g.Key, count = g.Count() })
             .OrderByDescending(x => x.count).Take(6)
-            .ToList();
+            .ToListAsync();
 
         return Json(new { bookingsByStatus, subjectPopularity });
     }
