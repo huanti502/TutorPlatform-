@@ -2,10 +2,13 @@
     string? navAvatarUrl = null;
     if (User.Identity?.IsAuthenticated == true)
     {
-        var userManager = Context.RequestServices
-            .GetService<Microsoft.AspNetCore.Identity.UserManager<TutorPlatform.Core.Models.AppUser>>();
-        var currentUser = await userManager!.GetUserAsync(User);
-        navAvatarUrl = currentUser?.AvatarUrl;
+        // 🚀 TỐI ƯU TỐC ĐỘ: Bỏ UserManager, chọc thẳng vào DB chỉ lấy đúng AvatarUrl
+        var db = Context.RequestServices.GetService<TutorPlatform.Infrastructure.Data.AppDbContext>();
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            navAvatarUrl = db!.Users.Where(u => u.Id == userId).Select(u => u.AvatarUrl).FirstOrDefault();
+        }
     }
 }
 <!DOCTYPE html>
