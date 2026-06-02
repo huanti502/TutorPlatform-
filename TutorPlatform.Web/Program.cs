@@ -7,6 +7,8 @@ using TutorPlatform.Web.Data;
 using TutorPlatform.Web.Hubs;
 using TutorPlatform.Web.Services;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Đọc DATABASE_URL từ Render (PostgreSQL)
