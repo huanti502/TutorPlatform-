@@ -59,14 +59,18 @@ public class BookingController : Controller
     {
         var user = await _userManager.GetUserAsync(User);
 
+        // 🛠️ SỬA LỖI POSTGRESQL: Chuyển thời gian sang UTC trước khi xử lý
+        var startUtc = startTime.ToUniversalTime();
+        var endUtc = endTime.ToUniversalTime();
+
         // ✅ Validate thời gian hợp lệ
-        if (startTime >= endTime)
+        if (startUtc >= endUtc)
         {
             TempData["Error"] = "Thời gian kết thúc phải sau thời gian bắt đầu.";
             return RedirectToAction("Create", new { tutorId = tutorProfileId });
         }
 
-        if (startTime < DateTime.Now.AddHours(1))
+        if (startUtc < DateTime.UtcNow.AddHours(1))
         {
             TempData["Error"] = "Vui lòng đặt lịch trước ít nhất 1 tiếng.";
             return RedirectToAction("Create", new { tutorId = tutorProfileId });
@@ -76,7 +80,7 @@ public class BookingController : Controller
         var conflict = await _db.Bookings.AnyAsync(b =>
             b.TutorProfileId == tutorProfileId &&
             (b.Status == "Confirmed" || b.Status == "Pending") &&
-            b.StartTime < endTime && b.EndTime > startTime);
+            b.StartTime < endUtc && b.EndTime > startUtc);
 
         if (conflict)
         {
@@ -88,7 +92,7 @@ public class BookingController : Controller
         var selfConflict = await _db.Bookings.AnyAsync(b =>
             b.StudentId == user!.Id &&
             (b.Status == "Confirmed" || b.Status == "Pending") &&
-            b.StartTime < endTime && b.EndTime > startTime);
+            b.StartTime < endUtc && b.EndTime > startUtc);
 
         if (selfConflict)
         {
@@ -101,8 +105,8 @@ public class BookingController : Controller
             StudentId = user!.Id,
             TutorProfileId = tutorProfileId,
             SubjectId = subjectId,
-            StartTime = startTime,
-            EndTime = endTime,
+            StartTime = startUtc, // Lưu bản UTC
+            EndTime = endUtc,     // Lưu bản UTC
             TeachingMode = teachingMode,
             Note = note,
             Status = "Pending"
@@ -144,6 +148,13 @@ public class BookingController : Controller
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
 
+        // 🛠️ SỬA LỖI HIỂN THỊ: Chuyển lại Local Time khi view
+        foreach (var b in bookings)
+        {
+            b.StartTime = b.StartTime.ToLocalTime();
+            b.EndTime = b.EndTime.ToLocalTime();
+        }
+
         // Lấy danh sách bookingId đã được đánh giá rồi
         var bookingIds = bookings.Select(b => b.Id).ToList();
         var reviewedIds = await _db.Reviews
@@ -172,6 +183,13 @@ public class BookingController : Controller
             .Where(b => b.TutorProfileId == profile.Id)
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
+
+        // 🛠️ SỬA LỖI HIỂN THỊ: Chuyển lại Local Time khi view
+        foreach (var b in bookings)
+        {
+            b.StartTime = b.StartTime.ToLocalTime();
+            b.EndTime = b.EndTime.ToLocalTime();
+        }
 
         return View(bookings);
     }
@@ -301,6 +319,11 @@ public class BookingController : Controller
     public async Task<IActionResult> GetCalendarEvents(DateTime start, DateTime end)
     {
         var userId = _userManager.GetUserId(User);
+
+        // 🛠️ SỬA LỖI POSTGRESQL: Ép biến Start / End thành UTC
+        var startUtc = start.ToUniversalTime();
+        var endUtc = end.ToUniversalTime();
+
         List<Booking> bookings;
 
         if (User.IsInRole("Tutor"))
@@ -308,7 +331,7 @@ public class BookingController : Controller
             var profile = await _db.TutorProfiles.FirstOrDefaultAsync(t => t.UserId == userId);
             bookings = profile == null ? new() : await _db.Bookings
                 .Include(b => b.Student).Include(b => b.Subject)
-                .Where(b => b.TutorProfileId == profile.Id && b.StartTime >= start && b.EndTime <= end)
+                .Where(b => b.TutorProfileId == profile.Id && b.StartTime >= startUtc && b.EndTime <= endUtc)
                 .ToListAsync();
         }
         else
@@ -316,7 +339,7 @@ public class BookingController : Controller
             bookings = await _db.Bookings
                 .Include(b => b.TutorProfile).ThenInclude(t => t.User)
                 .Include(b => b.Subject)
-                .Where(b => b.StudentId == userId && b.StartTime >= start && b.EndTime <= end)
+                .Where(b => b.StudentId == userId && b.StartTime >= startUtc && b.EndTime <= endUtc)
                 .ToListAsync();
         }
 
@@ -326,8 +349,9 @@ public class BookingController : Controller
             title = User.IsInRole("Tutor")
                       ? $"📚 {b.Subject?.Name} — {b.Student?.FullName}"
                       : $"📚 {b.Subject?.Name} — GS: {b.TutorProfile?.User?.FullName}",
-            start = b.StartTime.ToString("yyyy-MM-ddTHH:mm:ss"),
-            end = b.EndTime.ToString("yyyy-MM-ddTHH:mm:ss"),
+            // 🛠️ SỬA LỖI POSTGRESQL: Ép lại Local Time cho FullCalendar
+            start = b.StartTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss"),
+            end = b.EndTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss"),
             color = b.Status switch
             {
                 "Pending" => "#FFA500",
@@ -355,17 +379,22 @@ public class BookingController : Controller
     [HttpGet]
     public async Task<IActionResult> GetBusySlots(int tutorProfileId, DateTime date)
     {
-        var dayStart = date.Date;
-        var dayEnd = dayStart.AddDays(1);
+        // 🛠️ SỬA LỖI POSTGRESQL
+        var dayStartLocal = date.Date;
+        var dayEndLocal = dayStartLocal.AddDays(1);
+
+        var dayStartUtc = dayStartLocal.ToUniversalTime();
+        var dayEndUtc = dayEndLocal.ToUniversalTime();
 
         // Lấy các booking đã Confirmed hoặc Pending trong ngày đó
         var busyBookings = await _db.Bookings
             .Where(b => b.TutorProfileId == tutorProfileId &&
-                        b.StartTime >= dayStart && b.StartTime < dayEnd &&
+                        b.StartTime >= dayStartUtc && b.StartTime < dayEndUtc &&
                         (b.Status == "Confirmed" || b.Status == "Pending"))
             .Select(b => new {
-                start = b.StartTime.ToString("HH:mm"),
-                end = b.EndTime.ToString("HH:mm")
+                // 🛠️ SỬA LỖI: Render lại theo Local Time cho UI
+                start = b.StartTime.ToLocalTime().ToString("HH:mm"),
+                end = b.EndTime.ToLocalTime().ToString("HH:mm")
             })
             .ToListAsync();
 
@@ -388,11 +417,15 @@ public class BookingController : Controller
     [HttpGet]
     public async Task<IActionResult> CheckConflict(int tutorProfileId, DateTime start, DateTime end)
     {
+        // 🛠️ SỬA LỖI POSTGRESQL
+        var startUtc = start.ToUniversalTime();
+        var endUtc = end.ToUniversalTime();
+
         // Kiểm tra trùng lịch (overlap logic)
         var conflict = await _db.Bookings
             .AnyAsync(b => b.TutorProfileId == tutorProfileId &&
                            (b.Status == "Confirmed" || b.Status == "Pending") &&
-                           b.StartTime < end && b.EndTime > start);
+                           b.StartTime < endUtc && b.EndTime > startUtc);
 
         return Json(new { hasConflict = conflict });
     }
@@ -405,8 +438,10 @@ public class BookingController : Controller
     public async Task<IActionResult> GetUpcoming()
     {
         var userId = _userManager.GetUserId(User);
-        var now = DateTime.Now;
-        var soon = now.AddMinutes(30);
+
+        // 🛠️ SỬA LỖI POSTGRESQL: Dùng biến UtcNow
+        var nowUtc = DateTime.UtcNow;
+        var soonUtc = nowUtc.AddMinutes(30);
 
         // Tìm booking sắp bắt đầu trong 30 phút
         Booking? upcoming = null;
@@ -420,7 +455,7 @@ public class BookingController : Controller
                 .FirstOrDefaultAsync(b =>
                     b.StudentId == userId &&
                     b.Status == "Confirmed" &&
-                    b.StartTime >= now && b.StartTime <= soon);
+                    b.StartTime >= nowUtc && b.StartTime <= soonUtc);
 
             partnerName = upcoming?.TutorProfile?.User?.FullName ?? "";
         }
@@ -437,7 +472,7 @@ public class BookingController : Controller
                     .FirstOrDefaultAsync(b =>
                         b.TutorProfileId == profile.Id &&
                         b.Status == "Confirmed" &&
-                        b.StartTime >= now && b.StartTime <= soon);
+                        b.StartTime >= nowUtc && b.StartTime <= soonUtc);
 
                 partnerName = upcoming?.Student?.FullName ?? "";
             }
@@ -451,7 +486,8 @@ public class BookingController : Controller
             hasUpcoming = true,
             subjectName = upcoming.Subject?.Name,
             partnerName,
-            startTime = upcoming.StartTime.ToString("HH:mm"),
+            // 🛠️ SỬA LỖI: Trả về Local Time cho Jitsi hiển thị
+            startTime = upcoming.StartTime.ToLocalTime().ToString("HH:mm"),
             joinUrl = $"https://meet.jit.si/{upcoming.MeetingRoomId}"
         });
     }

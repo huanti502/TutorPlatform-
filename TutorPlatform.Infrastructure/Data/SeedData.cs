@@ -2,6 +2,10 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TutorPlatform.Core.Models;
 using TutorPlatform.Infrastructure.Data;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace TutorPlatform.Web.Data;
 
@@ -12,7 +16,8 @@ public static class SeedData
         UserManager<AppUser> userManager,
         RoleManager<IdentityRole> roleManager)
     {
-        if (await db.TutorProfiles.CountAsync() >= 5) return;
+        // Đã comment dòng này để luôn chạy Seed Data
+        // if (await db.TutorProfiles.CountAsync() >= 5) return;
 
         // ── ROLES ─────────────────────────────────────────
         foreach (var role in new[] { "Admin", "Tutor", "Student" })
@@ -62,6 +67,12 @@ public static class SeedData
                 await db.SaveChangesAsync();
                 await db.Database.ExecuteSqlRawAsync("SET IDENTITY_INSERT [Subjects] OFF");
             }
+            catch
+            {
+                // Nếu dùng PostgreSQL thì lệnh SET IDENTITY_INSERT không áp dụng, ta fallback
+                db.Subjects.AddRange(missingSubjects);
+                await db.SaveChangesAsync();
+            }
             finally
             {
                 await db.Database.CloseConnectionAsync();
@@ -87,7 +98,8 @@ public static class SeedData
         }
       
 
-   
+
+
         // ════════════════════════════════════════════════════
         //  TẠO GIA SƯ
         // ════════════════════════════════════════════════════
@@ -308,8 +320,10 @@ public static class SeedData
             {
                 var student = studentUsers[rng.Next(studentUsers.Count)];
                 int daysAgo = rng.Next(-7, 90);
-                var startTime = DateTime.Now.AddDays(-daysAgo).Date
-                    .AddHours(rng.Next(17, 20)).AddMinutes(rng.Next(0, 2) * 30);
+
+                // FIX LỖI POSTGRESQL UTC: Ép chuẩn DateTimeKind.Utc 
+                var baseDate = DateTime.UtcNow.AddDays(-daysAgo);
+                var startTime = new DateTime(baseDate.Year, baseDate.Month, baseDate.Day, rng.Next(17, 20), rng.Next(0, 2) * 30, 0, DateTimeKind.Utc);
                 var endTime = startTime.AddHours(rng.Next(1, 3));
 
                 string status;
@@ -435,7 +449,7 @@ public static class SeedData
                     Summary     = "Chia sẻ từ gia sư 8 năm kinh nghiệm: Cách học Toán hiệu quả, tránh học vẹt và tăng điểm nhanh.",
                     Content     = "Nhiều học sinh học Toán theo kiểu thuộc lòng công thức mà không hiểu bản chất...\n\n**1. Hiểu gốc rễ trước khi giải bài**\nThay vì vội vào bài tập, hãy dành 20% thời gian hiểu lý thuyết thật sâu...\n\n**2. Phân loại dạng bài**\nMỗi chương có 4-6 dạng bài chuẩn. Hãy tổng hợp và thuộc phương pháp giải từng dạng...\n\n**3. Luyện đề theo thời gian thực**\nLàm đề thi thử trong đúng 90 phút, không tra cứu...\n\n**4. Review sai lầm hàng ngày**\nMỗi tối dành 10 phút xem lại các bài làm sai trong ngày...\n\n**5. Học theo nhóm nhỏ**\nGiải thích cho bạn bè là cách học hiệu quả nhất.",
                     IsPublished = true,
-                    CreatedAt   = DateTime.Now.AddDays(-45)
+                    CreatedAt   = DateTime.UtcNow.AddDays(-45) // Đã sửa
                 },
                 new Post {
                     AuthorId    = tutorUsers[1].Id,
@@ -443,7 +457,7 @@ public static class SeedData
                     Summary     = "Lộ trình học IELTS chi tiết theo từng tháng, kèm tài liệu và app học miễn phí.",
                     Content     = "IELTS 7.0 không phải mục tiêu xa vời nếu bạn có lộ trình đúng...\n\n**Tháng 1-2: Xây nền tảng**\n- Từ vựng: Học 10 từ/ngày với Anki\n- Ngữ pháp: Cambridge Grammar in Use\n\n**Tháng 3-4: Luyện kỹ năng**\n- Reading: Cambridge IELTS 14, 15, 16\n- Writing: Practice Task 1 và Task 2 mỗi ngày\n\n**Tháng 5-6: Mock Test**\n- Làm full test mỗi tuần\n- Đăng ký thi thật",
                     IsPublished = true,
-                    CreatedAt   = DateTime.Now.AddDays(-32)
+                    CreatedAt   = DateTime.UtcNow.AddDays(-32) // Đã sửa
                 },
                 new Post {
                     AuthorId    = tutorUsers[2].Id,
@@ -451,7 +465,7 @@ public static class SeedData
                     Summary     = "Hướng dẫn toàn diện cho người mới muốn học lập trình Web, từ HTML đến Full-stack.",
                     Content     = "Lập trình Web là ngành hot nhất hiện tại với mức lương hấp dẫn...\n\n**Bước 1: HTML & CSS (2-4 tuần)**\n**Bước 2: JavaScript (4-8 tuần)**\n**Bước 3: Chọn hướng**\n- Frontend: React, Vue\n- Backend: NodeJS, C# .NET\n**Bước 4: Làm Project thực tế**",
                     IsPublished = true,
-                    CreatedAt   = DateTime.Now.AddDays(-20)
+                    CreatedAt   = DateTime.UtcNow.AddDays(-20) // Đã sửa
                 },
                 new Post {
                     AuthorId    = tutorUsers[3].Id,
@@ -459,7 +473,7 @@ public static class SeedData
                     Summary     = "TS Hóa học chia sẻ cách học Hóa hữu cơ một lần nhớ mãi, không cần học thuộc.",
                     Content     = "Hóa hữu cơ khiến nhiều học sinh sợ vì quá nhiều phản ứng cần nhớ...\n\n**Nguyên tắc 1: Hiểu cơ chế phản ứng**\n**Nguyên tắc 2: Vẽ sơ đồ tư duy**\n**Nguyên tắc 3: Học từ ví dụ thực tế**\n**Nguyên tắc 4: Luyện bài tập nhận biết**",
                     IsPublished = true,
-                    CreatedAt   = DateTime.Now.AddDays(-15)
+                    CreatedAt   = DateTime.UtcNow.AddDays(-15) // Đã sửa
                 },
                 new Post {
                     AuthorId    = tutorUsers[4].Id,
@@ -467,7 +481,7 @@ public static class SeedData
                     Summary     = "Bí quyết viết mở bài sáng tạo và kết bài đọng lại cảm xúc.",
                     Content     = "Mở bài và kết bài chiếm 15-20% điểm bài văn...\n\n**3 kiểu mở bài hiệu quả:**\n1. Mở bài bằng câu hỏi tu từ\n2. Mở bài bằng trích dẫn\n3. Mở bài bằng tình huống giả định\n\n**Kết bài gây đọng lại:**\nMở ra hướng suy nghĩ mới cho người đọc.",
                     IsPublished = true,
-                    CreatedAt   = DateTime.Now.AddDays(-10)
+                    CreatedAt   = DateTime.UtcNow.AddDays(-10) // Đã sửa
                 },
                 new Post {
                     AuthorId    = tutorUsers[1].Id,
@@ -475,7 +489,7 @@ public static class SeedData
                     Summary     = "Tổng hợp các app học tiếng Anh hiệu quả nhất, từ người mới đến nâng cao.",
                     Content     = "Học tiếng Anh không nhất thiết phải tốn nhiều tiền...\n\n1. Duolingo\n2. Anki\n3. BBC Learning English\n4. Elsa Speak\n5. Cake\n6. HelloTalk\n7. Coursera\n8. TED\n9. Grammarly\n10. DeepL",
                     IsPublished = true,
-                    CreatedAt   = DateTime.Now.AddDays(-5)
+                    CreatedAt   = DateTime.UtcNow.AddDays(-5) // Đã sửa
                 },
                 new Post {
                     AuthorId    = tutorUsers[6].Id,
@@ -483,7 +497,7 @@ public static class SeedData
                     Summary     = "Thị trường lao động Nhật Bản đang mở rộng, cơ hội rất lớn cho người biết tiếng Nhật.",
                     Content     = "Nhật Bản đang thiếu lao động và đang tìm kiếm nhân lực từ Việt Nam...\n\n**Lý do học tiếng Nhật:**\n- Lương kỹ sư IT tại Nhật: 80-150 triệu/tháng\n- Chi phí du học hợp lý hơn Mỹ/Úc\n\n**Lộ trình:** N5 → N4 → N3 → N2 → N1",
                     IsPublished = true,
-                    CreatedAt   = DateTime.Now.AddDays(-3)
+                    CreatedAt   = DateTime.UtcNow.AddDays(-3) // Đã sửa
                 },
             };
 
@@ -535,6 +549,7 @@ public static class SeedData
             }
             await db.SaveChangesAsync();
         }
+        await db.SaveChangesAsync();
 
         // ════════════════════════════════════════════════════
         //  TẠO TIN NHẮN
@@ -573,6 +588,64 @@ public static class SeedData
             }
             await db.SaveChangesAsync();
         }
+
+        // ════════════════════════════════════════════════════
+        //  TẠO TÀI LIỆU HỌC TẬP (DOCUMENTS)
+        // ════════════════════════════════════════════════════
+        if (!await db.Documents.AnyAsync() && tutorUsers.Any())
+        {
+            var docTitles = new[]
+            {
+                ("Đề cương ôn tập Toán 12 - Học kỳ 2", "Tài liệu ôn tập bám sát cấu trúc đề thi THPT Quốc gia môn Toán."),
+                ("500 câu trắc nghiệm Hóa Hữu cơ có đáp án", "Tuyển tập câu hỏi trắc nghiệm phân loại học sinh khá giỏi."),
+                ("Tổng hợp Từ vựng IELTS Band 7.0+", "Danh sách từ vựng Academic thường gặp trong IELTS Reading & Writing."),
+                ("Slide bài giảng C# và ASP.NET Core", "Bài giảng chi tiết về lập trình web thực chiến với .NET Core."),
+                ("Đề thi thử THPT Quốc gia môn Vật lý 2025", "Đề thi bám sát cấu trúc mới nhất của Bộ GD&ĐT."),
+                ("Ngữ pháp Tiếng Nhật N3 căn bản", "Tổng hợp 150 cấu trúc ngữ pháp N3 trọng tâm."),
+                ("Tài liệu luyện thi Toán Cao Cấp đại học", "Giải chi tiết bài tập tích phân, ma trận, không gian vector."),
+                ("Các bài văn mẫu nghị luận xã hội lớp 12", "Tuyển tập 50 bài văn nghị luận xã hội xuất sắc đạt điểm cao.")
+            };
+
+            foreach (var item in docTitles)
+            {
+                // Chọn ngẫu nhiên 1 gia sư làm người upload
+                var uploader = tutorUsers[rng.Next(tutorUsers.Count)];
+
+                // Tỷ lệ 50% tài liệu này được gắn với một buổi học cụ thể
+                int? bookingId = null;
+                if (rng.Next(2) == 0)
+                {
+                    var uploaderProfile = await db.TutorProfiles.FirstOrDefaultAsync(t => t.UserId == uploader.Id);
+                    if (uploaderProfile != null)
+                    {
+                        var randomBooking = await db.Bookings.FirstOrDefaultAsync(b => b.TutorProfileId == uploaderProfile.Id);
+                        bookingId = randomBooking?.Id;
+                    }
+                }
+
+                var randomString = Guid.NewGuid().ToString("N")[..6];
+                var fileName = $"TaiLieu_{randomString}.pdf";
+
+                var doc = new Document
+                {
+                    Title = item.Item1,
+                    Description = item.Item2,
+                    FileName = fileName,
+                    FilePath = $"/uploads/documents/{fileName}",
+                    FileType = "pdf",
+                    FileSize = rng.Next(1024000, 15360000), // Random size từ 1MB đến 15MB (đơn vị bytes)
+                    UploaderId = uploader.Id,
+                    BookingId = bookingId,
+                    IsPublic = true, // Public để ai vào trang Tài liệu cũng thấy
+                    DownloadCount = rng.Next(5, 150),
+                    CreatedAt = DateTime.UtcNow.AddDays(-rng.Next(1, 30))
+                };
+
+                db.Documents.Add(doc);
+            }
+            await db.SaveChangesAsync();
+        }
+
 
         // ════════════════════════════════════════════════════
         //  TẠO THÔNG BÁO

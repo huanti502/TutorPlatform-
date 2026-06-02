@@ -35,12 +35,13 @@ public class DashboardController : Controller
             .ToListAsync();
         // Thêm vào action Index() hiện có, sau các ViewBag cũ:
         ViewBag.CompletedBookings = await _db.Bookings.CountAsync(b => b.Status == "Completed");
-        var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1);
+        var monthStart = new DateTime(DateTime.UtcNow.Year, DateTime.UtcNow.Month, 1, 0, 0, 0, DateTimeKind.Utc);
         ViewBag.BookingsThisMonth = await _db.Bookings.CountAsync(b => b.CreatedAt >= monthStart);
         var completed = await _db.Bookings.Include(b => b.TutorProfile)
-            .Where(b => b.Status == "Completed").ToListAsync();
-        ViewBag.TotalRevenue = completed.Sum(b =>
-            (decimal)(b.EndTime - b.StartTime).TotalHours * b.TutorProfile.HourlyRate);
+    .Where(b => b.Status == "Completed").ToListAsync();
+        ViewBag.TotalRevenue = completed
+            .Where(b => b.TutorProfile != null)
+            .Sum(b => (decimal)(b.EndTime - b.StartTime).TotalHours * b.TutorProfile!.HourlyRate);
         ViewBag.TopTutors = await _db.TutorProfiles
             .Include(t => t.User).Include(t => t.Bookings).Include(t => t.ReceivedReviews)
             .Where(t => t.IsApproved)
@@ -137,7 +138,7 @@ public class DashboardController : Controller
         for (int i = 11; i >= 0; i--)
         {
             var month = DateTime.UtcNow.AddMonths(-i);
-            var start = new DateTime(month.Year, month.Month, 1);
+            var start = new DateTime(month.Year, month.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var end = start.AddMonths(1);
 
             var bookings = await _db.Bookings
@@ -165,7 +166,7 @@ public class DashboardController : Controller
         for (int i = 11; i >= 0; i--)
         {
             var month = DateTime.UtcNow.AddMonths(-i);
-            var start = new DateTime(month.Year, month.Month, 1);
+            var start = new DateTime(month.Year, month.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var end = start.AddMonths(1);
 
             data.Add(new

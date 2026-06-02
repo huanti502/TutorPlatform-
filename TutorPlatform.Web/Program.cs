@@ -1,15 +1,29 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using TutorPlatform.Core.Models;
 using TutorPlatform.Infrastructure.Data;
 using TutorPlatform.Web.Data;
 using TutorPlatform.Web.Hubs;
 using TutorPlatform.Web.Services;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
 
+// Đọc DATABASE_URL từ Render (PostgreSQL)
+var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
+if (!string.IsNullOrEmpty(databaseUrl))
+{
+    var uri = new Uri(databaseUrl);
+    var userInfo = uri.UserInfo.Split(':');
+    var npgsqlConn = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+    builder.Configuration["ConnectionStrings:DefaultConnection"] = npgsqlConn;
+}
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
+           .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
 
 builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
 {
@@ -50,7 +64,7 @@ using (var scope = app.Services.CreateScope())
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
         await db.Database.MigrateAsync(); // ← Chạy migration trước
-        await SeedData.SeedAllAsync(db, userManager, roleManager);
+        // await SeedData.SeedAllAsync(db, userManager, roleManager); ................... quyét dữ liệu trong SeedData
 
         // ==============================================================
         // 🚀 TỰ ĐỘNG KHỞI TẠO ROLES VÀ TÀI KHOẢN ADMIN MẶC ĐỊNH
