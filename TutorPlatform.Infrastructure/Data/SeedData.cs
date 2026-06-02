@@ -96,6 +96,7 @@ public static class SeedData
             );
             await db.SaveChangesAsync();
         }
+      
 
 
 
@@ -548,6 +549,7 @@ public static class SeedData
             }
             await db.SaveChangesAsync();
         }
+        await db.SaveChangesAsync();
 
         // ════════════════════════════════════════════════════
         //  TẠO TIN NHẮN
