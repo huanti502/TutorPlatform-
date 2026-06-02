@@ -64,7 +64,7 @@ using (var scope = app.Services.CreateScope())
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
         await db.Database.MigrateAsync(); // ← Chạy migration trước
-        await SeedData.SeedAllAsync(db, userManager, roleManager);
+       // await SeedData.SeedAllAsync(db, userManager, roleManager);
 
         // ==============================================================
         // 🚀 TỰ ĐỘNG KHỞI TẠO ROLES VÀ TÀI KHOẢN ADMIN MẶC ĐỊNH

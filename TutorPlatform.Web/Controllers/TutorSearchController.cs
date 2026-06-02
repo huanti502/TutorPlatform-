@@ -27,6 +27,8 @@ public class TutorSearchController : Controller
         const int pageSize = 9;
 
         var query = _db.TutorProfiles
+            .AsNoTracking() // 🚀 TĂNG TỐC: Giải phóng RAM
+            .AsSplitQuery() // 🚀 TĂNG TỐC: Chia nhỏ truy vấn chống nghẽn
             .Include(t => t.User)
             .Include(t => t.TutorSubjects).ThenInclude(ts => ts.Subject)
             .Include(t => t.ReceivedReviews)
@@ -35,7 +37,6 @@ public class TutorSearchController : Controller
             .Where(t => t.IsApproved)
             .AsQueryable();
 
-        // Đã thêm kiểm tra != null để khắc phục cảnh báo CS8602
         if (!string.IsNullOrWhiteSpace(keyword))
             query = query.Where(t =>
                 (t.User != null && t.User.FullName != null && t.User.FullName.Contains(keyword)) ||

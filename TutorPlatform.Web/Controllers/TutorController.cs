@@ -19,7 +19,7 @@ public class TutorController : Controller
 {
     private readonly AppDbContext _db;
     private readonly UserManager<AppUser> _userManager;
-    private readonly IWebHostEnvironment _env; // Thêm IWebHostEnvironment để xử lý file
+    private readonly IWebHostEnvironment _env;
 
     public TutorController(AppDbContext db, UserManager<AppUser> userManager, IWebHostEnvironment env)
     {
@@ -31,6 +31,8 @@ public class TutorController : Controller
     public async Task<IActionResult> Index(string? keyword, int? subjectId, string? area, decimal? maxRate)
     {
         var query = _db.TutorProfiles
+            .AsNoTracking() // 🚀 Tối ưu
+            .AsSplitQuery() // 🚀 Tối ưu
             .Include(t => t.User)
             .Include(t => t.TutorSubjects).ThenInclude(ts => ts.Subject)
             .Include(t => t.ReceivedReviews)
@@ -64,6 +66,8 @@ public class TutorController : Controller
     public async Task<IActionResult> Detail(int id)
     {
         var tutor = await _db.TutorProfiles
+            .AsNoTracking() // 🚀 Tối ưu
+            .AsSplitQuery() // 🚀 Tối ưu
             .Include(t => t.User)
             .Include(t => t.TutorSubjects).ThenInclude(ts => ts.Subject)
             .Include(t => t.ReceivedReviews).ThenInclude(r => r.Student)
@@ -73,7 +77,6 @@ public class TutorController : Controller
 
         if (tutor == null) return NotFound();
 
-        // Thêm đoạn code kiểm tra xem user hiện tại đã có booking được xác nhận hay chưa
         var currentUserId = _userManager.GetUserId(User);
         var hasBooking = false;
 
@@ -97,7 +100,7 @@ public class TutorController : Controller
     [HttpPost]
     [Authorize(Roles = "Student,Tutor")]
     public async Task<IActionResult> Register(
-        RegisterViewModel model, // Thay đổi thành Model tương ứng nếu cần
+        RegisterViewModel model,
         IFormFile? avatarFile,
         IFormFile? facePhotoFile,
         List<string>? certTitles,
@@ -123,7 +126,6 @@ public class TutorController : Controller
             await avatarFile.CopyToAsync(stream);
             avatarUrl = $"/uploads/avatars/{fileName}";
 
-            // Cập nhật avatar vào AppUser
             user.AvatarUrl = avatarUrl;
             await _userManager.UpdateAsync(user);
         }
@@ -132,13 +134,11 @@ public class TutorController : Controller
         var profile = new TutorProfile
         {
             UserId = user.Id,
-            // Ánh xạ các trường khác từ model form nếu có (ví dụ: model.PhoneNumber, model.Bio...)
-
             IsApproved = false
         };
 
         _db.TutorProfiles.Add(profile);
-        await _db.SaveChangesAsync(); // Phải SaveChanges để lấy ID của profile
+        await _db.SaveChangesAsync();
 
         // ── Upload Ảnh khuôn mặt xác minh ────────────────────────────
         if (facePhotoFile != null && facePhotoFile.Length > 0)
@@ -332,7 +332,6 @@ public class TutorController : Controller
         return RedirectToAction("Availability");
     }
 
-    // ── Helper: kiểm tra gia sư đã được duyệt chưa ──────────────────
     private async Task<TutorProfile?> GetApprovedProfileAsync(string userId)
     {
         return await _db.TutorProfiles
@@ -347,6 +346,8 @@ public class TutorController : Controller
     {
         var user = await _userManager.GetUserAsync(User);
         var profile = await _db.TutorProfiles
+            .AsNoTracking() // 🚀 Tối ưu RAM
+            .AsSplitQuery() // 🚀 Tối ưu Database
             .Include(t => t.Bookings).ThenInclude(b => b.Student)
             .Include(t => t.Bookings).ThenInclude(b => b.Subject)
             .Include(t => t.ReceivedReviews).ThenInclude(r => r.Student)
@@ -354,20 +355,17 @@ public class TutorController : Controller
             .Include(t => t.TutorSubjects).ThenInclude(ts => ts.Subject)
             .FirstOrDefaultAsync(t => t.UserId == user!.Id);
 
-        // Chưa có hồ sơ nào → trang đăng ký
         if (profile == null)
             return RedirectToAction("Profile");
 
-        // Có hồ sơ nhưng chưa được duyệt → trang chờ duyệt
         if (!profile.IsApproved)
             return View("Pending");
 
-        // Doanh thu 6 tháng cho biểu đồ
         var revenueChart = new List<object>();
         for (int i = 5; i >= 0; i--)
         {
-            var m = DateTime.Now.AddMonths(-i);
-            var start = new DateTime(m.Year, m.Month, 1);
+            var m = DateTime.UtcNow.AddMonths(-i);
+            var start = new DateTime(m.Year, m.Month, 1, 0, 0, 0, DateTimeKind.Utc);
             var end = start.AddMonths(1);
             var rev = profile.Bookings
                 .Where(b => b.Status == "Completed" && b.CreatedAt >= start && b.CreatedAt < end)
