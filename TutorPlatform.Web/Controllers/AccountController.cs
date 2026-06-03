@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,16 +16,68 @@ public class AccountController : Controller
     private readonly SignInManager<AppUser> _signInManager;
     private readonly AppDbContext _db;
     private readonly IWebHostEnvironment _env;
+    private readonly Cloudinary _cloudinary;
 
     public AccountController(UserManager<AppUser> userManager,
         SignInManager<AppUser> signInManager,
         AppDbContext db,
-        IWebHostEnvironment env)
+        IWebHostEnvironment env,
+        IConfiguration config)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _db = db;
         _env = env;
+
+        var account = new Account(
+            config["Cloudinary:CloudName"],
+            config["Cloudinary:ApiKey"],
+            config["Cloudinary:ApiSecret"]
+        );
+        _cloudinary = new Cloudinary(account);
+    }
+
+    // ── Helper: Upload file lên Cloudinary ──────────────────────────
+    private async Task<string?> UploadToCloudinaryAsync(IFormFile file, string folder)
+    {
+        if (file == null || file.Length == 0) return null;
+        using var stream = file.OpenReadStream();
+        var uploadParams = new ImageUploadParams
+        {
+            File = new FileDescription(file.FileName, stream),
+            Folder = $"tutorplatform/{folder}",
+            Transformation = new Transformation().Width(400).Height(400).Crop("fill").Gravity("face")
+        };
+        var result = await _cloudinary.UploadAsync(uploadParams);
+        return result.SecureUrl?.ToString();
+    }
+
+    private async Task<string?> UploadFileToCloudinaryAsync(IFormFile file, string folder)
+    {
+        if (file == null || file.Length == 0) return null;
+        using var stream = file.OpenReadStream();
+        var ext = Path.GetExtension(file.FileName).ToLower();
+
+        if (ext == ".pdf")
+        {
+            var rawParams = new RawUploadParams
+            {
+                File = new FileDescription(file.FileName, stream),
+                Folder = $"tutorplatform/{folder}"
+            };
+            var result = await _cloudinary.UploadAsync(rawParams);
+            return result.SecureUrl?.ToString();
+        }
+        else
+        {
+            var imgParams = new ImageUploadParams
+            {
+                File = new FileDescription(file.FileName, stream),
+                Folder = $"tutorplatform/{folder}"
+            };
+            var result = await _cloudinary.UploadAsync(imgParams);
+            return result.SecureUrl?.ToString();
+        }
     }
 
     [HttpGet]
@@ -77,26 +131,21 @@ public class AccountController : Controller
 
         await _userManager.AddToRoleAsync(user, model.Role);
 
+        // Upload avatar lên Cloudinary (cả Student và Tutor)
+        if (avatarFile != null && avatarFile.Length > 0)
+        {
+            var avatarUrl = await UploadToCloudinaryAsync(avatarFile, "avatars");
+            if (avatarUrl != null)
+            {
+                user.AvatarUrl = avatarUrl;
+                await _userManager.UpdateAsync(user);
+            }
+        }
+
         if (model.Role == "Tutor")
         {
             try
             {
-                var uploadsPath = Path.Combine(_env.WebRootPath, "uploads");
-
-                string? avatarUrl = null;
-                if (avatarFile != null && avatarFile.Length > 0)
-                {
-                    var avatarFolder = Path.Combine(uploadsPath, "avatars");
-                    Directory.CreateDirectory(avatarFolder);
-                    var ext = Path.GetExtension(avatarFile.FileName);
-                    var fileName = $"avatar_{user.Id}{ext}";
-                    using (var stream = new FileStream(Path.Combine(avatarFolder, fileName), FileMode.Create))
-                        await avatarFile.CopyToAsync(stream);
-                    avatarUrl = $"/uploads/avatars/{fileName}";
-                    user.AvatarUrl = avatarUrl;
-                    await _userManager.UpdateAsync(user);
-                }
-
                 var profile = new TutorProfile
                 {
                     UserId = user.Id,
@@ -109,46 +158,38 @@ public class AccountController : Controller
                 _db.TutorProfiles.Add(profile);
                 await _db.SaveChangesAsync();
 
+                // Upload ảnh xác minh danh tính
                 if (facePhotoFile != null && facePhotoFile.Length > 0)
                 {
-                    var faceFolder = Path.Combine(uploadsPath, "verifications");
-                    Directory.CreateDirectory(faceFolder);
-                    var ext = Path.GetExtension(facePhotoFile.FileName);
-                    var name = $"face_{profile.Id}_{Guid.NewGuid()}{ext}";
-                    using (var stream = new FileStream(Path.Combine(faceFolder, name), FileMode.Create))
-                        await facePhotoFile.CopyToAsync(stream);
-                    _db.Certificates.Add(new Certificate
-                    {
-                        TutorProfileId = profile.Id,
-                        Title = "Ảnh xác minh danh tính",
-                        FilePath = $"/uploads/verifications/{name}",
-                        FileType = "image",
-                        Type = CertificateType.FacePhoto
-                    });
+                    var faceUrl = await UploadToCloudinaryAsync(facePhotoFile, "verifications");
+                    if (faceUrl != null)
+                        _db.Certificates.Add(new Certificate
+                        {
+                            TutorProfileId = profile.Id,
+                            Title = "Ảnh xác minh danh tính",
+                            FilePath = faceUrl,
+                            FileType = "image",
+                            Type = CertificateType.FacePhoto
+                        });
                 }
 
-                if (certFiles.Any())
+                // Upload bằng cấp/chứng chỉ
+                for (int i = 0; i < certFiles.Count; i++)
                 {
-                    var certFolder = Path.Combine(uploadsPath, "certificates");
-                    Directory.CreateDirectory(certFolder);
-                    for (int i = 0; i < certFiles.Count; i++)
-                    {
-                        var file = certFiles[i];
-                        if (file == null || file.Length == 0) continue;
-                        var title = (i < certTitles.Count) ? certTitles[i] : string.Empty;
-                        var ext = Path.GetExtension(file.FileName);
-                        var name = $"cert_{profile.Id}_{Guid.NewGuid()}{ext}";
-                        using (var stream = new FileStream(Path.Combine(certFolder, name), FileMode.Create))
-                            await file.CopyToAsync(stream);
+                    var file = certFiles[i];
+                    if (file == null || file.Length == 0) continue;
+                    var title = (i < certTitles.Count) ? certTitles[i] : string.Empty;
+                    var ext = Path.GetExtension(file.FileName).ToLower();
+                    var url = await UploadFileToCloudinaryAsync(file, "certificates");
+                    if (url != null)
                         _db.Certificates.Add(new Certificate
                         {
                             TutorProfileId = profile.Id,
                             Title = string.IsNullOrWhiteSpace(title) ? $"Bằng cấp {i + 1}" : title,
-                            FilePath = $"/uploads/certificates/{name}",
-                            FileType = ext.ToLower() == ".pdf" ? "pdf" : "image",
+                            FilePath = url,
+                            FileType = ext == ".pdf" ? "pdf" : "image",
                             Type = CertificateType.Degree
                         });
-                    }
                 }
 
                 await _db.SaveChangesAsync();
@@ -176,11 +217,10 @@ public class AccountController : Controller
     {
         if (!ModelState.IsValid) return View(model);
 
-        // ── Kiểm tra tài khoản có bị khoá không TRƯỚC khi đăng nhập ──
         var user = await _userManager.FindByEmailAsync(model.Email);
         if (user != null && user.IsLocked)
         {
-            ModelState.AddModelError("", "Tài khoản của bạn đã bị khoá. Vui lòng liên hệ Admin để được hỗ trợ.");
+            ModelState.AddModelError("", "Tài khoản của bạn đã bị khoá. Vui lòng liên hệ Admin.");
             return View(model);
         }
 
@@ -231,7 +271,7 @@ public class AccountController : Controller
 
     [HttpPost]
     public async Task<IActionResult> ResetPassword(string token, string email,
-       string newPassword, string confirmPassword)
+        string newPassword, string confirmPassword)
     {
         if (string.IsNullOrEmpty(email)) email = Request.Form["email"].ToString();
         if (string.IsNullOrEmpty(token)) token = Request.Form["token"].ToString();
@@ -263,6 +303,36 @@ public class AccountController : Controller
             ModelState.AddModelError("", error.Description);
         ViewBag.Token = token; ViewBag.Email = email;
         return View();
+    }
+
+    // ── Upload avatar cho user đã đăng nhập ─────────────────────────
+    [Authorize]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateAvatar(IFormFile avatarFile)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return RedirectToAction("Login");
+
+        if (avatarFile == null || avatarFile.Length == 0)
+        {
+            TempData["Error"] = "Vui lòng chọn ảnh.";
+            return RedirectBack();
+        }
+
+        var url = await UploadToCloudinaryAsync(avatarFile, "avatars");
+        if (url != null)
+        {
+            user.AvatarUrl = url;
+            await _userManager.UpdateAsync(user);
+            TempData["Success"] = "Cập nhật ảnh đại diện thành công!";
+        }
+        else
+        {
+            TempData["Error"] = "Upload ảnh thất bại. Vui lòng thử lại.";
+        }
+
+        return RedirectBack();
     }
 
     [Authorize]
@@ -310,5 +380,13 @@ public class AccountController : Controller
         foreach (var n in notifications.Where(n => !n.IsRead)) n.IsRead = true;
         await _db.SaveChangesAsync();
         return View(notifications);
+    }
+
+    private IActionResult RedirectBack()
+    {
+        var referer = Request.Headers["Referer"].ToString();
+        return string.IsNullOrEmpty(referer)
+            ? RedirectToAction("Index", "Home")
+            : Redirect(referer);
     }
 }
