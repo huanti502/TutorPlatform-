@@ -58,10 +58,20 @@
                         @foreach (var u in users!)
                         {
                             <div class="list-group-item d-flex align-items-center gap-3 py-3">
-                                <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
-                                     style="width:42px;height:42px">
-                                    @u.FullName.FirstOrDefault()
-                                </div>
+                                @if (!string.IsNullOrEmpty(u.AvatarUrl))
+                                {
+                                    <img src="@u.AvatarUrl"
+                                         class="rounded-circle flex-shrink-0"
+                                         style="width:42px;height:42px;object-fit:cover"
+                                         alt="@u.FullName" />
+                                }
+                                else
+                                {
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
+                                         style="width:42px;height:42px">
+                                        @u.FullName.FirstOrDefault()
+                                    </div>
+                                }
                                 <div class="flex-grow-1">
                                     <div class="fw-semibold">@u.FullName</div>
                                     <small class="text-muted">@u.Role · @u.XpPoints XP · @u.XpLevel</small>

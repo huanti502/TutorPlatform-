@@ -66,7 +66,6 @@ using (var scope = app.Services.CreateScope())
         await db.Database.MigrateAsync(); // ← Chạy migration trước
         await SeedData.SeedAllAsync(db, userManager, roleManager); //................... quyét dữ liệu trong SeedData
 
-
         // ==============================================================
         // 🚀 TỰ ĐỘNG KHỞI TẠO ROLES VÀ TÀI KHOẢN ADMIN MẶC ĐỊNH
         // ==============================================================

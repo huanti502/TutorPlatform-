@@ -20,6 +20,7 @@ namespace TutorPlatform.Web.Controllers
         {
             _recommendation = recommendation;
             _userManager = userManager;
+
         }
 
         // Sửa thành async Task<IActionResult>
