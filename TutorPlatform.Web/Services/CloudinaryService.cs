@@ -14,9 +14,9 @@ public class CloudinaryService
     public CloudinaryService(IConfiguration config)
     {
         var account = new Account(
-            config["Cloudinary:dxiwxshi0"],
-            config["Cloudinary:142115129223819"],
-            config["Cloudinary:a-DJrMExXzcvdMxqi1GvbvBYWGE"]
+            config["Cloudinary:CloudName"],
+            config["Cloudinary:ApiKey"],
+            config["Cloudinary:ApiSecret"]
         );
         _cloudinary = new Cloudinary(account);
     }
