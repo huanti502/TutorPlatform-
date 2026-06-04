@@ -1,11 +1,12 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using CloudinaryDotNet;
+using CloudinaryDotNet.Actions;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TutorPlatform.Core.Models;
 using TutorPlatform.Infrastructure.Data;
 using TutorPlatform.Web.ViewModels;
-using TutorPlatform.Web.Services; // Thêm dòng này để gọi CloudinaryService
 
 namespace TutorPlatform.Web.Controllers;
 
@@ -15,19 +16,68 @@ public class AccountController : Controller
     private readonly SignInManager<AppUser> _signInManager;
     private readonly AppDbContext _db;
     private readonly IWebHostEnvironment _env;
-    private readonly CloudinaryService _cloudinary; // Sử dụng CloudinaryService
+    private readonly Cloudinary _cloudinary;
 
     public AccountController(UserManager<AppUser> userManager,
         SignInManager<AppUser> signInManager,
         AppDbContext db,
         IWebHostEnvironment env,
-        CloudinaryService cloudinary) // Inject trực tiếp Service vào đây
+        IConfiguration config)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _db = db;
         _env = env;
-        _cloudinary = cloudinary;
+
+        var account = new Account(
+            config["Cloudinary:CloudName"],
+            config["Cloudinary:ApiKey"],
+            config["Cloudinary:ApiSecret"]
+        );
+        _cloudinary = new Cloudinary(account);
+    }
+
+    // ── Helper: Upload file lên Cloudinary ──────────────────────────
+    private async Task<string?> UploadToCloudinaryAsync(IFormFile file, string folder)
+    {
+        if (file == null || file.Length == 0) return null;
+        using var stream = file.OpenReadStream();
+        var uploadParams = new ImageUploadParams
+        {
+            File = new FileDescription(file.FileName, stream),
+            Folder = $"tutorplatform/{folder}",
+            Transformation = new Transformation().Width(400).Height(400).Crop("fill").Gravity("face")
+        };
+        var result = await _cloudinary.UploadAsync(uploadParams);
+        return result.SecureUrl?.ToString();
+    }
+
+    private async Task<string?> UploadFileToCloudinaryAsync(IFormFile file, string folder)
+    {
+        if (file == null || file.Length == 0) return null;
+        using var stream = file.OpenReadStream();
+        var ext = Path.GetExtension(file.FileName).ToLower();
+
+        if (ext == ".pdf")
+        {
+            var rawParams = new RawUploadParams
+            {
+                File = new FileDescription(file.FileName, stream),
+                Folder = $"tutorplatform/{folder}"
+            };
+            var result = await _cloudinary.UploadAsync(rawParams);
+            return result.SecureUrl?.ToString();
+        }
+        else
+        {
+            var imgParams = new ImageUploadParams
+            {
+                File = new FileDescription(file.FileName, stream),
+                Folder = $"tutorplatform/{folder}"
+            };
+            var result = await _cloudinary.UploadAsync(imgParams);
+            return result.SecureUrl?.ToString();
+        }
     }
 
     [HttpGet]
@@ -81,10 +131,10 @@ public class AccountController : Controller
 
         await _userManager.AddToRoleAsync(user, model.Role);
 
-        // Upload avatar lên Cloudinary (cả Student và Tutor) bằng Service mới
+        // Upload avatar lên Cloudinary (cả Student và Tutor)
         if (avatarFile != null && avatarFile.Length > 0)
         {
-            var avatarUrl = await _cloudinary.UploadImageAsync(avatarFile, "avatars");
+            var avatarUrl = await UploadToCloudinaryAsync(avatarFile, "avatars");
             if (avatarUrl != null)
             {
                 user.AvatarUrl = avatarUrl;
@@ -108,10 +158,10 @@ public class AccountController : Controller
                 _db.TutorProfiles.Add(profile);
                 await _db.SaveChangesAsync();
 
-                // Upload ảnh xác minh danh tính bằng Service
+                // Upload ảnh xác minh danh tính
                 if (facePhotoFile != null && facePhotoFile.Length > 0)
                 {
-                    var faceUrl = await _cloudinary.UploadImageAsync(facePhotoFile, "verifications");
+                    var faceUrl = await UploadToCloudinaryAsync(facePhotoFile, "verifications");
                     if (faceUrl != null)
                         _db.Certificates.Add(new Certificate
                         {
@@ -123,14 +173,14 @@ public class AccountController : Controller
                         });
                 }
 
-                // Upload bằng cấp/chứng chỉ bằng Service
+                // Upload bằng cấp/chứng chỉ
                 for (int i = 0; i < certFiles.Count; i++)
                 {
                     var file = certFiles[i];
                     if (file == null || file.Length == 0) continue;
                     var title = (i < certTitles.Count) ? certTitles[i] : string.Empty;
                     var ext = Path.GetExtension(file.FileName).ToLower();
-                    var url = await _cloudinary.UploadFileAsync(file, "certificates");
+                    var url = await UploadFileToCloudinaryAsync(file, "certificates");
                     if (url != null)
                         _db.Certificates.Add(new Certificate
                         {
@@ -270,7 +320,7 @@ public class AccountController : Controller
             return RedirectBack();
         }
 
-        var url = await _cloudinary.UploadImageAsync(avatarFile, "avatars");
+        var url = await UploadToCloudinaryAsync(avatarFile, "avatars");
         if (url != null)
         {
             user.AvatarUrl = url;

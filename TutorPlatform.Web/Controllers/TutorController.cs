@@ -12,7 +12,6 @@ using Microsoft.EntityFrameworkCore;
 using TutorPlatform.Core.Models;
 using TutorPlatform.Infrastructure.Data;
 using TutorPlatform.Web.ViewModels;
-using TutorPlatform.Web.Services;
 
 namespace TutorPlatform.Web.Controllers;
 
@@ -21,14 +20,12 @@ public class TutorController : Controller
     private readonly AppDbContext _db;
     private readonly UserManager<AppUser> _userManager;
     private readonly IWebHostEnvironment _env;
-    private readonly CloudinaryService _cloudinary;
 
-    public TutorController(AppDbContext db, UserManager<AppUser> userManager, IWebHostEnvironment env, CloudinaryService cloudinary)
+    public TutorController(AppDbContext db, UserManager<AppUser> userManager, IWebHostEnvironment env)
     {
         _db = db;
         _userManager = userManager;
         _env = env;
-        _cloudinary = cloudinary;
     }
 
     public async Task<IActionResult> Index(string? keyword, int? subjectId, string? area, decimal? maxRate)
@@ -112,15 +109,25 @@ public class TutorController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return RedirectToAction("Login", "Account");
 
-        // ── Upload Avatar qua Cloudinary ───────────────────────────────────
+        var uploadsPath = Path.Combine(_env.WebRootPath, "uploads");
+
+        // ── Upload Avatar ───────────────────────────────────
+        string? avatarUrl = null;
         if (avatarFile != null && avatarFile.Length > 0)
         {
-            var avatarUrl = await _cloudinary.UploadImageAsync(avatarFile, "avatars");
-            if (avatarUrl != null)
-            {
-                user.AvatarUrl = avatarUrl;
-                await _userManager.UpdateAsync(user);
-            }
+            var avatarFolder = Path.Combine(uploadsPath, "avatars");
+            Directory.CreateDirectory(avatarFolder);
+
+            var ext = Path.GetExtension(avatarFile.FileName);
+            var fileName = $"avatar_{user.Id}{ext}";
+            var path = Path.Combine(avatarFolder, fileName);
+
+            using var stream = new FileStream(path, FileMode.Create);
+            await avatarFile.CopyToAsync(stream);
+            avatarUrl = $"/uploads/avatars/{fileName}";
+
+            user.AvatarUrl = avatarUrl;
+            await _userManager.UpdateAsync(user);
         }
 
         // ── Tạo TutorProfile ────────────────────────────────
@@ -133,26 +140,35 @@ public class TutorController : Controller
         _db.TutorProfiles.Add(profile);
         await _db.SaveChangesAsync();
 
-        // ── Upload Ảnh khuôn mặt xác minh qua Cloudinary ────────────────────────────
+        // ── Upload Ảnh khuôn mặt xác minh ────────────────────────────
         if (facePhotoFile != null && facePhotoFile.Length > 0)
         {
-            var faceUrl = await _cloudinary.UploadImageAsync(facePhotoFile, "verifications");
-            if (faceUrl != null)
+            var faceFolder = Path.Combine(uploadsPath, "verifications");
+            Directory.CreateDirectory(faceFolder);
+
+            var ext = Path.GetExtension(facePhotoFile.FileName);
+            var name = $"face_{profile.Id}_{Guid.NewGuid()}{ext}";
+            var path = Path.Combine(faceFolder, name);
+
+            using var stream = new FileStream(path, FileMode.Create);
+            await facePhotoFile.CopyToAsync(stream);
+
+            _db.Certificates.Add(new Certificate
             {
-                _db.Certificates.Add(new Certificate
-                {
-                    TutorProfileId = profile.Id,
-                    Title = "Ảnh xác minh danh tính",
-                    FilePath = faceUrl,
-                    FileType = "image",
-                    Type = CertificateType.FacePhoto
-                });
-            }
+                TutorProfileId = profile.Id,
+                Title = "Ảnh xác minh danh tính",
+                FilePath = $"/uploads/verifications/{name}",
+                FileType = "image",
+                Type = CertificateType.FacePhoto
+            });
         }
 
-        // ── Upload Bằng cấp / Chứng chỉ qua Cloudinary ─────────────────────────────────
+        // ── Upload Bằng cấp / Chứng chỉ ─────────────────────────────────
         if (certFiles != null && certTitles != null)
         {
+            var certFolder = Path.Combine(uploadsPath, "certificates");
+            Directory.CreateDirectory(certFolder);
+
             for (int i = 0; i < Math.Min(certFiles.Count, certTitles.Count); i++)
             {
                 var file = certFiles[i];
@@ -161,19 +177,20 @@ public class TutorController : Controller
                 if (file == null || file.Length == 0) continue;
 
                 var ext = Path.GetExtension(file.FileName);
-                var url = await _cloudinary.UploadFileAsync(file, "certificates");
+                var name = $"cert_{profile.Id}_{Guid.NewGuid()}{ext}";
+                var path = Path.Combine(certFolder, name);
 
-                if (url != null)
+                using var stream = new FileStream(path, FileMode.Create);
+                await file.CopyToAsync(stream);
+
+                _db.Certificates.Add(new Certificate
                 {
-                    _db.Certificates.Add(new Certificate
-                    {
-                        TutorProfileId = profile.Id,
-                        Title = string.IsNullOrWhiteSpace(title) ? $"Bằng cấp {i + 1}" : title,
-                        FilePath = url,
-                        FileType = ext.ToLower() == ".pdf" ? "pdf" : "image",
-                        Type = CertificateType.Degree
-                    });
-                }
+                    TutorProfileId = profile.Id,
+                    Title = string.IsNullOrWhiteSpace(title) ? $"Bằng cấp {i + 1}" : title,
+                    FilePath = $"/uploads/certificates/{name}",
+                    FileType = ext.ToLower() == ".pdf" ? "pdf" : "image",
+                    Type = CertificateType.Degree
+                });
             }
         }
 
@@ -321,13 +338,16 @@ public class TutorController : Controller
             .FirstOrDefaultAsync(t => t.UserId == userId && t.IsApproved);
     }
 
+    // ==========================================
+    // ACTION DASHBOARD 
+    // ==========================================
     [Authorize(Roles = "Tutor")]
     public async Task<IActionResult> Dashboard()
     {
         var user = await _userManager.GetUserAsync(User);
         var profile = await _db.TutorProfiles
-            .AsNoTracking()
-            .AsSplitQuery()
+            .AsNoTracking() // 🚀 Tối ưu RAM
+            .AsSplitQuery() // 🚀 Tối ưu Database
             .Include(t => t.Bookings).ThenInclude(b => b.Student)
             .Include(t => t.Bookings).ThenInclude(b => b.Subject)
             .Include(t => t.ReceivedReviews).ThenInclude(r => r.Student)

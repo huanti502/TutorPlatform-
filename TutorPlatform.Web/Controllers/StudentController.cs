@@ -3,11 +3,12 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using TutorPlatform.Core.Models;
 using TutorPlatform.Infrastructure.Data; // Thêm để sử dụng AppDbContext
-using TutorPlatform.Web.Services;       // Thêm để sử dụng AIService & CloudinaryService
+using TutorPlatform.Web.Services;       // Thêm để sử dụng AIService
 using TutorPlatform.Web.ViewModels;
 
 namespace TutorPlatform.Web.Controllers;
@@ -19,21 +20,18 @@ public class StudentController : Controller
     private readonly IWebHostEnvironment _env;
     private readonly AppDbContext _db; // Bổ sung AppDbContext để truy vấn lịch học & review
     private readonly AIService _ai;    // Bổ sung AIService
-    private readonly CloudinaryService _cloudinary; // 🚀 Khai báo CloudinaryService
 
     // Cập nhật Constructor để tiêm đầy đủ các dịch vụ
     public StudentController(
         UserManager<AppUser> userManager,
         IWebHostEnvironment env,
         AppDbContext db,
-        AIService ai,
-        CloudinaryService cloudinary) // 🚀 Inject CloudinaryService
+        AIService ai)
     {
         _userManager = userManager;
         _env = env;
         _db = db;
         _ai = ai;
-        _cloudinary = cloudinary;
     }
 
     [HttpGet]
@@ -63,14 +61,31 @@ public class StudentController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return NotFound();
 
-        // ✅ Xử lý Upload Avatar bằng Cloudinary (Thay vì lưu ổ đĩa)
+        // ✅ Xử lý Upload Avatar
         if (model.AvatarFile != null && model.AvatarFile.Length > 0)
         {
-            var avatarUrl = await _cloudinary.UploadImageAsync(model.AvatarFile, "avatars");
-            if (avatarUrl != null)
+            // Tạo thư mục nếu chưa có
+            string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "avatars");
+            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+            // Xóa ảnh cũ nếu có (để tiết kiệm dung lượng)
+            if (!string.IsNullOrEmpty(user.AvatarUrl))
             {
-                user.AvatarUrl = avatarUrl;
+                string oldFilePath = Path.Combine(_env.WebRootPath, user.AvatarUrl.TrimStart('/'));
+                if (System.IO.File.Exists(oldFilePath)) System.IO.File.Delete(oldFilePath); // Đã sửa lỗi logic Exists nhầm ở bản cũ thành Delete
             }
+
+            // Lưu ảnh mới
+            string uniqueFileName = Guid.NewGuid().ToString() + "_" + model.AvatarFile.FileName;
+            string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await model.AvatarFile.CopyToAsync(fileStream);
+            }
+
+            // Cập nhật URL vào DB
+            user.AvatarUrl = "/uploads/avatars/" + uniqueFileName;
         }
 
         user.FullName = model.FullName;
