@@ -12,7 +12,6 @@
         <p class="text-muted">Thách đấu bạn bè, ai đúng nhiều hơn trong 60 giây thắng!</p>
     </div>
 
-    @* Chờ lời mời (ẩn mặc định) *@
     <div id="invite-toast" class="alert alert-warning d-none position-fixed"
          style="top:80px;right:20px;z-index:9999;min-width:320px;box-shadow:0 4px 20px rgba(0,0,0,.15)">
         <strong>⚔️ Lời thách đấu!</strong>
@@ -22,20 +21,24 @@
     </div>
 
     <div class="row g-4">
-        @* Cột trái: Chọn môn + cấp độ *@
         <div class="col-md-4">
             <div class="card shadow-sm h-100">
                 <div class="card-body">
                     <h6 class="fw-bold mb-3">⚙️ Cài đặt trận đấu</h6>
+
                     <div class="mb-3">
                         <label class="form-label small fw-semibold">Môn học</label>
                         <select id="sel-subject" class="form-select">
-                            @foreach (var s in subjects!)
+                            @if (subjects != null && subjects.Any())
                             {
-                                <option value="@s.Id" data-name="@s.Name">@s.Name</option>
+                                foreach (var s in subjects)
+                                {
+                                    <option value="@s.Id" data-name="@s.Name">@s.Name</option>
+                                }
                             }
                         </select>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label small fw-semibold">Cấp độ</label>
                         <select id="sel-level" class="form-select">
@@ -44,42 +47,54 @@
                             <option>Nâng cao</option>
                         </select>
                     </div>
+
                     <div id="challenge-status" class="alert alert-info d-none small"></div>
                 </div>
             </div>
         </div>
 
-        @* Cột phải: Danh sách đối thủ *@
         <div class="col-md-8">
             <div class="card shadow-sm">
                 <div class="card-body">
                     <h6 class="fw-bold mb-3">👥 Chọn đối thủ <span class="badge bg-secondary">Top XP</span></h6>
+
                     <div class="list-group list-group-flush">
-                        @foreach (var u in users!)
+                        @if (users != null && users.Any())
                         {
-                            <div class="list-group-item d-flex align-items-center gap-3 py-3">
-                                @if (!string.IsNullOrEmpty(u.AvatarUrl))
-                                {
-                                    <img src="@u.AvatarUrl"
-                                         class="rounded-circle flex-shrink-0"
-                                         style="width:42px;height:42px;object-fit:cover"
-                                         alt="@u.FullName" />
-                                }
-                                else
-                                {
-                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
-                                         style="width:42px;height:42px">
-                                        @u.FullName.FirstOrDefault()
+                            foreach (var u in users)
+                            {
+                                <div class="list-group-item d-flex align-items-center gap-3 py-3">
+                                    @if (!string.IsNullOrEmpty(u.AvatarUrl))
+                                    {
+                                        <img src="@u.AvatarUrl"
+                                             class="rounded-circle flex-shrink-0"
+                                             style="width:42px;height:42px;object-fit:cover"
+                                             alt="@u.FullName" />
+                                    }
+                                    else
+                                    {
+                                        <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
+                                             style="width:42px;height:42px">
+                                            @u.FullName.FirstOrDefault()
+                                        </div>
+                                    }
+
+                                    <div class="flex-grow-1">
+                                        <div class="fw-semibold">@u.FullName</div>
+                                        <small class="text-muted">@u.Role · @u.XpPoints XP · @u.XpLevel</small>
                                     </div>
-                                }
-                                <div class="flex-grow-1">
-                                    <div class="fw-semibold">@u.FullName</div>
-                                    <small class="text-muted">@u.Role · @u.XpPoints XP · @u.XpLevel</small>
+
+                                    <button class="btn btn-outline-danger btn-sm"
+                                            onclick="sendChallenge('@u.Id', '@u.FullName')">
+                                        ⚔️ Thách đấu
+                                    </button>
                                 </div>
-                                <button class="btn btn-outline-danger btn-sm"
-                                        onclick="sendChallenge('@u.Id', '@u.FullName')">
-                                    ⚔️ Thách đấu
-                                </button>
+                            }
+                        }
+                        else
+                        {
+                            <div class="text-muted small">
+                                Không có người dùng khác để thách đấu.
                             </div>
                         }
                     </div>
@@ -91,8 +106,10 @@
 
 @section Scripts {
     <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
+
     <script>
         const myId = '@me!.Id';
+
         let pendingRoomId = null;
         let pendingInvite = null;
 
@@ -103,42 +120,90 @@
 
         conn.on("ReceiveBattleInvite", invite => {
         pendingInvite = invite;
+
         document.getElementById("invite-text").textContent =
         `${invite.challengerName} thách đấu môn ${invite.subjectName} (${invite.level})`;
+
         document.getElementById("invite-toast").classList.remove("d-none");
         });
 
         conn.on("ChallengeSent", ({ roomId }) => {
         pendingRoomId = roomId;
-        showStatus("⏳ Đã gửi lời thách đấu, đang chờ đối thủ...", "info");
+        showStatus("⏳ Đã gửi lời thách đấu, đang chuyển vào phòng chờ...", "info");
+
+        setTimeout(() => {
+        window.location.href = `/Battle/Room/${roomId}`;
+        }, 500);
+        });
+
+        conn.on("ChallengeAccepted", ({ roomId }) => {
+        window.location.href = `/Battle/Room/${roomId}`;
         });
 
         conn.on("ChallengeDeclined", () => {
         showStatus("❌ Đối thủ đã từ chối lời thách đấu.", "danger");
         });
 
-        conn.on("BattleStarting", ({ roomId }) => {
-        window.location.href = `/Battle/Room/${roomId}`;
+        conn.on("BattleError", message => {
+        showStatus(message, "danger");
         });
 
-        conn.start().catch(console.error);
+        conn.start().catch(err => {
+        console.error(err);
+        showStatus("Không thể kết nối BattleHub. Hãy F5 hoặc đăng nhập lại.", "danger");
+        });
 
         function sendChallenge(opponentId, opponentName) {
         const subjectEl = document.getElementById("sel-subject");
+
+        if (!subjectEl || !subjectEl.value) {
+        showStatus("Chưa có môn học để tạo Battle.", "danger");
+        return;
+        }
+
         const subjectId = parseInt(subjectEl.value);
         const subjectName = subjectEl.selectedOptions[0].dataset.name;
         const level = document.getElementById("sel-level").value;
-        conn.invoke("Challenge", opponentId, subjectId, subjectName, level);
+
+        showStatus(`Đang gửi lời thách đấu tới ${opponentName}...`, "info");
+
+        conn.invoke("Challenge", opponentId, subjectId, subjectName, level)
+        .catch(err => {
+        console.error(err);
+        showStatus("Không thể gửi lời thách đấu.", "danger");
+        });
         }
 
         function acceptInvite() {
+        if (!pendingInvite) {
+        alert("Không tìm thấy lời mời.");
+        return;
+        }
+
         document.getElementById("invite-toast").classList.add("d-none");
-        conn.invoke("AcceptChallenge", pendingInvite.roomId);
+
+        conn.invoke("AcceptChallenge", pendingInvite.roomId)
+        .then(() => {
+        window.location.href = `/Battle/Room/${pendingInvite.roomId}`;
+        })
+        .catch(err => {
+        console.error(err);
+        alert("Không thể chấp nhận lời thách đấu.");
+        });
         }
 
         function declineInvite() {
+        if (!pendingInvite) {
+        return;
+        }
+
         document.getElementById("invite-toast").classList.add("d-none");
-        conn.invoke("DeclineChallenge", pendingInvite.roomId);
+
+        conn.invoke("DeclineChallenge", pendingInvite.roomId)
+        .catch(err => {
+        console.error(err);
+        alert("Không thể từ chối lời thách đấu.");
+        });
         }
 
         function showStatus(msg, type) {
