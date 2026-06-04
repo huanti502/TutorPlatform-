@@ -192,6 +192,7 @@
         let battleInfo = null;
         let battleStarted = false;
         let finished = false;
+        let questionsLoaded = false;
 
         const conn = new signalR.HubConnectionBuilder()
         .withUrl("/battleHub")
@@ -209,10 +210,7 @@
         });
 
         conn.on("RoomError", message => {
-        document.getElementById("loading-card").innerHTML = `
-        <p class="text-danger fw-bold">${message}</p>
-        <a href="/Battle" class="btn btn-primary mt-2">Quay lại Battle</a>
-        `;
+        showLoadingError(message);
         });
 
         conn.on("BothReady", async () => {
@@ -224,6 +222,12 @@
         if (myId !== battleInfo.player1Id) {
         return;
         }
+
+        if (questionsLoaded) {
+        return;
+        }
+
+        questionsLoaded = true;
 
         try {
         const res = await fetch("/Battle/GenerateQuestions", {
@@ -282,9 +286,11 @@
         });
 
         conn.on("BattleResult", ({ result, winnerName, score1, score2, xpWinner, xpLoser }) => {
-        if (finished) return;
-        finished = true;
+        if (finished) {
+        return;
+        }
 
+        finished = true;
         clearInterval(timerHandle);
 
         document.getElementById("battle-card").style.display = "none";
@@ -327,7 +333,7 @@
 
         conn.on("OpponentLeft", () => {
         clearInterval(timerHandle);
-        alert("Đối thủ đã rời trận. Bạn thắng mặc định!");
+        alert("Đối thủ đã rời trận.");
         window.location.href = "/Battle";
         });
 
@@ -341,7 +347,9 @@
         });
 
         function startBattle() {
-        if (battleStarted) return;
+        if (battleStarted) {
+        return;
+        }
 
         battleStarted = true;
         timeLeft = 60;
@@ -373,12 +381,17 @@
         const q = questions[currentQ];
         answered = false;
 
-        document.getElementById("question-text").textContent = q.question;
+        document.getElementById("question-text").textContent = q.question || "Không có nội dung câu hỏi";
         document.getElementById("q-counter").textContent = `Câu ${currentQ + 1}/${questions.length}`;
         document.getElementById("q-progress").style.width = `${((currentQ + 1) / questions.length) * 100}%`;
 
         const wrap = document.getElementById("options-wrap");
         wrap.innerHTML = "";
+
+        if (!q.options || !Array.isArray(q.options)) {
+        showLoadingError("Câu hỏi AI trả về thiếu danh sách đáp án.");
+        return;
+        }
 
         q.options.forEach((opt, i) => {
         const btn = document.createElement("button");
@@ -390,7 +403,9 @@
         }
 
         function pickAnswer(chosen, correct) {
-        if (answered) return;
+        if (answered) {
+        return;
+        }
 
         answered = true;
 
@@ -415,16 +430,21 @@
         if (currentQ < questions.length) {
         renderQuestion();
         } else {
-        document.getElementById("question-text").textContent = "Bạn đã trả lời hết câu hỏi. Chờ hết giờ để xem kết quả.";
+        document.getElementById("question-text").textContent =
+        "Bạn đã trả lời hết câu hỏi. Chờ hết giờ để xem kết quả.";
+
         document.getElementById("options-wrap").innerHTML = "";
         }
         }, 1200);
         }
 
         function showLoadingError(message) {
+        document.getElementById("loading-card").style.display = "block";
+        document.getElementById("battle-card").style.display = "none";
+
         document.getElementById("loading-card").innerHTML = `
         <p class="text-danger fw-bold">${message}</p>
-        <p class="text-muted small">Bạn có thể bấm F5 hoặc quay lại tạo trận mới.</p>
+        <p class="text-muted small">Không mở lại link phòng cũ. Hãy quay lại Battle và tạo trận mới.</p>
         <a href="/Battle" class="btn btn-primary mt-2">Quay lại Battle</a>
         `;
         }
