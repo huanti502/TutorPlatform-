@@ -63,14 +63,13 @@ public class BattleHub : Hub
         room.Player2Name = user.FullName;
         room.Status = "Ready";
 
-        // Báo cả 2 vào trang battle
         await Clients.Caller.SendAsync("BattleStarting", new
         {
             roomId,
             subjectId = room.SubjectId,
             subjectName = room.SubjectName,
             level = room.Level,
-            player1Id = room.Player1Id, // 🚀 THÊM DÒNG NÀY ĐỂ FIX LỖI KẸT LOADING
+            player1Id = room.Player1Id, // Đã bổ sung
             player1Name = room.Player1Name,
             player2Name = room.Player2Name
         });
@@ -81,7 +80,7 @@ public class BattleHub : Hub
             subjectId = room.SubjectId,
             subjectName = room.SubjectName,
             level = room.Level,
-            player1Id = room.Player1Id, // 🚀 THÊM DÒNG NÀY ĐỂ FIX LỖI KẸT LOADING
+            player1Id = room.Player1Id, // Đã bổ sung
             player1Name = room.Player1Name,
             player2Name = room.Player2Name
         });
@@ -120,7 +119,7 @@ public class BattleHub : Hub
                 subjectId = room.SubjectId,
                 subjectName = room.SubjectName,
                 level = room.Level,
-                player1Id = room.Player1Id, // 🚀 THÊM DÒNG NÀY ĐỂ FIX LỖI KẸT LOADING
+                player1Id = room.Player1Id, // Đã bổ sung
                 player1Name = room.Player1Name,
                 player2Name = room.Player2Name
             });

@@ -177,12 +177,10 @@
         <a href="/Quiz" class="btn btn-outline-secondary mt-2 ms-2">📚 Quiz thường</a>
     </div>
 </div>
-
 @section Scripts {
     <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
     <script>
         const roomId = '@ViewBag.RoomId';
-        // 🚀 FIX 1: Ép về chữ thường ngay từ đầu để so sánh ID chính xác 100%
         const myId = '@ViewBag.MyId'.toLowerCase();
         const myName = '@ViewBag.MyName';
 
@@ -192,6 +190,7 @@
         let timeLeft = 60;
         let timerHandle = null;
         let battleInfo = null;
+        let isBothReady = false; // Thuật toán cờ theo dõi tín hiệu
 
         const conn = new signalR.HubConnectionBuilder()
         .withUrl("/battleHub")
@@ -204,20 +203,27 @@
         document.getElementById("p2-name").textContent = info.player2Name;
         document.getElementById("final-p1-name").textContent = info.player1Name;
         document.getElementById("final-p2-name").textContent = info.player2Name;
+
+        checkAndStartAI(); // Nhận xong dữ liệu thì báo cho AI
         });
 
-        conn.on("BothReady", async () => {
-        if (!battleInfo) return;
+        conn.on("BothReady", () => {
+        isBothReady = true;
+        checkAndStartAI(); // Nhận xong tín hiệu sẵn sàng thì báo cho AI
+        });
 
-        // 🚀 FIX 2: Ép ID từ server về chữ thường để so sánh chuẩn xác
+        async function checkAndStartAI() {
+        // Phải hội đủ 2 điều kiện mới cho chạy tiếp
+        if (!battleInfo || !isBothReady) return;
+
+        isBothReady = false; // Đóng chốt không cho gọi AI 2 lần
+
         if (myId !== battleInfo.player1Id.toLowerCase()) {
-        // Người chơi 2 sẽ thấy dòng chữ này trong lúc chờ
         document.querySelector("#loading-card p").textContent = "Đối thủ đang nhờ AI soạn đề, vui lòng đợi khoảng 15 giây...";
         return;
         }
 
-        // Người chơi 1 sẽ thấy dòng chữ này khi bắt đầu gọi AI
-        document.querySelector("#loading-card p").textContent = "AI đang tạo bộ câu hỏi thi, vui lòng đợi khoảng 15 giây...";
+        document.querySelector("#loading-card p").textContent = "AI đang tạo bộ câu hỏi thi, vui lòng đợi khoảng 15-20 giây...";
 
         try {
         const res = await fetch("/Battle/GenerateQuestions", {
@@ -238,7 +244,7 @@
         console.error("Lỗi khi kết nối AI:", err);
         alert("Có lỗi xảy ra khi gọi AI. Hãy nhấn F5 để tải lại trang!");
         }
-        });
+        }
 
         conn.on("ReceiveQuestions", (questionsJson) => {
         questions = JSON.parse(questionsJson);
