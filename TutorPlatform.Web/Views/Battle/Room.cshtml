@@ -197,6 +197,8 @@
         .withAutomaticReconnect()
         .build();
 
+        // BUG FIX: BattleStarting có thể được gửi lại từ JoinRoom để đảm bảo
+        // battleInfo luôn được set trước khi BothReady xử lý
         conn.on("BattleStarting", info => {
         battleInfo = info;
         document.getElementById("p1-name").textContent = info.player1Name;
@@ -206,6 +208,8 @@
         });
 
         conn.on("BothReady", async () => {
+        // BUG FIX: Chỉ player1 generate câu hỏi
+        // battleInfo đã được đảm bảo có giá trị nhờ server gửi lại BattleStarting trong JoinRoom
         if (myId !== battleInfo?.player1Id) return;
         const res = await fetch("/Battle/GenerateQuestions", {
         method: "POST",
@@ -263,9 +267,11 @@
         window.location.href = "/Battle";
         });
 
-        conn.start().then(() => {
-        conn.invoke("JoinRoom", roomId);
-        });
+        // BUG FIX: Dùng async/await để đảm bảo JoinRoom chỉ được gọi sau khi
+        // connection đã thực sự started, tránh race condition
+        conn.start()
+        .then(() => conn.invoke("JoinRoom", roomId))
+        .catch(err => console.error("SignalR connection error:", err));
 
         function startBattle() {
         timerHandle = setInterval(() => {
