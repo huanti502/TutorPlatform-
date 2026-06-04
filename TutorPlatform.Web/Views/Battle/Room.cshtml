@@ -182,7 +182,8 @@
     <script src="~/lib/microsoft/signalr/dist/browser/signalr.min.js"></script>
     <script>
         const roomId = '@ViewBag.RoomId';
-        const myId = '@ViewBag.MyId';
+        // 🚀 FIX 1: Ép về chữ thường ngay từ đầu để so sánh ID chính xác 100%
+        const myId = '@ViewBag.MyId'.toLowerCase();
         const myName = '@ViewBag.MyName';
 
         let questions = [];
@@ -197,8 +198,6 @@
         .withAutomaticReconnect()
         .build();
 
-        // BUG FIX: BattleStarting có thể được gửi lại từ JoinRoom để đảm bảo
-        // battleInfo luôn được set trước khi BothReady xử lý
         conn.on("BattleStarting", info => {
         battleInfo = info;
         document.getElementById("p1-name").textContent = info.player1Name;
@@ -208,17 +207,37 @@
         });
 
         conn.on("BothReady", async () => {
-        // BUG FIX: Chỉ player1 generate câu hỏi
-        // battleInfo đã được đảm bảo có giá trị nhờ server gửi lại BattleStarting trong JoinRoom
-        if (myId !== battleInfo?.player1Id) return;
+        if (!battleInfo) return;
+
+        // 🚀 FIX 2: Ép ID từ server về chữ thường để so sánh chuẩn xác
+        if (myId !== battleInfo.player1Id.toLowerCase()) {
+        // Người chơi 2 sẽ thấy dòng chữ này trong lúc chờ
+        document.querySelector("#loading-card p").textContent = "Đối thủ đang nhờ AI soạn đề, vui lòng đợi khoảng 15 giây...";
+        return;
+        }
+
+        // Người chơi 1 sẽ thấy dòng chữ này khi bắt đầu gọi AI
+        document.querySelector("#loading-card p").textContent = "AI đang tạo bộ câu hỏi thi, vui lòng đợi khoảng 15 giây...";
+
+        try {
         const res = await fetch("/Battle/GenerateQuestions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ subjectId: battleInfo.subjectId, level: battleInfo.level })
         });
+
         const json = await res.json();
-        if (!json.success) { alert("Lỗi tải câu hỏi: " + json.error); return; }
+
+        if (!json.success) {
+        alert("Lỗi tải câu hỏi: " + json.error);
+        return;
+        }
+
         await conn.invoke("BroadcastQuestions", roomId, JSON.stringify(json.data.questions));
+        } catch (err) {
+        console.error("Lỗi khi kết nối AI:", err);
+        alert("Có lỗi xảy ra khi gọi AI. Hãy nhấn F5 để tải lại trang!");
+        }
         });
 
         conn.on("ReceiveQuestions", (questionsJson) => {
@@ -267,8 +286,6 @@
         window.location.href = "/Battle";
         });
 
-        // BUG FIX: Dùng async/await để đảm bảo JoinRoom chỉ được gọi sau khi
-        // connection đã thực sự started, tránh race condition
         conn.start()
         .then(() => conn.invoke("JoinRoom", roomId))
         .catch(err => console.error("SignalR connection error:", err));
