@@ -235,4 +235,5 @@ public class BattleRoom
     public int Score2 { get; set; }
     public string Status { get; set; } = "Waiting";
     public DateTime StartTime { get; set; }
+    //
 }
