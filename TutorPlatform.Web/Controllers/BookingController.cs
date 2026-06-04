@@ -319,19 +319,18 @@ public class BookingController : Controller
     public async Task<IActionResult> GetCalendarEvents(DateTime start, DateTime end)
     {
         var userId = _userManager.GetUserId(User);
-
-        // 🛠️ SỬA LỖI POSTGRESQL: Ép biến Start / End thành UTC
-        var startUtc = start.ToUniversalTime();
-        var endUtc = end.ToUniversalTime();
-
         List<Booking> bookings;
+
+        // Mở rộng ±2 ngày để tránh lệch timezone
+        var startUtc = start.AddDays(-2);
+        var endUtc = end.AddDays(2);
 
         if (User.IsInRole("Tutor"))
         {
             var profile = await _db.TutorProfiles.FirstOrDefaultAsync(t => t.UserId == userId);
             bookings = profile == null ? new() : await _db.Bookings
                 .Include(b => b.Student).Include(b => b.Subject)
-                .Where(b => b.TutorProfileId == profile.Id && b.StartTime >= startUtc && b.EndTime <= endUtc)
+                .Where(b => b.TutorProfileId == profile.Id && b.StartTime >= startUtc && b.StartTime <= endUtc)
                 .ToListAsync();
         }
         else
@@ -339,7 +338,7 @@ public class BookingController : Controller
             bookings = await _db.Bookings
                 .Include(b => b.TutorProfile).ThenInclude(t => t.User)
                 .Include(b => b.Subject)
-                .Where(b => b.StudentId == userId && b.StartTime >= startUtc && b.EndTime <= endUtc)
+                .Where(b => b.StudentId == userId && b.StartTime >= startUtc && b.StartTime <= endUtc)
                 .ToListAsync();
         }
 

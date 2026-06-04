@@ -38,6 +38,7 @@ public class BattleHub : Hub
             Level = level,
             Player1Id = challenger.Id,
             Player1Name = challenger.FullName,
+            Player1ConnectionId = Context.ConnectionId, // lưu ngay khi challenge
             Player2Id = opponentId,
             Status = "Waiting"
         };
@@ -65,16 +66,28 @@ public class BattleHub : Hub
         if (user == null || user.Id != room.Player2Id) return;
 
         room.Player2Name = user.FullName;
+        room.Player2ConnectionId = Context.ConnectionId;
         room.Status = "Ready";
 
         await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
 
-        // Thêm player1 vào group — cần lưu connectionId của player1
+        // Thêm player1 vào group nếu có connectionId
         if (room.Player1ConnectionId != null)
             await Groups.AddToGroupAsync(room.Player1ConnectionId, roomId);
 
-        // Báo cả 2 vào trang battle
-        await Clients.Group(roomId).SendAsync("BattleStarting", new
+        // Báo Player2 vào trang battle ngay
+        await Clients.Caller.SendAsync("BattleStarting", new
+        {
+            roomId,
+            subjectId = room.SubjectId,
+            subjectName = room.SubjectName,
+            level = room.Level,
+            player1Name = room.Player1Name,
+            player2Name = room.Player2Name
+        });
+
+        // Báo Player1 vào trang battle (dùng User() để đảm bảo nhận được)
+        await Clients.User(room.Player1Id).SendAsync("BattleStarting", new
         {
             roomId,
             subjectId = room.SubjectId,
