@@ -60,15 +60,12 @@ public class BattleHub : Hub
                 return;
             }
 
+            // FIX: Chỉ xóa room "Waiting" của chính challenger (không xóa room của opponent)
+            // Tránh xóa room đang "Playing" hoặc "Ready" của người khác
             var oldRooms = await _db.BattleRooms
                 .Where(r =>
-                    r.Status != "Finished" &&
-                    (
-                        r.Player1Id == challenger.Id ||
-                        r.Player2Id == challenger.Id ||
-                        r.Player1Id == opponentId ||
-                        r.Player2Id == opponentId
-                    ))
+                    r.Status == "Waiting" &&
+                    (r.Player1Id == challenger.Id || r.Player2Id == challenger.Id))
                 .ToListAsync();
 
             foreach (var old in oldRooms)
@@ -129,9 +126,7 @@ public class BattleHub : Hub
         catch (Exception ex)
         {
             var realError = ex.GetBaseException().Message;
-
             _logger.LogError(ex, "Battle Challenge error");
-
             await Clients.Caller.SendAsync("BattleError", "Lỗi server khi gửi thách đấu: " + realError);
         }
     }
@@ -140,12 +135,13 @@ public class BattleHub : Hub
     {
         try
         {
+            // FIX: Chấp nhận cả room "Waiting" (trạng thái ban đầu khi mới tạo)
             var room = await _db.BattleRooms
-                .FirstOrDefaultAsync(r => r.RoomId == roomId && r.Status != "Finished");
+                .FirstOrDefaultAsync(r => r.RoomId == roomId && (r.Status == "Waiting" || r.Status == "Ready"));
 
             if (room == null)
             {
-                await Clients.Caller.SendAsync("BattleError", "Không tìm thấy phòng Battle.");
+                await Clients.Caller.SendAsync("BattleError", "Không tìm thấy phòng Battle hoặc phòng đã hết hạn.");
                 return;
             }
 
@@ -171,11 +167,13 @@ public class BattleHub : Hub
 
             await _db.SaveChangesAsync();
 
+            // Gửi cho Player1 (challenger)
             await Clients.User(room.Player1Id).SendAsync("ChallengeAccepted", new
             {
                 roomId = room.RoomId
             });
 
+            // Gửi cho Player2 (người accept)
             await Clients.Caller.SendAsync("ChallengeAccepted", new
             {
                 roomId = room.RoomId
@@ -184,9 +182,7 @@ public class BattleHub : Hub
         catch (Exception ex)
         {
             var realError = ex.GetBaseException().Message;
-
             _logger.LogError(ex, "AcceptChallenge error");
-
             await Clients.Caller.SendAsync("BattleError", "Lỗi server khi chấp nhận Battle: " + realError);
         }
     }
@@ -214,9 +210,7 @@ public class BattleHub : Hub
         catch (Exception ex)
         {
             var realError = ex.GetBaseException().Message;
-
             _logger.LogError(ex, "DeclineChallenge error");
-
             await Clients.Caller.SendAsync("BattleError", "Lỗi server khi từ chối Battle: " + realError);
         }
     }
@@ -225,6 +219,8 @@ public class BattleHub : Hub
     {
         try
         {
+            // FIX: Tìm room không phân biệt status (trừ Finished)
+            // Cho phép join room ở bất kỳ trạng thái "Waiting", "Ready", "Playing"
             var room = await _db.BattleRooms
                 .FirstOrDefaultAsync(r => r.RoomId == roomId && r.Status != "Finished");
 
@@ -274,6 +270,7 @@ public class BattleHub : Hub
                 status = room.Status
             });
 
+            // Re-query để lấy trạng thái mới nhất sau khi cả 2 đã cập nhật ConnectionId
             var freshRoom = await _db.BattleRooms
                 .FirstOrDefaultAsync(r => r.RoomId == roomId && r.Status != "Finished");
 
@@ -282,9 +279,14 @@ public class BattleHub : Hub
                 return;
             }
 
-            if (!string.IsNullOrWhiteSpace(freshRoom.Player1ConnectionId) &&
-                !string.IsNullOrWhiteSpace(freshRoom.Player2ConnectionId) &&
-                freshRoom.Status == "Ready")
+            bool bothConnected = !string.IsNullOrWhiteSpace(freshRoom.Player1ConnectionId) &&
+                                 !string.IsNullOrWhiteSpace(freshRoom.Player2ConnectionId);
+
+            // FIX: Cho phép chuyển từ "Waiting" hoặc "Ready" sang "Playing"
+            // (trước đây chỉ check Status == "Ready", bỏ lỡ case "Waiting")
+            bool canStart = freshRoom.Status == "Ready" || freshRoom.Status == "Waiting";
+
+            if (bothConnected && canStart)
             {
                 freshRoom.Status = "Playing";
                 freshRoom.StartTime = DateTime.UtcNow;
@@ -310,9 +312,7 @@ public class BattleHub : Hub
         catch (Exception ex)
         {
             var realError = ex.GetBaseException().Message;
-
             _logger.LogError(ex, "JoinRoom error");
-
             await Clients.Caller.SendAsync("RoomError", "Lỗi server khi vào phòng Battle: " + realError);
         }
     }
@@ -451,9 +451,7 @@ public class BattleHub : Hub
         catch (Exception ex)
         {
             var realError = ex.GetBaseException().Message;
-
             _logger.LogError(ex, "BroadcastQuestions error");
-
             await Clients.Caller.SendAsync("RoomError", "Lỗi gửi câu hỏi Battle: " + realError);
         }
     }
