@@ -69,7 +69,7 @@ public class BattleHub : Hub
             subjectId = room.SubjectId,
             subjectName = room.SubjectName,
             level = room.Level,
-            player1Id = room.Player1Id, // Đã bổ sung
+            player1Id = room.Player1Id,
             player1Name = room.Player1Name,
             player2Name = room.Player2Name
         });
@@ -80,7 +80,7 @@ public class BattleHub : Hub
             subjectId = room.SubjectId,
             subjectName = room.SubjectName,
             level = room.Level,
-            player1Id = room.Player1Id, // Đã bổ sung
+            player1Id = room.Player1Id,
             player1Name = room.Player1Name,
             player2Name = room.Player2Name
         });
@@ -93,22 +93,30 @@ public class BattleHub : Hub
         await Clients.User(room.Player1Id).SendAsync("ChallengeDeclined");
     }
 
-    public async Task JoinRoom(string roomId)
+    // 🚀 FIX: Nhận clientUserId trực tiếp từ JS để đảm bảo 100% khớp ID
+    public async Task JoinRoom(string roomId, string clientUserId)
     {
-        if (!Rooms.TryGetValue(roomId, out var room)) return;
-        var userId = _userManager.GetUserId(Context.User!);
+        Console.WriteLine($"[BATTLE] Tín hiệu JoinRoom từ ID: {clientUserId} vào phòng {roomId}");
+
+        if (!Rooms.TryGetValue(roomId, out var room))
+        {
+            Console.WriteLine($"[BATTLE] Lỗi: Không tìm thấy phòng {roomId}!");
+            return;
+        }
 
         await Groups.AddToGroupAsync(Context.ConnectionId, roomId);
 
-        if (userId == room.Player1Id)
+        if (string.Equals(clientUserId, room.Player1Id, StringComparison.OrdinalIgnoreCase))
         {
             room.Player1ConnectionId = Context.ConnectionId;
             room.Player1Joined = true;
+            Console.WriteLine($"[BATTLE] Player 1 ({room.Player1Name}) đã vào phòng.");
         }
-        else if (userId == room.Player2Id)
+        else if (string.Equals(clientUserId, room.Player2Id, StringComparison.OrdinalIgnoreCase))
         {
             room.Player2ConnectionId = Context.ConnectionId;
             room.Player2Joined = true;
+            Console.WriteLine($"[BATTLE] Player 2 ({room.Player2Name}) đã vào phòng.");
         }
 
         if (room.Status == "Ready" || room.Status == "Playing")
@@ -119,7 +127,7 @@ public class BattleHub : Hub
                 subjectId = room.SubjectId,
                 subjectName = room.SubjectName,
                 level = room.Level,
-                player1Id = room.Player1Id, // Đã bổ sung
+                player1Id = room.Player1Id,
                 player1Name = room.Player1Name,
                 player2Name = room.Player2Name
             });
@@ -127,6 +135,7 @@ public class BattleHub : Hub
 
         if (room.Player1Joined && room.Player2Joined && room.Status == "Ready")
         {
+            Console.WriteLine($"[BATTLE] Thành công! Cả 2 đã vào phòng. Bắn tín hiệu BothReady.");
             room.Status = "Playing";
             room.StartTime = DateTime.UtcNow;
             await Clients.Group(roomId).SendAsync("BothReady");
@@ -141,11 +150,7 @@ public class BattleHub : Hub
         if (userId == room.Player1Id && isCorrect) room.Score1++;
         else if (userId == room.Player2Id && isCorrect) room.Score2++;
 
-        await Clients.Group(roomId).SendAsync("ScoreUpdate", new
-        {
-            score1 = room.Score1,
-            score2 = room.Score2
-        });
+        await Clients.Group(roomId).SendAsync("ScoreUpdate", new { score1 = room.Score1, score2 = room.Score2 });
     }
 
     public async Task FinishBattle(string roomId)
@@ -154,7 +159,7 @@ public class BattleHub : Hub
         if (room.Status == "Finished") return;
         room.Status = "Finished";
 
-        string winnerId, loserId, winnerName, result;
+        string winnerId = "", loserId = "", winnerName = "", result = "draw";
         if (room.Score1 > room.Score2)
         {
             winnerId = room.Player1Id; loserId = room.Player2Id;
@@ -164,10 +169,6 @@ public class BattleHub : Hub
         {
             winnerId = room.Player2Id; loserId = room.Player1Id;
             winnerName = room.Player2Name; result = "player2";
-        }
-        else
-        {
-            winnerId = ""; loserId = ""; winnerName = ""; result = "draw";
         }
 
         int xpWon = 0, xpLost = 0;
@@ -199,12 +200,14 @@ public class BattleHub : Hub
 
     public override async Task OnDisconnectedAsync(Exception? exception)
     {
-        var userId = _userManager.GetUserId(Context.User!);
+        // 🚀 FIX: Dùng ConnectionId để tìm phòng, tránh việc kết nối cũ ngắt làm bay luôn phòng mới
         var room = Rooms.Values.FirstOrDefault(r =>
-            (r.Player1Id == userId || r.Player2Id == userId) && r.Status == "Playing");
+            (r.Player1ConnectionId == Context.ConnectionId || r.Player2ConnectionId == Context.ConnectionId)
+            && r.Status == "Playing");
 
         if (room != null)
         {
+            Console.WriteLine($"[BATTLE] Một người chơi đã thoát. Hủy phòng {room.RoomId}");
             room.Status = "Finished";
             await Clients.Group(room.RoomId).SendAsync("OpponentLeft");
             Rooms.TryRemove(room.RoomId, out _);

@@ -190,12 +190,20 @@
         let timeLeft = 60;
         let timerHandle = null;
         let battleInfo = null;
-        let isBothReady = false; // Thuật toán cờ theo dõi tín hiệu
+        let isBothReady = false;
 
         const conn = new signalR.HubConnectionBuilder()
         .withUrl("/battleHub")
         .withAutomaticReconnect()
         .build();
+
+        // 🚀 CƠ CHẾ TIMEOUT DỰ PHÒNG (Gợi ý của bạn)
+        const startTimeout = setTimeout(() => {
+        console.error("Lỗi: Quá thời gian chờ server hoặc AI.");
+        document.querySelector("#loading-card p").innerHTML = "Không thể tải trận đấu.<br/>Vui lòng nhấn F5 hoặc quay lại trang trước.";
+        document.querySelector("#loading-card .spinner-border").classList.add("d-none");
+        try { conn.stop(); } catch {}
+        }, 40000);
 
         conn.on("BattleStarting", info => {
         battleInfo = info;
@@ -203,27 +211,24 @@
         document.getElementById("p2-name").textContent = info.player2Name;
         document.getElementById("final-p1-name").textContent = info.player1Name;
         document.getElementById("final-p2-name").textContent = info.player2Name;
-
-        checkAndStartAI(); // Nhận xong dữ liệu thì báo cho AI
+        checkAndStartAI();
         });
 
         conn.on("BothReady", () => {
         isBothReady = true;
-        checkAndStartAI(); // Nhận xong tín hiệu sẵn sàng thì báo cho AI
+        checkAndStartAI();
         });
 
         async function checkAndStartAI() {
-        // Phải hội đủ 2 điều kiện mới cho chạy tiếp
         if (!battleInfo || !isBothReady) return;
-
-        isBothReady = false; // Đóng chốt không cho gọi AI 2 lần
+        isBothReady = false;
 
         if (myId !== battleInfo.player1Id.toLowerCase()) {
-        document.querySelector("#loading-card p").textContent = "Đối thủ đang nhờ AI soạn đề, vui lòng đợi khoảng 15 giây...";
+        document.querySelector("#loading-card p").textContent = "Đối thủ đang nhờ AI soạn đề, vui lòng đợi...";
         return;
         }
 
-        document.querySelector("#loading-card p").textContent = "AI đang tạo bộ câu hỏi thi, vui lòng đợi khoảng 15-20 giây...";
+        document.querySelector("#loading-card p").textContent = "AI đang soạn 10 câu hỏi, vui lòng đợi 15-20 giây...";
 
         try {
         const res = await fetch("/Battle/GenerateQuestions", {
@@ -235,18 +240,19 @@
         const json = await res.json();
 
         if (!json.success) {
-        alert("Lỗi tải câu hỏi: " + json.error);
+        clearTimeout(startTimeout);
+        alert("Lỗi tải câu hỏi từ AI: " + json.error);
         return;
         }
 
         await conn.invoke("BroadcastQuestions", roomId, JSON.stringify(json.data.questions));
         } catch (err) {
         console.error("Lỗi khi kết nối AI:", err);
-        alert("Có lỗi xảy ra khi gọi AI. Hãy nhấn F5 để tải lại trang!");
         }
         }
 
         conn.on("ReceiveQuestions", (questionsJson) => {
+        clearTimeout(startTimeout); // 🚀 Có câu hỏi là hủy timeout ngay
         questions = JSON.parse(questionsJson);
         document.getElementById("loading-card").style.display = "none";
         document.getElementById("battle-card").style.display = "block";
@@ -288,12 +294,17 @@
 
         conn.on("OpponentLeft", () => {
         clearInterval(timerHandle);
+        clearTimeout(startTimeout);
         alert("Đối thủ đã rời trận. Bạn thắng mặc định!");
         window.location.href = "/Battle";
         });
 
+        // 🚀 FIX: Truyền trực tiếp myId lên server để tránh lỗi rớt định danh
         conn.start()
-        .then(() => conn.invoke("JoinRoom", roomId))
+        .then(() => {
+        console.log("Đã kết nối. Đang JoinRoom với ID:", myId);
+        return conn.invoke("JoinRoom", roomId, myId);
+        })
         .catch(err => console.error("SignalR connection error:", err));
 
         function startBattle() {
