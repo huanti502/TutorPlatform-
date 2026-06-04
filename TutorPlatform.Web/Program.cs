@@ -11,20 +11,55 @@ AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Đọc DATABASE_URL từ Render (PostgreSQL)
+// ======================================================
+// CẤU HÌNH DATABASE POSTGRESQL CHO RENDER
+// ======================================================
 var databaseUrl = Environment.GetEnvironmentVariable("DATABASE_URL");
-if (!string.IsNullOrEmpty(databaseUrl))
+
+if (!string.IsNullOrWhiteSpace(databaseUrl))
 {
     var uri = new Uri(databaseUrl);
     var userInfo = uri.UserInfo.Split(':');
-    var npgsqlConn = $"Host={uri.Host};Port={uri.Port};Database={uri.AbsolutePath.TrimStart('/')};Username={userInfo[0]};Password={userInfo[1]};SSL Mode=Require;Trust Server Certificate=true";
+
+    var username = Uri.UnescapeDataString(userInfo[0]);
+    var password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "";
+
+    var npgsqlConn =
+        $"Host={uri.Host};" +
+        $"Port={uri.Port};" +
+        $"Database={uri.AbsolutePath.TrimStart('/')};" +
+        $"Username={username};" +
+        $"Password={password};" +
+        $"SSL Mode=Require;" +
+        $"Trust Server Certificate=true";
+
     builder.Configuration["ConnectionStrings:DefaultConnection"] = npgsqlConn;
 }
 
-builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"))
-           .ConfigureWarnings(w => w.Ignore(RelationalEventId.PendingModelChangesWarning)));
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
+if (string.IsNullOrWhiteSpace(connectionString))
+{
+    throw new InvalidOperationException(
+        "Chưa cấu hình ConnectionStrings:DefaultConnection hoặc DATABASE_URL. " +
+        "Hãy kiểm tra appsettings.json hoặc Environment Variables trên Render.");
+}
+
+// ======================================================
+// ĐĂNG KÝ DBCONTEXT
+// ======================================================
+builder.Services.AddDbContext<AppDbContext>(options =>
+{
+    options.UseNpgsql(connectionString)
+        .ConfigureWarnings(w =>
+        {
+            w.Ignore(RelationalEventId.PendingModelChangesWarning);
+        });
+});
+
+// ======================================================
+// IDENTITY
+// ======================================================
 builder.Services.AddIdentity<AppUser, IdentityRole>(options =>
 {
     options.Password.RequireDigit = true;
@@ -41,48 +76,68 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
 });
 
+// ======================================================
+// MVC + SIGNALR
+// ======================================================
 builder.Services.AddControllersWithViews();
 builder.Services.AddSignalR();
 
-// ✅ Đăng ký các dịch vụ Hệ thống & AI
+// ======================================================
+// SERVICES
+// ======================================================
 builder.Services.AddScoped<BadgeService>();
 builder.Services.AddScoped<AIService>();
 builder.Services.AddScoped<RecommendationService>();
 builder.Services.AddScoped<XpService>();
+
 builder.Services.AddHttpClient();
-builder.Services.AddSingleton<TutorPlatform.Web.Services.CloudinaryService>();
+builder.Services.AddSingleton<CloudinaryService>();
 
 var app = builder.Build();
 
-// FIX LỖI 3: Migrate tự động + try/catch để dễ debug
+// ======================================================
+// MIGRATION + SEED DATABASE
+// ======================================================
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+    var logger = services.GetRequiredService<ILogger<Program>>();
+
     try
     {
+        logger.LogInformation("Đang kiểm tra và migrate database...");
+
         var db = services.GetRequiredService<AppDbContext>();
         var userManager = services.GetRequiredService<UserManager<AppUser>>();
         var roleManager = services.GetRequiredService<RoleManager<IdentityRole>>();
 
-        await db.Database.MigrateAsync(); // ← Chạy migration trước
-        await SeedData.SeedAllAsync(db, userManager, roleManager); //................... quyét dữ liệu trong SeedData
+        await db.Database.MigrateAsync();
 
-        // ==============================================================
-        // 🚀 TỰ ĐỘNG KHỞI TẠO ROLES VÀ TÀI KHOẢN ADMIN MẶC ĐỊNH
-        // ==============================================================
+        logger.LogInformation("Database migration hoàn tất.");
 
-        // Tạo các roles nếu chưa tồn tại
+        await SeedData.SeedAllAsync(db, userManager, roleManager);
+
+        logger.LogInformation("SeedData hoàn tất.");
+
         foreach (var role in new[] { "Admin", "Student", "Tutor" })
         {
             if (!await roleManager.RoleExistsAsync(role))
             {
-                await roleManager.CreateAsync(new IdentityRole(role));
+                var createRoleResult = await roleManager.CreateAsync(new IdentityRole(role));
+
+                if (!createRoleResult.Succeeded)
+                {
+                    var errors = string.Join(", ", createRoleResult.Errors.Select(e => e.Description));
+                    throw new Exception($"Không thể tạo role {role}: {errors}");
+                }
             }
         }
 
-        // Tạo admin mặc định nếu chưa có
         const string adminEmail = "admin@tutorplatform.com";
-        if (await userManager.FindByEmailAsync(adminEmail) == null)
+
+        var existingAdmin = await userManager.FindByEmailAsync(adminEmail);
+
+        if (existingAdmin == null)
         {
             var admin = new AppUser
             {
@@ -93,29 +148,76 @@ using (var scope = app.Services.CreateScope())
                 EmailConfirmed = true
             };
 
-            var result = await userManager.CreateAsync(admin, "Admin@123456");
-            if (result.Succeeded)
+            var createAdminResult = await userManager.CreateAsync(admin, "Admin@123456");
+
+            if (!createAdminResult.Succeeded)
             {
-                await userManager.AddToRoleAsync(admin, "Admin");
+                var errors = string.Join(", ", createAdminResult.Errors.Select(e => e.Description));
+                throw new Exception($"Không thể tạo tài khoản Admin mặc định: {errors}");
             }
+
+            var addRoleResult = await userManager.AddToRoleAsync(admin, "Admin");
+
+            if (!addRoleResult.Succeeded)
+            {
+                var errors = string.Join(", ", addRoleResult.Errors.Select(e => e.Description));
+                throw new Exception($"Không thể gán role Admin cho tài khoản Admin mặc định: {errors}");
+            }
+
+            logger.LogInformation("Đã tạo tài khoản Admin mặc định.");
+        }
+        else
+        {
+            if (!await userManager.IsInRoleAsync(existingAdmin, "Admin"))
+            {
+                var addRoleResult = await userManager.AddToRoleAsync(existingAdmin, "Admin");
+
+                if (!addRoleResult.Succeeded)
+                {
+                    var errors = string.Join(", ", addRoleResult.Errors.Select(e => e.Description));
+                    throw new Exception($"Không thể gán role Admin cho tài khoản Admin đã tồn tại: {errors}");
+                }
+            }
+
+            logger.LogInformation("Tài khoản Admin mặc định đã tồn tại.");
         }
     }
     catch (Exception ex)
     {
-        var logger = services.GetRequiredService<ILogger<Program>>();
-        logger.LogError(ex, "❌ Lỗi khi migrate hoặc seed database (bao gồm khởi tạo Admin): {Message}", ex.Message);
+        logger.LogError(ex, "Lỗi khi migrate hoặc seed database: {Message}", ex.GetBaseException().Message);
+
+        // Không nuốt lỗi nữa.
+        // Nếu migration lỗi, Render Logs sẽ hiện lỗi thật.
+        throw;
     }
 }
 
+// ======================================================
+// PIPELINE
+// ======================================================
+if (!app.Environment.IsDevelopment())
+{
+    app.UseExceptionHandler("/Home/Error");
+    app.UseHsts();
+}
+
 app.UseStaticFiles();
+
 app.UseRouting();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
+// ======================================================
+// HUBS
+// ======================================================
 app.MapHub<ChatHub>("/chatHub");
 app.MapHub<WhiteboardHub>("/whiteboardHub");
 app.MapHub<BattleHub>("/battleHub");
 
+// ======================================================
+// ROUTES
+// ======================================================
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Dashboard}/{action=Index}/{id?}");
@@ -124,4 +226,4 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
 
-app.Run(); // ← Ứng dụng đứng đợi ở đây để nhận Request, mọi code đặt phía dưới dòng này sẽ bị bỏ qua.
+app.Run();
