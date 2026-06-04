@@ -8,7 +8,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
-    // ── Bảng CŨ (giữ nguyên) ──────────────────────────────
+    // ── Bảng CŨ ──────────────────────────────
     public DbSet<TutorProfile> TutorProfiles => Set<TutorProfile>();
     public DbSet<Subject> Subjects => Set<Subject>();
     public DbSet<TutorSubject> TutorSubjects => Set<TutorSubject>();
@@ -22,50 +22,73 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<PostLike> PostLikes => Set<PostLike>();
     public DbSet<Certificate> Certificates => Set<Certificate>();
 
-    // ── Bảng MỚI ✅ ───────────────────────────────────────
+    // ── Bảng MỚI ─────────────────────────────
     public DbSet<Badge> Badges => Set<Badge>();
     public DbSet<TutorBadge> TutorBadges => Set<TutorBadge>();
     public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
+    public DbSet<BattleRoomEntity> BattleRooms => Set<BattleRoomEntity>();
 
-    // Thêm bảng ReviewReply
+    // ── Bảng thêm sau ────────────────────────
     public DbSet<ReviewReply> ReviewReplies => Set<ReviewReply>();
-
-    // Thêm bảng Document
     public DbSet<Document> Documents => Set<Document>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
 
-        // Cấu hình CŨ (giữ nguyên toàn bộ)
+        // ─────────────────────────────────────
+        // Cấu hình TutorSubject
+        // ─────────────────────────────────────
         builder.Entity<TutorSubject>()
             .HasKey(ts => new { ts.TutorProfileId, ts.SubjectId });
 
         builder.Entity<TutorProfile>()
-            .HasOne(t => t.User).WithOne(u => u.TutorProfile)
+            .HasOne(t => t.User)
+            .WithOne(u => u.TutorProfile)
             .HasForeignKey<TutorProfile>(t => t.UserId);
 
+        // ─────────────────────────────────────
+        // Cấu hình Comment
+        // ─────────────────────────────────────
         builder.Entity<Comment>()
-            .HasOne(c => c.Author).WithMany()
-            .HasForeignKey(c => c.AuthorId).OnDelete(DeleteBehavior.NoAction);
+            .HasOne(c => c.Author)
+            .WithMany()
+            .HasForeignKey(c => c.AuthorId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        // ─────────────────────────────────────
+        // Cấu hình Booking
+        // ─────────────────────────────────────
+        builder.Entity<Booking>()
+            .HasOne(b => b.Student)
+            .WithMany(u => u.StudentBookings)
+            .HasForeignKey(b => b.StudentId)
+            .OnDelete(DeleteBehavior.NoAction);
 
         builder.Entity<Booking>()
-            .HasOne(b => b.Student).WithMany(u => u.StudentBookings)
-            .HasForeignKey(b => b.StudentId).OnDelete(DeleteBehavior.NoAction);
+            .HasOne(b => b.TutorProfile)
+            .WithMany(t => t.Bookings)
+            .HasForeignKey(b => b.TutorProfileId)
+            .OnDelete(DeleteBehavior.NoAction);
 
-        builder.Entity<Booking>()
-            .HasOne(b => b.TutorProfile).WithMany(t => t.Bookings)
-            .HasForeignKey(b => b.TutorProfileId).OnDelete(DeleteBehavior.NoAction);
+        // ─────────────────────────────────────
+        // Cấu hình Review
+        // ─────────────────────────────────────
+        builder.Entity<Review>()
+            .HasOne(r => r.Student)
+            .WithMany(u => u.Reviews)
+            .HasForeignKey(r => r.StudentId)
+            .OnDelete(DeleteBehavior.NoAction);
 
         builder.Entity<Review>()
-            .HasOne(r => r.Student).WithMany(u => u.Reviews)
-            .HasForeignKey(r => r.StudentId).OnDelete(DeleteBehavior.NoAction);
+            .HasOne(r => r.TutorProfile)
+            .WithMany(t => t.ReceivedReviews)
+            .HasForeignKey(r => r.TutorProfileId)
+            .OnDelete(DeleteBehavior.NoAction);
 
-        builder.Entity<Review>()
-            .HasOne(r => r.TutorProfile).WithMany(t => t.ReceivedReviews)
-            .HasForeignKey(r => r.TutorProfileId).OnDelete(DeleteBehavior.NoAction);
-
-        // Cấu hình PostLike (MỚI THÊM VÀO)
+        // ─────────────────────────────────────
+        // Cấu hình PostLike
+        // ─────────────────────────────────────
         builder.Entity<PostLike>()
             .HasOne(pl => pl.Post)
             .WithMany(p => p.Likes)
@@ -77,27 +100,38 @@ public class AppDbContext : IdentityDbContext<AppUser>
             .WithMany()
             .HasForeignKey(pl => pl.UserId)
             .OnDelete(DeleteBehavior.NoAction);
-        builder.Entity<Certificate>()
-    .       HasOne(c => c.TutorProfile)
-    .       WithMany(t => t.Certificates)
-    .       HasForeignKey(c => c.TutorProfileId)
-    .       OnDelete(DeleteBehavior.Cascade);
 
-        // Unique: 1 user chỉ like 1 bài 1 lần
         builder.Entity<PostLike>()
             .HasIndex(pl => new { pl.PostId, pl.UserId })
             .IsUnique();
 
-        // Cấu hình MỚI ✅ - TutorBadge
+        // ─────────────────────────────────────
+        // Cấu hình Certificate
+        // ─────────────────────────────────────
+        builder.Entity<Certificate>()
+            .HasOne(c => c.TutorProfile)
+            .WithMany(t => t.Certificates)
+            .HasForeignKey(c => c.TutorProfileId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ─────────────────────────────────────
+        // Cấu hình TutorBadge
+        // ─────────────────────────────────────
         builder.Entity<TutorBadge>()
-            .HasOne(tb => tb.TutorProfile).WithMany(t => t.TutorBadges)
-            .HasForeignKey(tb => tb.TutorProfileId).OnDelete(DeleteBehavior.Cascade);
+            .HasOne(tb => tb.TutorProfile)
+            .WithMany(t => t.TutorBadges)
+            .HasForeignKey(tb => tb.TutorProfileId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<TutorBadge>()
-            .HasOne(tb => tb.Badge).WithMany(b => b.TutorBadges)
-            .HasForeignKey(tb => tb.BadgeId).OnDelete(DeleteBehavior.Cascade);
+            .HasOne(tb => tb.Badge)
+            .WithMany(b => b.TutorBadges)
+            .HasForeignKey(tb => tb.BadgeId)
+            .OnDelete(DeleteBehavior.Cascade);
 
-        // Cấu hình MỚI ✅ - ReviewReply
+        // ─────────────────────────────────────
+        // Cấu hình ReviewReply
+        // ─────────────────────────────────────
         builder.Entity<ReviewReply>()
             .HasOne(r => r.Review)
             .WithOne(r => r.Reply)
@@ -110,7 +144,9 @@ public class AppDbContext : IdentityDbContext<AppUser>
             .HasForeignKey(r => r.AuthorId)
             .OnDelete(DeleteBehavior.NoAction);
 
-        // Cấu hình MỚI ✅ - Document
+        // ─────────────────────────────────────
+        // Cấu hình Document
+        // ─────────────────────────────────────
         builder.Entity<Document>()
             .HasOne(d => d.Uploader)
             .WithMany()
@@ -123,7 +159,71 @@ public class AppDbContext : IdentityDbContext<AppUser>
             .HasForeignKey(d => d.BookingId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        // Seed dữ liệu CŨ (giữ nguyên)
+        // ─────────────────────────────────────
+        // Cấu hình QuizAttempt
+        // ─────────────────────────────────────
+        builder.Entity<QuizAttempt>()
+            .HasOne(q => q.User)
+            .WithMany()
+            .HasForeignKey(q => q.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<QuizAttempt>()
+            .HasOne(q => q.Subject)
+            .WithMany()
+            .HasForeignKey(q => q.SubjectId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // ─────────────────────────────────────
+        // Cấu hình BattleRoomEntity
+        // ─────────────────────────────────────
+        builder.Entity<BattleRoomEntity>()
+            .HasIndex(b => b.RoomId)
+            .IsUnique();
+
+        builder.Entity<BattleRoomEntity>()
+            .Property(b => b.RoomId)
+            .HasMaxLength(20);
+
+        builder.Entity<BattleRoomEntity>()
+            .Property(b => b.SubjectName)
+            .HasMaxLength(200);
+
+        builder.Entity<BattleRoomEntity>()
+            .Property(b => b.Level)
+            .HasMaxLength(50);
+
+        builder.Entity<BattleRoomEntity>()
+            .Property(b => b.Player1Id)
+            .HasMaxLength(450);
+
+        builder.Entity<BattleRoomEntity>()
+            .Property(b => b.Player2Id)
+            .HasMaxLength(450);
+
+        builder.Entity<BattleRoomEntity>()
+            .Property(b => b.Player1Name)
+            .HasMaxLength(200);
+
+        builder.Entity<BattleRoomEntity>()
+            .Property(b => b.Player2Name)
+            .HasMaxLength(200);
+
+        builder.Entity<BattleRoomEntity>()
+            .Property(b => b.Player1ConnectionId)
+            .HasMaxLength(200);
+
+        builder.Entity<BattleRoomEntity>()
+            .Property(b => b.Player2ConnectionId)
+            .HasMaxLength(200);
+
+        builder.Entity<BattleRoomEntity>()
+            .Property(b => b.Status)
+            .HasMaxLength(30);
+
+        // ─────────────────────────────────────
+        // Seed Subject
+        // ─────────────────────────────────────
         builder.Entity<Subject>().HasData(
             new Subject { Id = 1, Name = "Toán học", Level = "THPT", IsActive = true },
             new Subject { Id = 2, Name = "Tiếng Anh", Level = "THPT", IsActive = true },
@@ -132,27 +232,110 @@ public class AppDbContext : IdentityDbContext<AppUser>
             new Subject { Id = 5, Name = "Lập trình", Level = "Đại học", IsActive = true }
         );
 
-        // Seed Badge MỚI ✅ — 10 huy hiệu mặc định
+        // ─────────────────────────────────────
+        // Seed Badge
+        // ─────────────────────────────────────
         builder.Entity<Badge>().HasData(
-            new Badge { Id = 1, Name = "Khởi đầu", Description = "Hoàn thành buổi học đầu tiên", Icon = "🌱", Color = "#4CAF50", Type = BadgeType.Sessions, RequiredCount = 1 },
-            new Badge { Id = 2, Name = "Đang lên", Description = "Hoàn thành 10 buổi học", Icon = "⚡", Color = "#2196F3", Type = BadgeType.Sessions, RequiredCount = 10 },
-            new Badge { Id = 3, Name = "Chuyên nghiệp", Description = "Hoàn thành 50 buổi học", Icon = "🎯", Color = "#9C27B0", Type = BadgeType.Sessions, RequiredCount = 50 },
-            new Badge { Id = 4, Name = "Huyền thoại", Description = "Hoàn thành 100 buổi học", Icon = "🏆", Color = "#FFD700", Type = BadgeType.Sessions, RequiredCount = 100 },
-            new Badge { Id = 5, Name = "Được yêu thích", Description = "Nhận được 5 lượt đánh giá", Icon = "⭐", Color = "#FF9800", Type = BadgeType.Reviews, RequiredCount = 5 },
-            new Badge { Id = 6, Name = "Top Rated", Description = "Nhận được 20 lượt đánh giá", Icon = "🌟", Color = "#FF5722", Type = BadgeType.Reviews, RequiredCount = 20 },
-            new Badge { Id = 7, Name = "Gia sư xuất sắc", Description = "Điểm TB ≥ 4.5⭐ (ít nhất 5 đánh giá)", Icon = "💎", Color = "#00BCD4", Type = BadgeType.Rating, RequiredCount = 45 },
-            new Badge { Id = 8, Name = "Hoàn hảo", Description = "Điểm TB ≥ 4.8⭐ (ít nhất 5 đánh giá)", Icon = "👑", Color = "#E91E63", Type = BadgeType.Rating, RequiredCount = 48 },
-            new Badge { Id = 9, Name = "Đa năng", Description = "Dạy từ 3 môn học trở lên", Icon = "📚", Color = "#607D8B", Type = BadgeType.Subjects, RequiredCount = 3 },
-            new Badge { Id = 10, Name = "Triệu phú", Description = "Tích lũy doanh thu 1,000,000 VNĐ", Icon = "💰", Color = "#795548", Type = BadgeType.Revenue, RequiredCount = 1000 }
+            new Badge
+            {
+                Id = 1,
+                Name = "Khởi đầu",
+                Description = "Hoàn thành buổi học đầu tiên",
+                Icon = "🌱",
+                Color = "#4CAF50",
+                Type = BadgeType.Sessions,
+                RequiredCount = 1
+            },
+            new Badge
+            {
+                Id = 2,
+                Name = "Đang lên",
+                Description = "Hoàn thành 10 buổi học",
+                Icon = "⚡",
+                Color = "#2196F3",
+                Type = BadgeType.Sessions,
+                RequiredCount = 10
+            },
+            new Badge
+            {
+                Id = 3,
+                Name = "Chuyên nghiệp",
+                Description = "Hoàn thành 50 buổi học",
+                Icon = "🎯",
+                Color = "#9C27B0",
+                Type = BadgeType.Sessions,
+                RequiredCount = 50
+            },
+            new Badge
+            {
+                Id = 4,
+                Name = "Huyền thoại",
+                Description = "Hoàn thành 100 buổi học",
+                Icon = "🏆",
+                Color = "#FFD700",
+                Type = BadgeType.Sessions,
+                RequiredCount = 100
+            },
+            new Badge
+            {
+                Id = 5,
+                Name = "Được yêu thích",
+                Description = "Nhận được 5 lượt đánh giá",
+                Icon = "⭐",
+                Color = "#FF9800",
+                Type = BadgeType.Reviews,
+                RequiredCount = 5
+            },
+            new Badge
+            {
+                Id = 6,
+                Name = "Top Rated",
+                Description = "Nhận được 20 lượt đánh giá",
+                Icon = "🌟",
+                Color = "#FF5722",
+                Type = BadgeType.Reviews,
+                RequiredCount = 20
+            },
+            new Badge
+            {
+                Id = 7,
+                Name = "Gia sư xuất sắc",
+                Description = "Điểm TB ≥ 4.5⭐ (ít nhất 5 đánh giá)",
+                Icon = "💎",
+                Color = "#00BCD4",
+                Type = BadgeType.Rating,
+                RequiredCount = 45
+            },
+            new Badge
+            {
+                Id = 8,
+                Name = "Hoàn hảo",
+                Description = "Điểm TB ≥ 4.8⭐ (ít nhất 5 đánh giá)",
+                Icon = "👑",
+                Color = "#E91E63",
+                Type = BadgeType.Rating,
+                RequiredCount = 48
+            },
+            new Badge
+            {
+                Id = 9,
+                Name = "Đa năng",
+                Description = "Dạy từ 3 môn học trở lên",
+                Icon = "📚",
+                Color = "#607D8B",
+                Type = BadgeType.Subjects,
+                RequiredCount = 3
+            },
+            new Badge
+            {
+                Id = 10,
+                Name = "Triệu phú",
+                Description = "Tích lũy doanh thu 1,000,000 VNĐ",
+                Icon = "💰",
+                Color = "#795548",
+                Type = BadgeType.Revenue,
+                RequiredCount = 1000
+            }
         );
-        builder.Entity<QuizAttempt>()
-    .HasOne(q => q.User).WithMany()
-    .HasForeignKey(q => q.UserId)
-    .OnDelete(DeleteBehavior.Cascade);
-
-        builder.Entity<QuizAttempt>()
-            .HasOne(q => q.Subject).WithMany()
-            .HasForeignKey(q => q.SubjectId)
-            .OnDelete(DeleteBehavior.Cascade);
     }
 }
