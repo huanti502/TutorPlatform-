@@ -3,6 +3,7 @@ using CloudinaryDotNet.Actions;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace TutorPlatform.Web.Services;
@@ -53,17 +54,11 @@ public class CloudinaryService
         using var stream = file.OpenReadStream();
         var ext = Path.GetExtension(file.FileName).ToLower();
 
-        if (ext == ".pdf")
-        {
-            var rawParams = new RawUploadParams
-            {
-                File = new FileDescription(file.FileName, stream),
-                Folder = $"tutorplatform/{folder}"
-            };
-            var result = await _cloudinary.UploadAsync(rawParams);
-            return result.SecureUrl?.ToString();
-        }
-        else
+        // Chỉ các định dạng ảnh mới upload kiểu image; còn lại (pdf, doc, docx, ppt, pptx, xls, xlsx, txt...)
+        // upload kiểu raw để Cloudinary giữ nguyên file gốc và trả về URL tải được.
+        var imageExts = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp" };
+
+        if (imageExts.Contains(ext))
         {
             var imgParams = new ImageUploadParams
             {
@@ -71,6 +66,16 @@ public class CloudinaryService
                 Folder = $"tutorplatform/{folder}"
             };
             var result = await _cloudinary.UploadAsync(imgParams);
+            return result.SecureUrl?.ToString();
+        }
+        else
+        {
+            var rawParams = new RawUploadParams
+            {
+                File = new FileDescription(file.FileName, stream),
+                Folder = $"tutorplatform/{folder}"
+            };
+            var result = await _cloudinary.UploadAsync(rawParams);
             return result.SecureUrl?.ToString();
         }
     }
