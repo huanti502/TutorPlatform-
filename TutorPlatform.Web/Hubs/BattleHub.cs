@@ -53,12 +53,25 @@ public class BattleHub : Hub
 
             if (!string.IsNullOrWhiteSpace(userId))
             {
-                _userConnections.TryRemove(userId, out _);
+                // Chỉ xóa mapping nếu connectionId đang lưu đúng là cái vừa ngắt.
+                // Tránh xóa nhầm connection mới hơn (khi user mở nhiều tab / vừa chuyển trang).
+                if (_userConnections.TryGetValue(userId, out var storedConn) &&
+                    storedConn == Context.ConnectionId)
+                {
+                    _userConnections.TryRemove(userId, out _);
+                }
 
+                // FIX RACE CONDITION:
+                // Chỉ kết thúc trận nếu CHÍNH connection đang ngắt này là connection
+                // hiện hành của người chơi trong phòng. Nếu không, một connection CŨ
+                // (vd: kết nối từ trang /Battle bị đóng khi điều hướng sang /Battle/Room)
+                // ngắt muộn sẽ kết thúc nhầm trận vừa mới bắt đầu → cả 2 bị "OpponentLeft"
+                // và sau đó mở lại phòng thì báo "Không tìm thấy phòng".
                 var room = await _db.BattleRooms
                     .FirstOrDefaultAsync(r =>
                         r.Status == "Playing" &&
-                        (r.Player1Id == userId || r.Player2Id == userId));
+                        ((r.Player1Id == userId && r.Player1ConnectionId == Context.ConnectionId) ||
+                         (r.Player2Id == userId && r.Player2ConnectionId == Context.ConnectionId)));
 
                 if (room != null)
                 {
