@@ -36,8 +36,6 @@ public class BattleHub : Hub
             Level = level,
             Player1Id = challenger.Id,
             Player1Name = challenger.FullName,
-            // BUG FIX: Không lưu ConnectionId ở đây vì connection này là từ trang Battle/Index
-            // ConnectionId sẽ được cập nhật khi player JoinRoom từ trang Battle/Room
             Player1ConnectionId = null,
             Player2Id = opponentId,
             Status = "Waiting"
@@ -64,8 +62,6 @@ public class BattleHub : Hub
 
         room.Player2Name = user.FullName;
         room.Status = "Ready";
-        // BUG FIX: Không lưu ConnectionId và không AddToGroup ở đây vì đây là connection
-        // từ trang Battle/Index. ConnectionId thực sự sẽ được set khi JoinRoom.
 
         // Báo cả 2 vào trang battle
         await Clients.Caller.SendAsync("BattleStarting", new
@@ -74,6 +70,7 @@ public class BattleHub : Hub
             subjectId = room.SubjectId,
             subjectName = room.SubjectName,
             level = room.Level,
+            player1Id = room.Player1Id, // 🚀 THÊM DÒNG NÀY ĐỂ FIX LỖI KẸT LOADING
             player1Name = room.Player1Name,
             player2Name = room.Player2Name
         });
@@ -84,6 +81,7 @@ public class BattleHub : Hub
             subjectId = room.SubjectId,
             subjectName = room.SubjectName,
             level = room.Level,
+            player1Id = room.Player1Id, // 🚀 THÊM DÒNG NÀY ĐỂ FIX LỖI KẸT LOADING
             player1Name = room.Player1Name,
             player2Name = room.Player2Name
         });
@@ -96,8 +94,6 @@ public class BattleHub : Hub
         await Clients.User(room.Player1Id).SendAsync("ChallengeDeclined");
     }
 
-    // BUG FIX: JoinRoom chỉ được gọi từ trang Room.cshtml
-    // → đây mới là connectionId đúng để lưu và check BothReady
     public async Task JoinRoom(string roomId)
     {
         if (!Rooms.TryGetValue(roomId, out var room)) return;
@@ -116,8 +112,6 @@ public class BattleHub : Hub
             room.Player2Joined = true;
         }
 
-        // BUG FIX: Gửi lại BattleStarting cho player vừa join để đảm bảo họ có battleInfo
-        // (trường hợp BattleStarting từ AcceptChallenge bị miss vì page chưa load kịp)
         if (room.Status == "Ready" || room.Status == "Playing")
         {
             await Clients.Caller.SendAsync("BattleStarting", new
@@ -126,12 +120,12 @@ public class BattleHub : Hub
                 subjectId = room.SubjectId,
                 subjectName = room.SubjectName,
                 level = room.Level,
+                player1Id = room.Player1Id, // 🚀 THÊM DÒNG NÀY ĐỂ FIX LỖI KẸT LOADING
                 player1Name = room.Player1Name,
                 player2Name = room.Player2Name
             });
         }
 
-        // BUG FIX: Chỉ bắt đầu khi CẢ HAI đều đã gọi JoinRoom từ trang Room
         if (room.Player1Joined && room.Player2Joined && room.Status == "Ready")
         {
             room.Status = "Playing";
@@ -233,7 +227,6 @@ public class BattleRoom
     public string Player2Name { get; set; } = "";
     public string? Player1ConnectionId { get; set; }
     public string? Player2ConnectionId { get; set; }
-    // BUG FIX: Thêm 2 flag để track chắc chắn cả 2 đã vào trang Room
     public bool Player1Joined { get; set; } = false;
     public bool Player2Joined { get; set; } = false;
     public int Score1 { get; set; }
