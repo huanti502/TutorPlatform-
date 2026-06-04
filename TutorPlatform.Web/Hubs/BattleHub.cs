@@ -27,76 +27,84 @@ public class BattleHub : Hub
 
     public async Task Challenge(string opponentId, int subjectId, string subjectName, string level)
     {
-        var challenger = await _userManager.GetUserAsync(Context.User!);
-
-        if (challenger == null)
+        try
         {
-            await Clients.Caller.SendAsync("BattleError", "Không tìm thấy tài khoản người gửi.");
-            return;
+            var challenger = await _userManager.GetUserAsync(Context.User!);
+
+            if (challenger == null)
+            {
+                await Clients.Caller.SendAsync("BattleError", "Không tìm thấy tài khoản người gửi.");
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(opponentId))
+            {
+                await Clients.Caller.SendAsync("BattleError", "Không tìm thấy đối thủ.");
+                return;
+            }
+
+            if (challenger.Id == opponentId)
+            {
+                await Clients.Caller.SendAsync("BattleError", "Không thể tự thách đấu chính mình.");
+                return;
+            }
+
+            var oldRooms = await _db.BattleRooms
+                .Where(r =>
+                    r.Status != "Finished" &&
+                    (r.Player1Id == challenger.Id ||
+                     r.Player2Id == challenger.Id ||
+                     r.Player1Id == opponentId ||
+                     r.Player2Id == opponentId))
+                .ToListAsync();
+
+            foreach (var old in oldRooms)
+            {
+                old.Status = "Finished";
+                old.FinishedAt = DateTime.UtcNow;
+            }
+
+            var roomId = Guid.NewGuid().ToString("N")[..8];
+
+            var room = new BattleRoomEntity
+            {
+                RoomId = roomId,
+                SubjectId = subjectId,
+                SubjectName = subjectName,
+                Level = level,
+                Player1Id = challenger.Id,
+                Player1Name = string.IsNullOrWhiteSpace(challenger.FullName)
+                    ? challenger.Email ?? "Player 1"
+                    : challenger.FullName,
+                Player2Id = opponentId,
+                Player2Name = "",
+                Status = "Waiting",
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _db.BattleRooms.Add(room);
+            await _db.SaveChangesAsync();
+
+            await Clients.User(opponentId).SendAsync("ReceiveBattleInvite", new
+            {
+                roomId = room.RoomId,
+                challengerName = room.Player1Name,
+                challengerId = room.Player1Id,
+                subjectId = room.SubjectId,
+                subjectName = room.SubjectName,
+                level = room.Level
+            });
+
+            await Clients.Caller.SendAsync("ChallengeSent", new
+            {
+                roomId = room.RoomId
+            });
         }
-
-        if (string.IsNullOrWhiteSpace(opponentId))
+        catch (Exception ex)
         {
-            await Clients.Caller.SendAsync("BattleError", "Không tìm thấy đối thủ.");
-            return;
+            await Clients.Caller.SendAsync("BattleError", "Lỗi BattleHub Challenge: " + ex.Message);
+            throw;
         }
-
-        if (challenger.Id == opponentId)
-        {
-            await Clients.Caller.SendAsync("BattleError", "Không thể tự thách đấu chính mình.");
-            return;
-        }
-
-        var oldRooms = await _db.BattleRooms
-            .Where(r =>
-                r.Status != "Finished" &&
-                (r.Player1Id == challenger.Id ||
-                 r.Player2Id == challenger.Id ||
-                 r.Player1Id == opponentId ||
-                 r.Player2Id == opponentId))
-            .ToListAsync();
-
-        foreach (var old in oldRooms)
-        {
-            old.Status = "Finished";
-            old.FinishedAt = DateTime.UtcNow;
-        }
-
-        var roomId = Guid.NewGuid().ToString("N")[..8];
-
-        var room = new BattleRoomEntity
-        {
-            RoomId = roomId,
-            SubjectId = subjectId,
-            SubjectName = subjectName,
-            Level = level,
-            Player1Id = challenger.Id,
-            Player1Name = string.IsNullOrWhiteSpace(challenger.FullName)
-                ? challenger.Email ?? "Player 1"
-                : challenger.FullName,
-            Player2Id = opponentId,
-            Player2Name = "",
-            Status = "Waiting",
-            CreatedAt = DateTime.UtcNow
-        };
-
-        _db.BattleRooms.Add(room);
-        await _db.SaveChangesAsync();
-
-        await Clients.User(opponentId).SendAsync("ReceiveBattleInvite", new
-        {
-            roomId = room.RoomId,
-            challengerName = room.Player1Name,
-            challengerId = room.Player1Id,
-            subjectId = room.SubjectId,
-            subjectName = room.SubjectName,
-            level = room.Level
-        });
-
-        await Clients.Caller.SendAsync("ChallengeSent", new
-        {
-            roomId = room.RoomId
-        });
     }
 
     public async Task AcceptChallenge(string roomId)
