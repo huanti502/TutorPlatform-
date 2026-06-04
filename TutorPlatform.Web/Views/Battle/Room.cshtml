@@ -118,7 +118,7 @@
 <div class="battle-wrap">
     <div id="loading-card">
         <div class="spinner-border text-primary mb-3" role="status"></div>
-        <p class="text-muted">Đang kết nối với đối thủ và tải câu hỏi...</p>
+        <p class="text-muted" id="loading-msg">Đang kết nối với đối thủ và tải câu hỏi...</p>
     </div>
 
     <div id="battle-card" style="display:none">
@@ -194,47 +194,44 @@
         let finished = false;
         let questionsLoaded = false;
 
+        // ── Kết nối SignalR
         const conn = new signalR.HubConnectionBuilder()
         .withUrl("/battleHub")
-        .withAutomaticReconnect()
+        .withAutomaticReconnect([0, 1000, 2000, 5000]) // retry nhanh hơn
         .build();
 
+        // ── Nhận thông tin phòng
         conn.on("RoomInfo", info => {
         battleInfo = info;
-
         document.getElementById("p1-name").textContent = info.player1Name || "Player 1";
         document.getElementById("p2-name").textContent = info.player2Name || "Đang chờ đối thủ...";
-
         document.getElementById("final-p1-name").textContent = info.player1Name || "Player 1";
         document.getElementById("final-p2-name").textContent = info.player2Name || "Player 2";
         });
 
+        // ── Lỗi phòng
         conn.on("RoomError", message => {
         showLoadingError(message);
         });
 
+        // ── Cả 2 đã vào phòng → Player1 generate câu hỏi
         conn.on("BothReady", async () => {
         if (!battleInfo) {
         showLoadingError("Chưa nhận được thông tin trận đấu.");
         return;
         }
 
-        if (myId !== battleInfo.player1Id) {
-        return;
-        }
-
-        if (questionsLoaded) {
-        return;
-        }
-
+        // Chỉ Player1 generate câu hỏi
+        if (myId !== battleInfo.player1Id) return;
+        if (questionsLoaded) return;
         questionsLoaded = true;
+
+        setLoadingMsg("⚡ Đang tải câu hỏi từ AI...");
 
         try {
         const res = await fetch("/Battle/GenerateQuestions", {
         method: "POST",
-        headers: {
-        "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
         subjectId: battleInfo.subjectId,
         level: battleInfo.level
@@ -260,11 +257,11 @@
         }
         });
 
+        // ── Nhận câu hỏi → bắt đầu trận
         conn.on("ReceiveQuestions", questionsJson => {
         try {
         questions = JSON.parse(questionsJson);
         } catch (err) {
-        console.error(err);
         showLoadingError("Dữ liệu câu hỏi bị lỗi.");
         return;
         }
@@ -276,20 +273,18 @@
 
         document.getElementById("loading-card").style.display = "none";
         document.getElementById("battle-card").style.display = "block";
-
         startBattle();
         });
 
+        // ── Cập nhật điểm
         conn.on("ScoreUpdate", ({ score1, score2 }) => {
         document.getElementById("score1").textContent = score1;
         document.getElementById("score2").textContent = score2;
         });
 
+        // ── Kết quả trận
         conn.on("BattleResult", ({ result, winnerName, score1, score2, xpWinner, xpLoser }) => {
-        if (finished) {
-        return;
-        }
-
+        if (finished) return;
         finished = true;
         clearInterval(timerHandle);
 
@@ -297,33 +292,22 @@
         document.getElementById("loading-card").style.display = "none";
         document.getElementById("result-card").style.display = "block";
 
-        let emoji;
-        let title;
-        let detail;
-
+        let emoji, title, detail;
         if (result === "draw") {
-        emoji = "🤝";
-        title = "Hòa!";
-        detail = "Hai bên cân tài nhau!";
+        emoji = "🤝"; title = "Hòa!"; detail = "Hai bên cân tài nhau!";
         } else if (winnerName === myName) {
-        emoji = "🏆";
-        title = "Bạn thắng!";
-        detail = "Xuất sắc!";
+        emoji = "🏆"; title = "Bạn thắng!"; detail = "Xuất sắc!";
         } else {
-        emoji = "😤";
-        title = "Bạn thua!";
-        detail = `${winnerName} giỏi hơn lần này!`;
+        emoji = "😤"; title = "Bạn thua!"; detail = `${winnerName} giỏi hơn lần này!`;
         }
 
         document.getElementById("result-emoji").textContent = emoji;
         document.getElementById("result-title").textContent = title;
         document.getElementById("result-detail").textContent = detail;
-
         document.getElementById("final-score1").textContent = score1;
         document.getElementById("final-score2").textContent = score2;
 
         const xpGained = winnerName === myName ? xpWinner : xpLoser;
-
         if (xpGained > 0) {
         const xpAlert = document.getElementById("xp-alert");
         xpAlert.textContent = `+${xpGained} XP nhận được!`;
@@ -331,39 +315,62 @@
         }
         });
 
+        // ── Đối thủ rời trận
         conn.on("OpponentLeft", () => {
         clearInterval(timerHandle);
         alert("Đối thủ đã rời trận.");
         window.location.href = "/Battle";
         });
 
+        // ── Reconnect → tự join lại phòng
+        conn.onreconnected(async () => {
+        console.log("SignalR reconnected, rejoining room...");
+        try {
+        await conn.invoke("JoinRoom", roomId);
+        } catch (err) {
+        console.error("Rejoin failed:", err);
+        }
+        });
+
+        // ── Khởi động
         conn.start()
-        .then(() => {
-        return conn.invoke("JoinRoom", roomId);
+        .then(async () => {
+        try {
+        await conn.invoke("JoinRoom", roomId);
+        } catch (err) {
+        console.error(err);
+        showLoadingError("Không thể vào phòng Battle. Hãy quay lại và tạo trận mới.");
+        }
         })
         .catch(err => {
         console.error(err);
         showLoadingError("Không thể kết nối BattleHub. Hãy kiểm tra SignalR hoặc đăng nhập lại.");
         });
 
-        function startBattle() {
-        if (battleStarted) {
-        return;
+        // ── Nếu sau 30 giây vẫn chưa bắt đầu → thông báo chờ đối thủ
+        setTimeout(() => {
+        if (!battleStarted && !finished) {
+        setLoadingMsg("⏳ Đang chờ đối thủ vào phòng...");
         }
+        }, 5000);
 
+        // ── Nếu sau 120 giây vẫn chưa bắt đầu → báo lỗi timeout
+        setTimeout(() => {
+        if (!battleStarted && !finished) {
+        showLoadingError("Đối thủ không vào phòng trong 2 phút. Hãy tạo trận mới.");
+        }
+        }, 120000);
+
+        function startBattle() {
+        if (battleStarted) return;
         battleStarted = true;
         timeLeft = 60;
 
         timerHandle = setInterval(() => {
         timeLeft--;
-
         const circle = document.getElementById("timer-circle");
         circle.textContent = timeLeft;
-
-        if (timeLeft <= 10) {
-        circle.classList.add("urgent");
-        }
-
+        if (timeLeft <= 10) circle.classList.add("urgent");
         if (timeLeft <= 0) {
         clearInterval(timerHandle);
         conn.invoke("FinishBattle", roomId).catch(console.error);
@@ -374,10 +381,7 @@
         }
 
         function renderQuestion() {
-        if (currentQ >= questions.length) {
-        return;
-        }
-
+        if (currentQ >= questions.length) return;
         const q = questions[currentQ];
         answered = false;
 
@@ -403,45 +407,38 @@
         }
 
         function pickAnswer(chosen, correct) {
-        if (answered) {
-        return;
-        }
-
+        if (answered) return;
         answered = true;
-
         const isCorrect = chosen === correct;
 
         document.querySelectorAll(".option-btn").forEach((b, i) => {
         b.disabled = true;
-
-        if (i === correct) {
-        b.classList.add("correct");
-        } else if (i === chosen && !isCorrect) {
-        b.classList.add("wrong");
-        }
+        if (i === correct) b.classList.add("correct");
+        else if (i === chosen && !isCorrect) b.classList.add("wrong");
         });
 
-        conn.invoke("SubmitAnswer", roomId, currentQ, isCorrect)
-        .catch(console.error);
+        conn.invoke("SubmitAnswer", roomId, currentQ, isCorrect).catch(console.error);
 
         setTimeout(() => {
         currentQ++;
-
         if (currentQ < questions.length) {
         renderQuestion();
         } else {
         document.getElementById("question-text").textContent =
         "Bạn đã trả lời hết câu hỏi. Chờ hết giờ để xem kết quả.";
-
         document.getElementById("options-wrap").innerHTML = "";
         }
         }, 1200);
         }
 
+        function setLoadingMsg(msg) {
+        const el = document.getElementById("loading-msg");
+        if (el) el.textContent = msg;
+        }
+
         function showLoadingError(message) {
         document.getElementById("loading-card").style.display = "block";
         document.getElementById("battle-card").style.display = "none";
-
         document.getElementById("loading-card").innerHTML = `
         <p class="text-danger fw-bold">${message}</p>
         <p class="text-muted small">Không mở lại link phòng cũ. Hãy quay lại Battle và tạo trận mới.</p>

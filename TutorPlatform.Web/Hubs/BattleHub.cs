@@ -16,6 +16,11 @@ public class BattleHub : Hub
     private readonly AppDbContext _db;
     private readonly ILogger<BattleHub> _logger;
 
+    // ─── Lưu mapping: userId → connectionId (in-memory, đủ dùng cho 1 instance)
+    // Key = userId, Value = connectionId hiện tại
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string>
+        _userConnections = new();
+
     public BattleHub(
         UserManager<AppUser> userManager,
         XpService xpService,
@@ -26,6 +31,72 @@ public class BattleHub : Hub
         _xpService = xpService;
         _db = db;
         _logger = logger;
+    }
+
+    // ─── Ghi nhận connection khi user kết nối
+    public override async Task OnConnectedAsync()
+    {
+        var userId = _userManager.GetUserId(Context.User!);
+        if (!string.IsNullOrWhiteSpace(userId))
+        {
+            _userConnections[userId] = Context.ConnectionId;
+        }
+        await base.OnConnectedAsync();
+    }
+
+    // ─── Xóa connection khi user ngắt kết nối
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        try
+        {
+            var userId = _userManager.GetUserId(Context.User!);
+
+            if (!string.IsNullOrWhiteSpace(userId))
+            {
+                _userConnections.TryRemove(userId, out _);
+
+                var room = await _db.BattleRooms
+                    .FirstOrDefaultAsync(r =>
+                        r.Status == "Playing" &&
+                        (r.Player1Id == userId || r.Player2Id == userId));
+
+                if (room != null)
+                {
+                    room.Status = "Finished";
+                    room.FinishedAt = DateTime.UtcNow;
+                    await _db.SaveChangesAsync();
+                    await Clients.Group(room.RoomId).SendAsync("OpponentLeft");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "OnDisconnectedAsync error");
+        }
+
+        await base.OnDisconnectedAsync(exception);
+    }
+
+    // ─── Helper: gửi message đến user qua ConnectionId (đáng tin hơn Clients.User)
+    private async Task SendToUser(string userId, string method, object arg)
+    {
+        // Thử gửi qua ConnectionId đã lưu
+        if (_userConnections.TryGetValue(userId, out var connId))
+        {
+            try
+            {
+                await Clients.Client(connId).SendAsync(method, arg);
+                return;
+            }
+            catch
+            {
+                // Connection có thể đã hết hạn, fallback xuống Clients.User
+                _userConnections.TryRemove(userId, out _);
+            }
+        }
+
+        // Fallback: dùng Clients.User (Identity claim)
+        await Clients.User(userId).SendAsync(method, arg);
     }
 
     public async Task Challenge(string opponentId, int subjectId, string subjectName, string level)
@@ -53,15 +124,13 @@ public class BattleHub : Hub
             }
 
             var opponent = await _userManager.FindByIdAsync(opponentId);
-
             if (opponent == null)
             {
                 await Clients.Caller.SendAsync("BattleError", "Tài khoản đối thủ không tồn tại.");
                 return;
             }
 
-            // FIX: Chỉ xóa room "Waiting" của chính challenger (không xóa room của opponent)
-            // Tránh xóa room đang "Playing" hoặc "Ready" của người khác
+            // Chỉ xóa room "Waiting" của chính challenger
             var oldRooms = await _db.BattleRooms
                 .Where(r =>
                     r.Status == "Waiting" &&
@@ -88,17 +157,18 @@ public class BattleHub : Hub
                     ? challenger.Email ?? "Player 1"
                     : challenger.FullName,
 
+                // Lưu ConnectionId của challenger ngay bây giờ
+                Player1ConnectionId = Context.ConnectionId,
+
                 Player2Id = opponentId,
                 Player2Name = string.IsNullOrWhiteSpace(opponent.FullName)
                     ? opponent.Email ?? "Player 2"
                     : opponent.FullName,
 
-                Player1ConnectionId = null,
                 Player2ConnectionId = null,
 
                 Score1 = 0,
                 Score2 = 0,
-
                 Status = "Waiting",
                 CreatedAt = DateTime.UtcNow,
                 StartTime = null,
@@ -108,7 +178,10 @@ public class BattleHub : Hub
             _db.BattleRooms.Add(room);
             await _db.SaveChangesAsync();
 
-            await Clients.User(opponentId).SendAsync("ReceiveBattleInvite", new
+            // Ghi nhận connection của challenger cho room này
+            _userConnections[challenger.Id] = Context.ConnectionId;
+
+            await SendToUser(opponentId, "ReceiveBattleInvite", new
             {
                 roomId = room.RoomId,
                 challengerName = room.Player1Name,
@@ -125,9 +198,8 @@ public class BattleHub : Hub
         }
         catch (Exception ex)
         {
-            var realError = ex.GetBaseException().Message;
             _logger.LogError(ex, "Battle Challenge error");
-            await Clients.Caller.SendAsync("BattleError", "Lỗi server khi gửi thách đấu: " + realError);
+            await Clients.Caller.SendAsync("BattleError", "Lỗi server khi gửi thách đấu: " + ex.GetBaseException().Message);
         }
     }
 
@@ -135,7 +207,7 @@ public class BattleHub : Hub
     {
         try
         {
-            // FIX: Chấp nhận cả room "Waiting" (trạng thái ban đầu khi mới tạo)
+            // Chấp nhận cả "Waiting" và "Ready"
             var room = await _db.BattleRooms
                 .FirstOrDefaultAsync(r => r.RoomId == roomId && (r.Status == "Waiting" || r.Status == "Ready"));
 
@@ -146,7 +218,6 @@ public class BattleHub : Hub
             }
 
             var user = await _userManager.GetUserAsync(Context.User!);
-
             if (user == null)
             {
                 await Clients.Caller.SendAsync("BattleError", "Không tìm thấy tài khoản người nhận.");
@@ -164,26 +235,35 @@ public class BattleHub : Hub
                 : user.FullName;
 
             room.Status = "Ready";
-
             await _db.SaveChangesAsync();
 
-            // Gửi cho Player1 (challenger)
-            await Clients.User(room.Player1Id).SendAsync("ChallengeAccepted", new
+            var acceptedPayload = new { roomId = room.RoomId };
+
+            // Gửi cho Player1 (challenger) — dùng ConnectionId đã lưu (đáng tin hơn)
+            if (!string.IsNullOrWhiteSpace(room.Player1ConnectionId))
             {
-                roomId = room.RoomId
-            });
+                try
+                {
+                    await Clients.Client(room.Player1ConnectionId).SendAsync("ChallengeAccepted", acceptedPayload);
+                }
+                catch
+                {
+                    // ConnectionId cũ, thử qua _userConnections hoặc Clients.User
+                    await SendToUser(room.Player1Id, "ChallengeAccepted", acceptedPayload);
+                }
+            }
+            else
+            {
+                await SendToUser(room.Player1Id, "ChallengeAccepted", acceptedPayload);
+            }
 
             // Gửi cho Player2 (người accept)
-            await Clients.Caller.SendAsync("ChallengeAccepted", new
-            {
-                roomId = room.RoomId
-            });
+            await Clients.Caller.SendAsync("ChallengeAccepted", acceptedPayload);
         }
         catch (Exception ex)
         {
-            var realError = ex.GetBaseException().Message;
             _logger.LogError(ex, "AcceptChallenge error");
-            await Clients.Caller.SendAsync("BattleError", "Lỗi server khi chấp nhận Battle: " + realError);
+            await Clients.Caller.SendAsync("BattleError", "Lỗi server khi chấp nhận Battle: " + ex.GetBaseException().Message);
         }
     }
 
@@ -202,16 +282,14 @@ public class BattleHub : Hub
 
             room.Status = "Finished";
             room.FinishedAt = DateTime.UtcNow;
-
             await _db.SaveChangesAsync();
 
-            await Clients.User(room.Player1Id).SendAsync("ChallengeDeclined");
+            await SendToUser(room.Player1Id, "ChallengeDeclined", new { });
         }
         catch (Exception ex)
         {
-            var realError = ex.GetBaseException().Message;
             _logger.LogError(ex, "DeclineChallenge error");
-            await Clients.Caller.SendAsync("BattleError", "Lỗi server khi từ chối Battle: " + realError);
+            await Clients.Caller.SendAsync("BattleError", "Lỗi server khi từ chối Battle: " + ex.GetBaseException().Message);
         }
     }
 
@@ -219,8 +297,6 @@ public class BattleHub : Hub
     {
         try
         {
-            // FIX: Tìm room không phân biệt status (trừ Finished)
-            // Cho phép join room ở bất kỳ trạng thái "Waiting", "Ready", "Playing"
             var room = await _db.BattleRooms
                 .FirstOrDefaultAsync(r => r.RoomId == roomId && r.Status != "Finished");
 
@@ -231,7 +307,6 @@ public class BattleHub : Hub
             }
 
             var userId = _userManager.GetUserId(Context.User!);
-
             if (string.IsNullOrWhiteSpace(userId))
             {
                 await Clients.Caller.SendAsync("RoomError", "Bạn chưa đăng nhập.");
@@ -246,11 +321,14 @@ public class BattleHub : Hub
 
             await Groups.AddToGroupAsync(Context.ConnectionId, room.RoomId);
 
+            // Cập nhật ConnectionId hiện tại (mới nhất)
+            _userConnections[userId] = Context.ConnectionId;
+
             if (userId == room.Player1Id)
             {
                 room.Player1ConnectionId = Context.ConnectionId;
             }
-            else if (userId == room.Player2Id)
+            else
             {
                 room.Player2ConnectionId = Context.ConnectionId;
             }
@@ -270,30 +348,25 @@ public class BattleHub : Hub
                 status = room.Status
             });
 
-            // Re-query để lấy trạng thái mới nhất sau khi cả 2 đã cập nhật ConnectionId
+            // Re-query để check cả 2 đã join chưa
             var freshRoom = await _db.BattleRooms
                 .FirstOrDefaultAsync(r => r.RoomId == roomId && r.Status != "Finished");
 
-            if (freshRoom == null)
-            {
-                return;
-            }
+            if (freshRoom == null) return;
 
             bool bothConnected = !string.IsNullOrWhiteSpace(freshRoom.Player1ConnectionId) &&
                                  !string.IsNullOrWhiteSpace(freshRoom.Player2ConnectionId);
 
-            // FIX: Cho phép chuyển từ "Waiting" hoặc "Ready" sang "Playing"
-            // (trước đây chỉ check Status == "Ready", bỏ lỡ case "Waiting")
+            // Cho phép start từ "Waiting" hoặc "Ready"
             bool canStart = freshRoom.Status == "Ready" || freshRoom.Status == "Waiting";
 
             if (bothConnected && canStart)
             {
                 freshRoom.Status = "Playing";
                 freshRoom.StartTime = DateTime.UtcNow;
-
                 await _db.SaveChangesAsync();
 
-                await Clients.Group(freshRoom.RoomId).SendAsync("RoomInfo", new
+                var roomInfoPayload = new
                 {
                     roomId = freshRoom.RoomId,
                     subjectId = freshRoom.SubjectId,
@@ -304,16 +377,16 @@ public class BattleHub : Hub
                     player2Id = freshRoom.Player2Id,
                     player2Name = freshRoom.Player2Name,
                     status = freshRoom.Status
-                });
+                };
 
+                await Clients.Group(freshRoom.RoomId).SendAsync("RoomInfo", roomInfoPayload);
                 await Clients.Group(freshRoom.RoomId).SendAsync("BothReady");
             }
         }
         catch (Exception ex)
         {
-            var realError = ex.GetBaseException().Message;
             _logger.LogError(ex, "JoinRoom error");
-            await Clients.Caller.SendAsync("RoomError", "Lỗi server khi vào phòng Battle: " + realError);
+            await Clients.Caller.SendAsync("RoomError", "Lỗi server khi vào phòng Battle: " + ex.GetBaseException().Message);
         }
     }
 
@@ -324,21 +397,12 @@ public class BattleHub : Hub
             var room = await _db.BattleRooms
                 .FirstOrDefaultAsync(r => r.RoomId == roomId && r.Status == "Playing");
 
-            if (room == null)
-            {
-                return;
-            }
+            if (room == null) return;
 
             var userId = _userManager.GetUserId(Context.User!);
 
-            if (userId == room.Player1Id && isCorrect)
-            {
-                room.Score1++;
-            }
-            else if (userId == room.Player2Id && isCorrect)
-            {
-                room.Score2++;
-            }
+            if (userId == room.Player1Id && isCorrect) room.Score1++;
+            else if (userId == room.Player2Id && isCorrect) room.Score2++;
 
             await _db.SaveChangesAsync();
 
@@ -358,61 +422,36 @@ public class BattleHub : Hub
     {
         try
         {
-            var room = await _db.BattleRooms
-                .FirstOrDefaultAsync(r => r.RoomId == roomId);
-
-            if (room == null)
-            {
-                return;
-            }
-
-            if (room.Status == "Finished")
-            {
-                return;
-            }
+            var room = await _db.BattleRooms.FirstOrDefaultAsync(r => r.RoomId == roomId);
+            if (room == null || room.Status == "Finished") return;
 
             room.Status = "Finished";
             room.FinishedAt = DateTime.UtcNow;
 
             string result;
-            string winnerId = "";
-            string loserId = "";
-            string winnerName = "";
+            string winnerId = "", loserId = "", winnerName = "";
 
             if (room.Score1 > room.Score2)
             {
-                result = "player1";
-                winnerId = room.Player1Id;
-                loserId = room.Player2Id;
-                winnerName = room.Player1Name;
+                result = "player1"; winnerId = room.Player1Id; loserId = room.Player2Id; winnerName = room.Player1Name;
             }
             else if (room.Score2 > room.Score1)
             {
-                result = "player2";
-                winnerId = room.Player2Id;
-                loserId = room.Player1Id;
-                winnerName = room.Player2Name;
+                result = "player2"; winnerId = room.Player2Id; loserId = room.Player1Id; winnerName = room.Player2Name;
             }
             else
             {
                 result = "draw";
             }
 
-            int xpWinner = 0;
-            int xpLoser = 0;
+            int xpWinner = 0, xpLoser = 0;
 
             if (result != "draw")
             {
                 xpWinner = await _xpService.AwardXpAsync(winnerId, "quiz_pass");
                 xpLoser = 10;
-
                 var loser = await _userManager.FindByIdAsync(loserId);
-
-                if (loser != null)
-                {
-                    loser.XpPoints += xpLoser;
-                    await _userManager.UpdateAsync(loser);
-                }
+                if (loser != null) { loser.XpPoints += xpLoser; await _userManager.UpdateAsync(loser); }
             }
 
             await _db.SaveChangesAsync();
@@ -450,41 +489,8 @@ public class BattleHub : Hub
         }
         catch (Exception ex)
         {
-            var realError = ex.GetBaseException().Message;
             _logger.LogError(ex, "BroadcastQuestions error");
-            await Clients.Caller.SendAsync("RoomError", "Lỗi gửi câu hỏi Battle: " + realError);
+            await Clients.Caller.SendAsync("RoomError", "Lỗi gửi câu hỏi Battle: " + ex.GetBaseException().Message);
         }
-    }
-
-    public override async Task OnDisconnectedAsync(Exception? exception)
-    {
-        try
-        {
-            var userId = _userManager.GetUserId(Context.User!);
-
-            if (!string.IsNullOrWhiteSpace(userId))
-            {
-                var room = await _db.BattleRooms
-                    .FirstOrDefaultAsync(r =>
-                        r.Status == "Playing" &&
-                        (r.Player1Id == userId || r.Player2Id == userId));
-
-                if (room != null)
-                {
-                    room.Status = "Finished";
-                    room.FinishedAt = DateTime.UtcNow;
-
-                    await _db.SaveChangesAsync();
-
-                    await Clients.Group(room.RoomId).SendAsync("OpponentLeft");
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "OnDisconnectedAsync error");
-        }
-
-        await base.OnDisconnectedAsync(exception);
     }
 }
