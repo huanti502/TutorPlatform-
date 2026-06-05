@@ -60,9 +60,18 @@
                         <tr>
                             <td class="ps-4">
                                 <a href="/Admin/UserDetail/@u.Id" class="d-flex align-items-center gap-2 text-decoration-none" style="color:inherit;">
-                                    <div class="avatar avatar-sm" style="@(u.IsLocked ? "background:#E2E8F0;color:#94A3B8;" : "")">
-                                        @u.FullName.FirstOrDefault()
-                                    </div>
+                                    @if (!string.IsNullOrEmpty(u.AvatarUrl))
+                                    {
+                                        <img src="@u.AvatarUrl" alt="@u.FullName"
+                                             class="avatar avatar-sm avatar-img"
+                                             style="@(u.IsLocked ? "filter:grayscale(1);opacity:0.55;" : "")" />
+                                    }
+                                    else
+                                    {
+                                        <div class="avatar avatar-sm" style="@(u.IsLocked ? "background:#E2E8F0;color:#94A3B8;" : "")">
+                                            @u.FullName.FirstOrDefault()
+                                        </div>
+                                    }
                                     <div>
                                         <div style="font-weight:700;font-size:0.875rem;color:var(--text-primary);">@u.FullName</div>
                                         <div style="font-size:0.75rem;color:var(--text-muted);">@u.Email</div>

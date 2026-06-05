@@ -128,7 +128,14 @@
                         @foreach (var u in (ViewBag.NewUsers as List<TutorPlatform.Core.Models.AppUser> ?? new()))
                         {
                             <div class="d-flex align-items-center gap-2 py-1" style="border-bottom:1px solid var(--border-subtle);">
-                                <div class="avatar avatar-sm">@u.FullName.FirstOrDefault()</div>
+                                @if (!string.IsNullOrEmpty(u.AvatarUrl))
+                                {
+                                    <img src="@u.AvatarUrl" alt="@u.FullName" class="avatar avatar-sm avatar-img" />
+                                }
+                                else
+                                {
+                                    <div class="avatar avatar-sm">@u.FullName.FirstOrDefault()</div>
+                                }
                                 <div class="flex-grow-1">
                                     <div style="font-weight:700;font-size:0.85rem;">@u.FullName</div>
                                     <div style="color:var(--text-muted);font-size:0.75rem;">@u.Email</div>
