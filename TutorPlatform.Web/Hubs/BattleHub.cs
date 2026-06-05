@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using TutorPlatform.Core.Models;
 using TutorPlatform.Infrastructure.Data;
 using TutorPlatform.Web.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace TutorPlatform.Web.Hubs;
 
@@ -15,6 +16,11 @@ public class BattleHub : Hub
     private readonly XpService _xpService;
     private readonly AppDbContext _db;
     private readonly ILogger<BattleHub> _logger;
+    private readonly IServiceScopeFactory _scopeFactory;
+    private readonly IHubContext<BattleHub> _hubContext;
+
+    // Thời gian ân hạn cho phép người chơi kết nối lại trước khi tính là "rời trận".
+    private const int DisconnectGraceSeconds = 12;
 
     // ─── Lưu mapping: userId → connectionId (in-memory, đủ dùng cho 1 instance)
     // Key = userId, Value = connectionId hiện tại
@@ -25,12 +31,16 @@ public class BattleHub : Hub
         UserManager<AppUser> userManager,
         XpService xpService,
         AppDbContext db,
-        ILogger<BattleHub> logger)
+        ILogger<BattleHub> logger,
+        IServiceScopeFactory scopeFactory,
+        IHubContext<BattleHub> hubContext)
     {
         _userManager = userManager;
         _xpService = xpService;
         _db = db;
         _logger = logger;
+        _scopeFactory = scopeFactory;
+        _hubContext = hubContext;
     }
 
     // ─── Ghi nhận connection khi user kết nối
@@ -61,12 +71,16 @@ public class BattleHub : Hub
                     _userConnections.TryRemove(userId, out _);
                 }
 
-                // FIX RACE CONDITION:
-                // Chỉ kết thúc trận nếu CHÍNH connection đang ngắt này là connection
-                // hiện hành của người chơi trong phòng. Nếu không, một connection CŨ
-                // (vd: kết nối từ trang /Battle bị đóng khi điều hướng sang /Battle/Room)
-                // ngắt muộn sẽ kết thúc nhầm trận vừa mới bắt đầu → cả 2 bị "OpponentLeft"
-                // và sau đó mở lại phòng thì báo "Không tìm thấy phòng".
+                // FIX RACE CONDITION + RECONNECT:
+                // Không kết thúc trận NGAY khi connection rớt. Một cú rớt mạng tạm thời
+                // (chuyển tab, sleep, mạng chập chờn, hoặc connection cũ từ trang /Battle
+                // ngắt muộn) không được giết trận đang chơi — nếu không cả 2 sẽ bị
+                // "OpponentLeft" rồi khi tự reconnect lại báo "Không tìm thấy phòng".
+                //
+                // Thay vào đó: chỉ đánh dấu ứng viên rời trận, chờ DisconnectGraceSeconds.
+                // Nếu trong thời gian đó người chơi kết nối lại (JoinRoom sẽ ghi đè
+                // ConnectionId bằng một id MỚI), ta phát hiện id đã đổi → bỏ qua, trận
+                // tiếp tục. Chỉ khi họ thật sự không quay lại mới kết thúc + OpponentLeft.
                 var room = await _db.BattleRooms
                     .FirstOrDefaultAsync(r =>
                         r.Status == "Playing" &&
@@ -75,10 +89,7 @@ public class BattleHub : Hub
 
                 if (room != null)
                 {
-                    room.Status = "Finished";
-                    room.FinishedAt = DateTime.UtcNow;
-                    await _db.SaveChangesAsync();
-                    await Clients.Group(room.RoomId).SendAsync("OpponentLeft");
+                    ScheduleLeaveCheck(room.RoomId, userId, Context.ConnectionId);
                 }
             }
         }
@@ -88,6 +99,47 @@ public class BattleHub : Hub
         }
 
         await base.OnDisconnectedAsync(exception);
+    }
+
+    // ─── Lên lịch kiểm tra "rời trận" sau thời gian ân hạn.
+    // Hub là transient và _db sẽ bị dispose sau khi OnDisconnectedAsync trả về,
+    // nên tác vụ trễ phải mở một DI scope MỚI và gửi qua IHubContext.
+    private void ScheduleLeaveCheck(string roomId, string userId, string disconnectedConnectionId)
+    {
+        _ = Task.Run(async () =>
+        {
+            try
+            {
+                await Task.Delay(TimeSpan.FromSeconds(DisconnectGraceSeconds));
+
+                using var scope = _scopeFactory.CreateScope();
+                var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+
+                var room = await db.BattleRooms.FirstOrDefaultAsync(r => r.RoomId == roomId);
+
+                // Trận đã kết thúc bình thường rồi → không cần làm gì.
+                if (room == null || room.Status == "Finished") return;
+
+                // Người chơi này đã KẾT NỐI LẠI nếu ConnectionId hiện tại trong phòng
+                // KHÁC với connection đã rớt. Khi đó: bỏ qua, trận vẫn tiếp tục.
+                bool stillGone =
+                    (room.Player1Id == userId && room.Player1ConnectionId == disconnectedConnectionId) ||
+                    (room.Player2Id == userId && room.Player2ConnectionId == disconnectedConnectionId);
+
+                if (!stillGone) return;
+
+                // Hết ân hạn mà vẫn không quay lại → kết thúc trận, báo đối thủ.
+                room.Status = "Finished";
+                room.FinishedAt = DateTime.UtcNow;
+                await db.SaveChangesAsync();
+
+                await _hubContext.Clients.Group(roomId).SendAsync("OpponentLeft");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "ScheduleLeaveCheck error for room {RoomId}", roomId);
+            }
+        });
     }
 
     // ─── Helper: gửi message đến user qua ConnectionId (đáng tin hơn Clients.User)
