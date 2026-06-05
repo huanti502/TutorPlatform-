@@ -168,30 +168,108 @@ public class BookingController : Controller
     }
 
     [Authorize(Roles = "Tutor")]
-    public async Task<IActionResult> TutorRequests()
+    [HttpGet]
+    public async Task<IActionResult> TutorRequests(
+        string? keyword,
+        string? status,
+        int? subjectId,
+        DateTime? fromDate,
+        DateTime? toDate,
+        string sort = "newest")
     {
         var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Challenge();
+
         var profile = await _db.TutorProfiles
-            .FirstOrDefaultAsync(t => t.UserId == user!.Id);
+            .FirstOrDefaultAsync(t => t.UserId == user.Id);
 
         if (profile == null)
             return RedirectToAction("Profile", "Tutor");
 
         var bookings = await _db.Bookings
+            .AsNoTracking()
             .Include(b => b.Student)
             .Include(b => b.Subject)
             .Where(b => b.TutorProfileId == profile.Id)
-            .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
 
-        // 🛠️ SỬA LỖI HIỂN THỊ: Chuyển lại Local Time khi view
-        foreach (var b in bookings)
+        foreach (var booking in bookings)
         {
-            b.StartTime = b.StartTime.ToLocalTime();
-            b.EndTime = b.EndTime.ToLocalTime();
+            booking.StartTime = booking.StartTime.ToLocalTime();
+            booking.EndTime = booking.EndTime.ToLocalTime();
+            booking.CreatedAt = booking.CreatedAt.ToLocalTime();
         }
 
-        return View(bookings);
+        var subjects = bookings
+            .Where(b => b.Subject != null)
+            .Select(b => b.Subject!)
+            .GroupBy(s => s.Id)
+            .Select(g => g.First())
+            .OrderBy(s => s.Name)
+            .ToList();
+
+        IEnumerable<Booking> result = bookings;
+
+        if (!string.IsNullOrWhiteSpace(keyword))
+        {
+            var search = keyword.Trim();
+            result = result.Where(b =>
+                (b.Student?.FullName?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (b.Student?.Email?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                (b.Note?.Contains(search, StringComparison.OrdinalIgnoreCase) ?? false));
+        }
+
+        if (!string.IsNullOrWhiteSpace(status) && status != "All")
+        {
+            result = result.Where(b =>
+                string.Equals(b.Status, status, StringComparison.OrdinalIgnoreCase));
+        }
+
+        if (subjectId.HasValue)
+            result = result.Where(b => b.SubjectId == subjectId.Value);
+
+        if (fromDate.HasValue)
+            result = result.Where(b => b.StartTime.Date >= fromDate.Value.Date);
+
+        if (toDate.HasValue)
+            result = result.Where(b => b.StartTime.Date <= toDate.Value.Date);
+
+        if (fromDate.HasValue && toDate.HasValue && fromDate.Value.Date > toDate.Value.Date)
+        {
+            TempData["Error"] = "Ngày bắt đầu không được lớn hơn ngày kết thúc.";
+            result = Enumerable.Empty<Booking>();
+        }
+
+        result = sort switch
+        {
+            "oldest" => result.OrderBy(b => b.CreatedAt),
+            "start_asc" => result.OrderBy(b => b.StartTime),
+            "start_desc" => result.OrderByDescending(b => b.StartTime),
+            "student_asc" => result.OrderBy(b => b.Student != null ? b.Student.FullName : string.Empty),
+            "status" => result
+                .OrderBy(b => b.Status == "Pending" ? 0
+                    : b.Status == "Confirmed" ? 1
+                    : b.Status == "Completed" ? 2
+                    : b.Status == "Rejected" ? 3
+                    : b.Status == "Cancelled" ? 4 : 5)
+                .ThenBy(b => b.StartTime),
+            _ => result.OrderByDescending(b => b.CreatedAt)
+        };
+
+        var filteredBookings = result.ToList();
+
+        ViewBag.Subjects = subjects;
+        ViewBag.TotalCount = bookings.Count;
+        ViewBag.PendingCount = bookings.Count(b => b.Status == "Pending");
+        ViewBag.FilteredCount = filteredBookings.Count;
+        ViewBag.Keyword = keyword ?? string.Empty;
+        ViewBag.Status = string.IsNullOrWhiteSpace(status) ? "All" : status;
+        ViewBag.SubjectId = subjectId;
+        ViewBag.FromDate = fromDate?.ToString("yyyy-MM-dd");
+        ViewBag.ToDate = toDate?.ToString("yyyy-MM-dd");
+        ViewBag.Sort = string.IsNullOrWhiteSpace(sort) ? "newest" : sort;
+
+        return View(filteredBookings);
     }
 
     [Authorize(Roles = "Tutor")]
