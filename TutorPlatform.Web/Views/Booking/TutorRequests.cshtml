@@ -1,35 +1,25 @@
 @model IEnumerable<TutorPlatform.Core.Models.Booking>
-@using TutorPlatform.Core.Models
-@using System.Linq
-
 @{
     ViewData["Title"] = "Yêu cầu học";
-
-    var subjects = ViewBag.Subjects as IEnumerable<Subject> ?? Enumerable.Empty<Subject>();
-    var selectedStatus = ViewBag.Status as string ?? "All";
-    var selectedSort = ViewBag.Sort as string ?? "newest";
-    int? selectedSubjectId = ViewBag.SubjectId == null ? null : (int?)ViewBag.SubjectId;
-
-    var statusMap = new Dictionary<string, (string bg, string color, string label)>
-    {
-        { "Pending", ("#FFF7ED", "#D97706", "Chờ xác nhận") },
-        { "Confirmed", ("#F0FDF4", "#059669", "Đã xác nhận") },
-        { "Completed", ("#EEF2FF", "#4F46E5", "Đã hoàn thành") },
-        { "Cancelled", ("#FEF2F2", "#DC2626", "Đã huỷ") },
-        { "Rejected", ("#FEF2F2", "#DC2626", "Đã từ chối") }
+    var statusMap = new Dictionary<string, (string bg, string color, string label)>{
+        {"Pending",   ("#FFF7ED","#D97706","Chờ xác nhận")},
+        {"Confirmed", ("#F0FDF4","#059669","Đã xác nhận")},
+        {"Completed", ("var(--primary-light)","var(--primary)","Đã hoàn thành")},
+        {"Cancelled", ("#FEF2F2","#DC2626","Đã huỷ")},
+        {"Rejected",  ("#FEF2F2","#DC2626","Đã từ chối")},
     };
 }
 
 <style>
-    @@keyframes requestPulse {
+    @@keyframes pulse {
         0% {
             transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, .4);
+            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
         }
 
         70% {
             transform: scale(1.02);
-            box-shadow: 0 0 0 7px rgba(16, 185, 129, 0);
+            box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
         }
 
         100% {
@@ -37,508 +27,174 @@
             box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
         }
     }
-
-    .requests-page {
-        padding: 28px 0 40px;
-    }
-
-    .requests-header {
-        display: flex;
-        align-items: flex-end;
-        justify-content: space-between;
-        flex-wrap: wrap;
-        gap: 12px;
-        margin-bottom: 18px;
-    }
-
-    .requests-title {
-        margin: 0 0 4px;
-        font-size: 24px;
-        font-weight: 800;
-        color: var(--text-primary,#0f172a);
-    }
-
-    .requests-description {
-        margin: 0;
-        color: var(--text-muted,#64748b);
-        font-size: 14px;
-    }
-
-    .requests-count {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 14px;
-        border-radius: 999px;
-        background: #eef2ff;
-        color: #4f46e5;
-        font-size: 13px;
-        font-weight: 700;
-    }
-
-    .request-filter {
-        padding: 18px;
-        margin-bottom: 24px;
-        background: #fff;
-        border: 1px solid var(--border,#e2e8f0);
-        border-radius: 16px;
-        box-shadow: 0 5px 20px rgba(15,23,42,.05);
-    }
-
-        .request-filter label {
-            display: block;
-            margin-bottom: 6px;
-            color: var(--text-secondary,#475569);
-            font-size: 12px;
-            font-weight: 700;
-        }
-
-        .request-filter .form-control,
-        .request-filter .form-select,
-        .request-filter .input-group-text {
-            min-height: 42px;
-            border-color: var(--border,#e2e8f0);
-            font-size: 14px;
-        }
-
-        .request-filter .form-control,
-        .request-filter .form-select {
-            border-radius: 10px;
-        }
-
-            .request-filter .form-control:focus,
-            .request-filter .form-select:focus {
-                border-color: #6366f1;
-                box-shadow: 0 0 0 3px rgba(99,102,241,.12);
-            }
-
-    .search-input-group .input-group-text {
-        border-radius: 10px 0 0 10px;
-        border-right: 0;
-        background: #fff;
-        color: #64748b;
-    }
-
-    .search-input-group .form-control {
-        border-radius: 0 10px 10px 0;
-        border-left: 0;
-    }
-
-    .filter-button {
-        min-height: 42px;
-        border-radius: 10px;
-        font-weight: 700;
-    }
-
-    .request-card {
-        height: 100%;
-        overflow: hidden;
-        border: 1px solid var(--border,#e2e8f0);
-        border-radius: 16px;
-        background: #fff;
-        box-shadow: 0 3px 12px rgba(15,23,42,.04);
-        transition: .18s ease;
-    }
-
-        .request-card:hover {
-            transform: translateY(-3px);
-            border-color: rgba(99,102,241,.25);
-            box-shadow: 0 12px 30px rgba(15,23,42,.09);
-        }
-
-    .request-card-body {
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-        padding: 20px;
-    }
-
-    .request-user-wrapper {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 10px;
-        margin-bottom: 14px;
-    }
-
-    .request-user {
-        display: flex;
-        align-items: center;
-        min-width: 0;
-        gap: 10px;
-    }
-
-    .request-avatar {
-        width: 44px;
-        height: 44px;
-        flex: 0 0 44px;
-        overflow: hidden;
-        border: 2px solid #fff;
-        border-radius: 50%;
-        background: linear-gradient(135deg,#10b981,#059669);
-        box-shadow: 0 3px 9px rgba(15,23,42,.12);
-    }
-
-        .request-avatar img {
-            display: block;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-    .request-avatar-fallback {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-        height: 100%;
-        color: #fff;
-        font-size: 15px;
-        font-weight: 800;
-        text-transform: uppercase;
-    }
-
-    .request-user-info {
-        min-width: 0;
-    }
-
-    .request-user-name {
-        max-width: 175px;
-        overflow: hidden;
-        margin-bottom: 2px;
-        color: var(--text-primary,#0f172a);
-        font-size: 14px;
-        font-weight: 800;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .request-subject {
-        max-width: 175px;
-        overflow: hidden;
-        color: var(--text-muted,#64748b);
-        font-size: 12px;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-    }
-
-    .request-status {
-        flex-shrink: 0;
-        padding: 5px 8px;
-        border-radius: 6px;
-        font-size: 11px;
-        font-weight: 700;
-    }
-
-    .request-information {
-        padding: 12px;
-        margin-bottom: 16px;
-        border-radius: 11px;
-        background: var(--bg,#f8fafc);
-        color: var(--text-secondary,#475569);
-        font-size: 13px;
-    }
-
-    .request-information-row {
-        display: flex;
-        align-items: flex-start;
-        gap: 8px;
-    }
-
-        .request-information-row + .request-information-row {
-            margin-top: 8px;
-        }
-
-    .request-actions {
-        margin-top: auto;
-    }
-
-    .request-button {
-        min-height: 36px;
-        border-radius: 8px;
-        font-size: 13px;
-        font-weight: 700;
-    }
-
-    .join-class-button {
-        animation: requestPulse 1.5s infinite;
-    }
-
-    .empty-request-box {
-        padding: 64px 20px;
-        text-align: center;
-    }
-
-    .empty-request-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 74px;
-        height: 74px;
-        margin: 0 auto 18px;
-        border-radius: 20px;
-        background: #ecfdf5;
-        color: #10b981;
-        font-size: 32px;
-    }
-
-    @@media (max-width:575.98px) {
-        .requests-title {
-            font-size: 21px;
-        }
-
-        .request-filter {
-            padding: 14px;
-        }
-
-        .request-card-body {
-            padding: 16px;
-        }
-
-        .request-user-name, .request-subject {
-            max-width: 145px;
-        }
-    }
 </style>
 
-<section class="requests-page">
+<section class="section-sm">
     <div class="container">
-        @if (TempData["Success"] != null)
-        {
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        }
-
-        @if (TempData["Error"] != null)
-        {
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>@TempData["Error"]
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        }
-
-        <div class="requests-header">
-            <div>
-                <h1 class="requests-title">Yêu cầu học</h1>
-                <p class="requests-description">
-                    @ViewBag.PendingCount yêu cầu đang chờ xác nhận · Tổng @ViewBag.TotalCount yêu cầu
-                </p>
-            </div>
-            <span class="requests-count">
-                <i class="bi bi-list-check"></i> Đang hiển thị @ViewBag.FilteredCount kết quả
-            </span>
+        <div class="mb-4">
+            <h4 style="font-weight:800;margin-bottom:0.25rem;">
+                Yêu cầu học
+            </h4>
+            <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">
+                @Model.Count(b => b.Status == "Pending") yêu cầu đang chờ xác nhận
+            </p>
         </div>
-
-        <form asp-controller="Booking" asp-action="TutorRequests" method="get" class="request-filter">
-            <div class="row g-3 align-items-end">
-                <div class="col-xl-4 col-lg-4 col-md-6">
-                    <label for="keyword">Tìm kiếm</label>
-                    <div class="input-group search-input-group">
-                        <span class="input-group-text"><i class="bi bi-search"></i></span>
-                        <input id="keyword" name="keyword" type="text" class="form-control"
-                               value="@ViewBag.Keyword" placeholder="Tên, email hoặc ghi chú..." />
-                    </div>
-                </div>
-
-                <div class="col-xl-2 col-lg-2 col-md-3 col-6">
-                    <label for="status">Trạng thái</label>
-                    <select id="status" name="status" class="form-select">
-                        <option value="All" selected="@(selectedStatus == "All")">Tất cả</option>
-                        <option value="Pending" selected="@(selectedStatus == "Pending")">Chờ xác nhận</option>
-                        <option value="Confirmed" selected="@(selectedStatus == "Confirmed")">Đã xác nhận</option>
-                        <option value="Completed" selected="@(selectedStatus == "Completed")">Đã hoàn thành</option>
-                        <option value="Rejected" selected="@(selectedStatus == "Rejected")">Đã từ chối</option>
-                        <option value="Cancelled" selected="@(selectedStatus == "Cancelled")">Đã huỷ</option>
-                    </select>
-                </div>
-
-                <div class="col-xl-2 col-lg-2 col-md-3 col-6">
-                    <label for="subjectId">Môn học</label>
-                    <select id="subjectId" name="subjectId" class="form-select">
-                        <option value="">Tất cả môn</option>
-                        @foreach (var subject in subjects)
-                        {
-                            if (selectedSubjectId == subject.Id)
-                            {
-                                <option value="@subject.Id" selected>@subject.Name</option>
-                            }
-                            else
-                            {
-                                <option value="@subject.Id">@subject.Name</option>
-                            }
-                        }
-                    </select>
-                </div>
-
-                <div class="col-xl-2 col-lg-2 col-md-3 col-6">
-                    <label for="fromDate">Từ ngày</label>
-                    <input id="fromDate" name="fromDate" type="date" class="form-control" value="@ViewBag.FromDate" />
-                </div>
-
-                <div class="col-xl-2 col-lg-2 col-md-3 col-6">
-                    <label for="toDate">Đến ngày</label>
-                    <input id="toDate" name="toDate" type="date" class="form-control" value="@ViewBag.ToDate" />
-                </div>
-
-                <div class="col-xl-3 col-lg-4 col-md-5">
-                    <label for="sort">Sắp xếp</label>
-                    <select id="sort" name="sort" class="form-select">
-                        <option value="newest" selected="@(selectedSort == "newest")">Yêu cầu mới nhất</option>
-                        <option value="oldest" selected="@(selectedSort == "oldest")">Yêu cầu cũ nhất</option>
-                        <option value="start_asc" selected="@(selectedSort == "start_asc")">Buổi học gần nhất</option>
-                        <option value="start_desc" selected="@(selectedSort == "start_desc")">Buổi học xa nhất</option>
-                        <option value="student_asc" selected="@(selectedSort == "student_asc")">Tên học viên A–Z</option>
-                        <option value="status" selected="@(selectedSort == "status")">Ưu tiên chờ xác nhận</option>
-                    </select>
-                </div>
-
-                <div class="col-xl-3 col-lg-4 col-md-4">
-                    <div class="d-flex gap-2">
-                        <button type="submit" class="btn btn-primary flex-grow-1 filter-button">
-                            <i class="bi bi-funnel me-1"></i>Áp dụng
-                        </button>
-                        <a asp-controller="Booking" asp-action="TutorRequests"
-                           class="btn btn-outline-secondary filter-button d-flex align-items-center justify-content-center"
-                           title="Xóa bộ lọc">
-                            <i class="bi bi-arrow-counterclockwise"></i>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </form>
 
         @if (!Model.Any())
         {
-            <div class="empty-request-box">
-                <div class="empty-request-icon"><i class="bi bi-inbox"></i></div>
-                <h5 class="fw-bold">Không tìm thấy yêu cầu phù hợp</h5>
-                <p class="text-muted mb-3">Hãy thay đổi hoặc xóa bộ lọc để xem lại toàn bộ yêu cầu.</p>
-                <a asp-controller="Booking" asp-action="TutorRequests" class="btn btn-outline-primary">
-                    Xem tất cả yêu cầu
-                </a>
+            <div class="text-center py-5">
+                <div style="width:72px;height:72px;border-radius:var(--radius-xl);
+                    background:var(--success-light);
+                    display:flex;align-items:center;justify-content:center;
+                    margin:0 auto 1.25rem;">
+                    <svg width="32" height="32" fill="none" stroke="#10B981"
+                         stroke-width="1.5" viewBox="0 0 24 24">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2
+                        19.79 19.79 0 0 1-8.63-3.07
+                        A19.5 19.5 0 0 1 4.99 15
+                        a19.79 19.79 0 0 1-3.07-8.67
+                        A2 2 0 0 1 3.9 4.22h3
+                        a2 2 0 0 1 2 1.72
+                        c.127.96.361 1.903.7 2.81
+                        a2 2 0 0 1-.45 2.11L8.09 11
+                        a16 16 0 0 0 5.91 5.91l1.27-1.27
+                        a2 2 0 0 1 2.11-.45
+                        c.907.339 1.85.573 2.81.7
+                        A2 2 0 0 1 22 17.92z" />
+                    </svg>
+                </div>
+                <h6 style="font-weight:700;">Chưa có yêu cầu nào</h6>
+                <p style="color:var(--text-muted);font-size:0.875rem;">
+                    Hoàn thiện hồ sơ để học viên tìm thấy bạn!
+                </p>
             </div>
         }
         else
         {
             <div class="row g-3">
-                @foreach (var booking in Model)
+                @foreach (var b in Model)
                 {
-                    var studentName = string.IsNullOrWhiteSpace(booking.Student?.FullName)
-                        ? "Học viên"
-                        : booking.Student.FullName;
+                    var (bg, color, label) = statusMap.GetValueOrDefault(
+                        b.Status, ("#F1F5F9", "#64748B", b.Status));
+                    var stuInitial = b.Student.FullName
+                                      .FirstOrDefault().ToString().ToUpper();
+                    <div class="col-md-6 col-xl-4">
+                        <div class="card h-100" style="border-radius:16px;">
+                            <div class="card-body p-4">
 
-                    var subjectName = string.IsNullOrWhiteSpace(booking.Subject?.Name)
-                        ? "Chưa xác định môn học"
-                        : booking.Subject.Name;
-
-                    var firstCharacter = studentName.Trim().Substring(0, 1).ToUpper();
-                    var avatarUrl = booking.Student?.AvatarUrl;
-                    var hasAvatar = !string.IsNullOrWhiteSpace(avatarUrl);
-
-                    var statusInfo = statusMap.TryGetValue(booking.Status, out var mapped)
-                        ? mapped
-                        : ("#F1F5F9", "#64748B", booking.Status ?? "Không xác định");
-
-                    var canJoin = booking.Status == "Confirmed" &&
-                                  !string.IsNullOrWhiteSpace(booking.MeetingRoomId);
-                    var joinUrl = canJoin ? $"https://meet.jit.si/{booking.MeetingRoomId}" : string.Empty;
-
-                    <div class="col-xl-4 col-md-6">
-                        <article class="request-card">
-                            <div class="request-card-body">
-                                <div class="request-user-wrapper">
-                                    <div class="request-user">
-                                        <div class="request-avatar">
-                                            @if (hasAvatar)
-                                            {
-                                                <img src="@avatarUrl"
-                                                     alt="Ảnh đại diện của @studentName"
-                                                     loading="lazy"
-                                                     onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
-                                                <div class="request-avatar-fallback" style="display:none;">@firstCharacter</div>
-                                            }
-                                            else
-                                            {
-                                                <div class="request-avatar-fallback">@firstCharacter</div>
-                                            }
+                                <!-- Header -->
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="avatar avatar-sm"
+                                             style="background:linear-gradient(135deg,#10B981,#059669);">
+                                            @stuInitial
                                         </div>
-
-                                        <div class="request-user-info">
-                                            <div class="request-user-name" title="@studentName">@studentName</div>
-                                            <div class="request-subject" title="@subjectName">@subjectName</div>
+                                        <div>
+                                            <div style="font-weight:700; font-size:0.875rem;">
+                                                @b.Student.FullName
+                                            </div>
+                                            <div style="font-size:0.75rem; color:var(--text-muted);">
+                                                @b.Subject.Name
+                                            </div>
                                         </div>
                                     </div>
-
-                                    <span class="request-status" style="background:@statusInfo.bg;color:@statusInfo.color;">
-                                        @statusInfo.label
+                                    <span class="badge" style="background:@bg;color:@color;">
+                                        @label
                                     </span>
                                 </div>
 
-                                <div class="request-information">
-                                    <div class="request-information-row">
-                                        <i class="bi bi-clock"></i>
-                                        <span>
-                                            @booking.StartTime.ToString("HH:mm dd/MM/yyyy")
-                                            – @booking.EndTime.ToString("HH:mm")
+                                <!-- Info -->
+                                <div style="background:var(--bg);border-radius:10px;
+                                    padding:0.75rem;margin-bottom:1rem;
+                                    font-size:0.82rem;">
+                                    <div class="d-flex gap-2 mb-1">
+                                        <svg width="14" height="14" fill="none"
+                                             stroke="var(--text-muted)" stroke-width="2"
+                                             viewBox="0 0 24 24" style="flex-shrink:0;margin-top:1px;">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <path d="M12 6v6l4 2" />
+                                        </svg>
+                                        <span style="color:var(--text-secondary);">
+                                            @b.StartTime.ToString("HH:mm dd/MM/yyyy")
+                                            – @b.EndTime.ToString("HH:mm")
                                         </span>
                                     </div>
-
-                                    @if (!string.IsNullOrWhiteSpace(booking.Note))
+                                    @if (!string.IsNullOrEmpty(b.Note))
                                     {
-                                        <div class="request-information-row">
-                                            <i class="bi bi-chat-left-text"></i>
-                                            <span>@booking.Note</span>
+                                        <div class="d-flex gap-2 mt-2">
+                                            <svg width="14" height="14" fill="none"
+                                                 stroke="var(--text-muted)" stroke-width="2"
+                                                 viewBox="0 0 24 24" style="flex-shrink:0;margin-top:2px;">
+                                                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5
+                                                a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                                            </svg>
+                                            <span style="color:var(--text-secondary);">
+                                                @b.Note
+                                            </span>
                                         </div>
                                     }
                                 </div>
 
-                                <div class="request-actions">
-                                    @if (canJoin)
-                                    {
-                                        <a href="@joinUrl" target="_blank" rel="noopener noreferrer"
-                                           class="btn btn-success request-button join-class-button w-100 mb-2">
-                                            <i class="bi bi-camera-video me-1"></i>Tham gia lớp học ngay
-                                        </a>
-                                    }
+                                <!-- Lớp học Jitsi Meeting -->
+                                @{
+                                    var now = DateTime.Now;
+                                    var canJoin = b.Status == "Confirmed" &&
+                                                  b.MeetingRoomId != null; // DEMO: bỏ giới hạn thời gian
+                                    var joinUrl = $"https://meet.jit.si/{b.MeetingRoomId}";
+                                }
 
-                                    @if (booking.Status == "Pending")
-                                    {
-                                        <form asp-controller="Booking" asp-action="UpdateStatus" method="post" class="d-flex gap-2">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@booking.Id" />
-                                            <button type="submit" name="status" value="Confirmed"
-                                                    class="btn btn-success request-button w-50">
-                                                <i class="bi bi-check-lg"></i> Xác nhận
-                                            </button>
-                                            <button type="submit" name="status" value="Rejected"
-                                                    class="btn btn-outline-danger request-button w-50"
-                                                    onclick="return confirm('Bạn có chắc muốn từ chối yêu cầu này?');">
-                                                <i class="bi bi-x-circle"></i> Từ chối
-                                            </button>
-                                        </form>
-                                    }
-                                    else if (booking.Status == "Confirmed")
-                                    {
-                                        <form asp-controller="Booking" asp-action="Complete" method="post" class="mb-2">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="id" value="@booking.Id" />
-                                            <button type="submit" class="btn btn-primary request-button w-100"
-                                                    onclick="return confirm('Xác nhận buổi học này đã hoàn thành?');">
-                                                <i class="bi bi-flag me-1"></i>Hoàn thành buổi học
-                                            </button>
-                                        </form>
+                                @if (b.Status == "Confirmed" && b.MeetingRoomId != null)
+                                {
+                                    <div class="mb-3 text-center">
+                                        @if (canJoin)
+                                        {
+                                            @* Đang trong giờ học → Hiện nút nổi bật *@
+                                            <a href="@joinUrl" target="_blank"
+                                               class="btn btn-success btn-sm w-100 fw-bold"
+                                               style="animation:pulse 1.5s infinite; border-radius:8px; padding:0.6rem;">
+                                                🎥 Tham gia lớp học ngay!
+                                            </a>
+                                        }
+                                        else if (now < b.StartTime.AddMinutes(-15))
+                                        {
+                                            @* Chưa đến giờ → Hiện đếm ngược *@
+                                            <div class="text-muted small py-2 px-3" style="background:#f8f9fa; border-radius:8px; border:1px dashed #dee2e6;">
+                                                🕒 Lớp mở lúc <strong>@b.StartTime.AddMinutes(-15).ToString("HH:mm")</strong>
+                                                <br />
+                                                <span class="countdown fw-semibold text-primary"
+                                                      data-time="@b.StartTime.AddMinutes(-15).ToString("O")">
+                                                </span>
+                                            </div>
+                                        }
+                                    </div>
+                                }
 
-                                        <a href="/Whiteboard/Index?bookingId=@booking.Id" target="_blank"
-                                           rel="noopener noreferrer" class="btn request-button w-100"
-                                           style="background:#1e3a5f;color:#fff;">
-                                            <i class="bi bi-easel me-1"></i>Bảng trắng
-                                        </a>
-                                    }
-                                </div>
+                                <!-- Actions -->
+                                @if (b.Status == "Pending")
+                                {
+                                    <form asp-action="UpdateStatus" method="post" class="d-flex gap-2">
+                                        <input type="hidden" name="id" value="@b.Id" />
+                                        <button name="status" value="Confirmed" class="btn btn-sm btn-success w-50" style="border-radius:8px; font-weight:600;"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Xác nhận</button>
+                                        <button name="status" value="Rejected" class="btn btn-sm btn-outline-danger w-50" style="border-radius:8px; font-weight:600;"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Từ chối</button>
+                                    </form>
+                                }
+                                @if (b.Status == "Confirmed")
+                                {
+                                    <form asp-action="Complete" method="post" class="mb-2">
+                                        <input type="hidden" name="id" value="@b.Id" />
+                                        <button class="btn btn-sm w-100 text-white" style="border-radius:8px; background:var(--primary); font-weight:600; border:none;">🏁 Hoàn thành buổi học</button>
+                                    </form>
+
+                                    <!-- Nút Bảng Trắng mới thêm -->
+                                    <a href="/Whiteboard/Index?bookingId=@b.Id"
+                                       target="_blank"
+                                       class="btn btn-sm w-100"
+                                       style="background:#1e3a5f; color:white; border-radius:8px;">
+                                        🎨 Bảng Trắng
+                                    </a>
+                                }
                             </div>
-                        </article>
+                        </div>
                     </div>
                 }
             </div>
