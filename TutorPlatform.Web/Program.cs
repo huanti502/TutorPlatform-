@@ -89,6 +89,7 @@ builder.Services.AddScoped<BadgeService>();
 builder.Services.AddScoped<AIService>();
 builder.Services.AddScoped<RecommendationService>();
 builder.Services.AddScoped<XpService>();
+builder.Services.AddScoped<ReportService>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<CloudinaryService>();

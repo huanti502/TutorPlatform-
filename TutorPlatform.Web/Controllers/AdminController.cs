@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TutorPlatform.Core.Models;
 using TutorPlatform.Infrastructure.Data;
+using TutorPlatform.Web.Services;
 
 namespace TutorPlatform.Web.Controllers;
 
@@ -12,23 +13,25 @@ public class AdminController : Controller
 {
     private readonly AppDbContext _db;
     private readonly UserManager<AppUser> _userManager;
+    private readonly ReportService _reportService;
 
-    public AdminController(AppDbContext db, UserManager<AppUser> userManager)
+    public AdminController(AppDbContext db, UserManager<AppUser> userManager, ReportService reportService)
     {
         _db = db;
         _userManager = userManager;
+        _reportService = reportService;
     }
 
     public async Task<IActionResult> Index()
     {
         var now = DateTime.UtcNow;
-        ViewBag.TotalUsers      = await _db.Users.CountAsync();
-        ViewBag.TotalStudents   = await _db.Users.CountAsync(u => u.Role == "Student");
-        ViewBag.TotalTutors     = await _db.TutorProfiles.CountAsync();
-        ViewBag.PendingTutors   = await _db.TutorProfiles.CountAsync(t => !t.IsApproved);
-        ViewBag.TotalBookings   = await _db.Bookings.CountAsync();
+        ViewBag.TotalUsers = await _db.Users.CountAsync();
+        ViewBag.TotalStudents = await _db.Users.CountAsync(u => u.Role == "Student");
+        ViewBag.TotalTutors = await _db.TutorProfiles.CountAsync();
+        ViewBag.PendingTutors = await _db.TutorProfiles.CountAsync(t => !t.IsApproved);
+        ViewBag.TotalBookings = await _db.Bookings.CountAsync();
         ViewBag.CompletedBookings = await _db.Bookings.CountAsync(b => b.Status == "Completed");
-        ViewBag.TotalReviews    = await _db.Reviews.CountAsync();
+        ViewBag.TotalReviews = await _db.Reviews.CountAsync();
 
         // ── FIX: Load vào memory trước rồi GroupBy ──────────────
         var sixMonthsAgo = now.AddMonths(-6);
@@ -41,16 +44,17 @@ public class AdminController : Controller
             .GroupBy(b => new { b.CreatedAt.Year, b.CreatedAt.Month })
             .Select(g => new
             {
-                g.Key.Year, g.Key.Month,
-                Count   = g.Count(),
+                g.Key.Year,
+                g.Key.Month,
+                Count = g.Count(),
                 Revenue = g.Sum(b => (decimal)(b.EndTime - b.StartTime).TotalHours * b.TutorProfile.HourlyRate)
             })
             .OrderBy(x => x.Year).ThenBy(x => x.Month)
             .ToList();
 
-        ViewBag.MonthlyLabels  = monthlyData.Select(m => $"{m.Month}/{m.Year}").ToList();
+        ViewBag.MonthlyLabels = monthlyData.Select(m => $"{m.Month}/{m.Year}").ToList();
         ViewBag.MonthlyRevenue = monthlyData.Select(m => (long)m.Revenue).ToList();
-        ViewBag.MonthlyCount   = monthlyData.Select(m => m.Count).ToList();
+        ViewBag.MonthlyCount = monthlyData.Select(m => m.Count).ToList();
 
         ViewBag.NewUsers = await _db.Users
             .Where(u => u.CreatedAt >= now.AddDays(-30))
@@ -82,7 +86,7 @@ public class AdminController : Controller
 
         var users = await query.OrderByDescending(u => u.CreatedAt).Take(50).ToListAsync();
         ViewBag.Search = search;
-        ViewBag.Role   = role;
+        ViewBag.Role = role;
         return View(users);
     }
 
@@ -100,11 +104,11 @@ public class AdminController : Controller
             .Include(t => t.ReceivedReviews)
             .FirstOrDefaultAsync(t => t.UserId == id);
 
-        ViewBag.TutorProfile  = tutorProfile;
-        ViewBag.BookingCount  = tutorProfile != null
+        ViewBag.TutorProfile = tutorProfile;
+        ViewBag.BookingCount = tutorProfile != null
             ? tutorProfile.Bookings.Count
             : await _db.Bookings.CountAsync(b => b.StudentId == id);
-        ViewBag.ReviewCount   = tutorProfile != null
+        ViewBag.ReviewCount = tutorProfile != null
             ? tutorProfile.ReceivedReviews.Count
             : await _db.Reviews.CountAsync(r => r.StudentId == id);
 
@@ -158,11 +162,11 @@ public class AdminController : Controller
 
         _db.Notifications.Add(new Notification
         {
-            UserId    = tutor.UserId,
-            Title     = "Hồ sơ đã được duyệt ✅",
-            Content   = "Chúc mừng! Hồ sơ gia sư của bạn đã được Admin duyệt.",
+            UserId = tutor.UserId,
+            Title = "Hồ sơ đã được duyệt ✅",
+            Content = "Chúc mừng! Hồ sơ gia sư của bạn đã được Admin duyệt.",
             CreatedAt = DateTime.UtcNow,
-            IsRead    = false
+            IsRead = false
         });
         await _db.SaveChangesAsync();
         return RedirectToAction("PendingTutors");
@@ -189,6 +193,36 @@ public class AdminController : Controller
             await _userManager.DeleteAsync(user);
 
         return RedirectToAction("PendingTutors");
+    }
+
+    // ── BÁO CÁO THỐNG KÊ ────────────────────────────────────────────
+    [HttpGet]
+    public async Task<IActionResult> Reports(DateTime? from, DateTime? to)
+    {
+        // Mặc định: 12 tháng gần nhất
+        var toDate = to ?? DateTime.UtcNow.Date;
+        var fromDate = from ?? toDate.AddMonths(-12);
+        if (fromDate > toDate) (fromDate, toDate) = (toDate, fromDate);
+
+        var data = await _reportService.BuildReportDataAsync(fromDate, toDate);
+        ViewBag.From = fromDate;
+        ViewBag.To = toDate;
+        return View(data);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> ExportExcel(DateTime? from, DateTime? to)
+    {
+        var toDate = to ?? DateTime.UtcNow.Date;
+        var fromDate = from ?? toDate.AddMonths(-12);
+        if (fromDate > toDate) (fromDate, toDate) = (toDate, fromDate);
+
+        var bytes = await _reportService.ExportExcelAsync(fromDate, toDate);
+        var fileName = $"BaoCao_GiaSu_{fromDate:yyyyMMdd}_{toDate:yyyyMMdd}.xlsx";
+        return File(
+            bytes,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            fileName);
     }
 
     [HttpGet]
