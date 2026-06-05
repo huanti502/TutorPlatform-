@@ -367,6 +367,20 @@
                                           class="text-danger"
                                           style="font-size:0.78rem;"></span>
                                 </div>
+
+                                @* ── Ghim vị trí trên bản đồ ── *@
+                                <div class="mb-3">
+                                    <label class="form-label">Ghim vị trí dạy trên bản đồ</label>
+                                    <div class="input-group input-group-sm mb-2">
+                                        <input type="text" id="mapSearch" class="form-control"
+                                               placeholder="Tìm địa chỉ để di chuyển bản đồ... (VD: Hải Châu, Đà Nẵng)" />
+                                        <button type="button" class="btn btn-outline-secondary" id="mapSearchBtn">Tìm</button>
+                                    </div>
+                                    <div id="pickMap" style="height:280px;border-radius:12px;overflow:hidden;border:1px solid var(--border-subtle);"></div>
+                                    <small class="text-muted d-block mt-1" id="pickCoordText">Kéo ghim hoặc bấm lên bản đồ để chọn vị trí.</small>
+                                    <input asp-for="Latitude" type="hidden" id="Latitude" />
+                                    <input asp-for="Longitude" type="hidden" id="Longitude" />
+                                </div>
                                 <!-- Teaching mode cards -->
                                 <label class="form-label">Hình thức dạy</label>
                                 <div class="row g-2" id="modeCards">
@@ -570,5 +584,63 @@
                     bioArea.value = bioArea.value.slice(0, 500);
             });
         }
+    </script>
+
+    @* ── Leaflet: ghim vị trí dạy ── *@
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        (function () {
+        const latInput = document.getElementById('Latitude');
+        const lngInput = document.getElementById('Longitude');
+        const coordText = document.getElementById('pickCoordText');
+
+        // Vị trí mặc định: trung tâm Việt Nam (Đà Nẵng) nếu chưa ghim
+        const hasCoord = latInput.value && lngInput.value;
+        const startLat = hasCoord ? parseFloat(latInput.value) : 16.0544;
+        const startLng = hasCoord ? parseFloat(lngInput.value) : 108.2022;
+
+        const map = L.map('pickMap').setView([startLat, startLng], hasCoord ? 15 : 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap', maxZoom: 19
+        }).addTo(map);
+
+        const marker = L.marker([startLat, startLng], { draggable: true }).addTo(map);
+
+        function setCoord(lat, lng) {
+        latInput.value = lat.toFixed(6);
+        lngInput.value = lng.toFixed(6);
+        coordText.textContent = `Đã ghim: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+        }
+        if (hasCoord) setCoord(startLat, startLng);
+
+        marker.on('dragend', e => { const p = e.target.getLatLng(); setCoord(p.lat, p.lng); });
+        map.on('click', e => { marker.setLatLng(e.latlng); setCoord(e.latlng.lat, e.latlng.lng); });
+
+        // Tìm địa chỉ (Nominatim) chỉ để di chuyển bản đồ — toạ độ thật vẫn lấy từ pin
+        async function searchAddress() {
+        const q = document.getElementById('mapSearch').value.trim();
+        if (!q) return;
+        try {
+        const res = await fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' + encodeURIComponent(q));
+        const arr = await res.json();
+        if (arr && arr.length) {
+        const lat = parseFloat(arr[0].lat), lng = parseFloat(arr[0].lon);
+        map.setView([lat, lng], 15);
+        marker.setLatLng([lat, lng]);
+        setCoord(lat, lng);
+        } else {
+        coordText.textContent = 'Không tìm thấy địa chỉ. Hãy bấm thẳng lên bản đồ để ghim.';
+        }
+        } catch { coordText.textContent = 'Lỗi tìm địa chỉ. Hãy bấm thẳng lên bản đồ để ghim.'; }
+        }
+        document.getElementById('mapSearchBtn').addEventListener('click', searchAddress);
+        document.getElementById('mapSearch').addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); searchAddress(); }
+        });
+
+        // Bản đồ render trong thẻ ẩn/tab có thể bị lệch → fix size
+        setTimeout(() => map.invalidateSize(), 300);
+        })();
     </script>
 }

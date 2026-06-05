@@ -937,6 +937,12 @@ namespace TutorPlatform.Infrastructure.Migrations
                 b.Property<bool>("IsApproved")
                     .HasColumnType("bit");
 
+                b.Property<double?>("Latitude")
+                    .HasColumnType("double precision");
+
+                b.Property<double?>("Longitude")
+                    .HasColumnType("double precision");
+
                 b.Property<string>("TeachingArea")
                     .IsRequired()
                     .HasColumnType("nvarchar(max)");

@@ -24,6 +24,10 @@ public class TutorProfile
     public string? Bio { get; set; }
     public bool IsApproved { get; set; } = false;
 
+    // Toạ độ vị trí dạy (gia sư ghim trên bản đồ) — dùng cho tính năng bản đồ & "gia sư gần tôi"
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+
     // Các danh sách liên kết (Navigation properties)
     public ICollection<TutorSubject> TutorSubjects { get; set; } = new List<TutorSubject>();
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();

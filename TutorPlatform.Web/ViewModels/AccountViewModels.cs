@@ -66,7 +66,9 @@ public class TutorProfileFormViewModel
     public string TeachingMode { get; set; } = "Both";
     public string? Bio { get; set; }
     public List<int> SelectedSubjectIds { get; set; } = new();
-
+    // Toạ độ vị trí dạy (lấy từ pin trên bản đồ)
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
     // Avatar
     public string? AvatarUrl { get; set; }
     public IFormFile? AvatarFile { get; set; }

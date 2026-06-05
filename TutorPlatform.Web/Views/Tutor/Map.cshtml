@@ -1,0 +1,152 @@
+﻿@{
+    ViewData["Title"] = "Bản đồ gia sư";
+    var tutorsJson = ViewBag.TutorsJson as string ?? "[]";
+    var count = ViewBag.Count as int? ?? 0;
+}
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<section class="page-header">
+    <div class="container">
+        <div class="section-label">Khám phá</div>
+        <h1>Bản đồ gia sư</h1>
+        <p style="color:var(--text-secondary);margin:0;font-size:0.95rem;">
+            @count gia sư đã ghim vị trí. Bấm "Gia sư gần tôi" để tìm theo khoảng cách.
+        </p>
+    </div>
+</section>
+
+<div class="container" style="padding-bottom:3rem;">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+        <button id="nearMeBtn" class="btn btn-primary btn-sm d-inline-flex align-items-center gap-2">
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" /><circle cx="12" cy="10" r="3" /></svg>
+            Gia sư gần tôi
+        </button>
+        <select id="radiusSel" class="form-select form-select-sm" style="width:auto;">
+            <option value="0">Tất cả khoảng cách</option>
+            <option value="5">Trong 5 km</option>
+            <option value="10">Trong 10 km</option>
+            <option value="20">Trong 20 km</option>
+        </select>
+        <span id="statusText" class="align-self-center text-muted" style="font-size:0.85rem;"></span>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div id="tutorMap" style="height:520px;border-radius:16px;overflow:hidden;border:1px solid var(--border-subtle);"></div>
+        </div>
+        <div class="col-lg-4">
+            <div id="tutorList" class="d-flex flex-column gap-2" style="max-height:520px;overflow:auto;"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const TUTORS = @Html.Raw(tutorsJson);
+        let userPos = null;
+        let routeLayer = null;
+
+        const map = L.map('tutorMap').setView([16.0544, 108.2022], 6);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap', maxZoom: 19
+        }).addTo(map);
+
+        const markers = {};
+        const bounds = [];
+
+        function fmtRate(r) { return Number(r).toLocaleString('vi-VN') + 'đ/giờ'; }
+
+        // Khoảng cách Haversine (km)
+        function distanceKm(a, b, c, d) {
+        const R = 6371, toR = x => x * Math.PI / 180;
+        const dLat = toR(c - a), dLng = toR(d - b);
+        const x = Math.sin(dLat / 2) ** 2 + Math.cos(toR(a)) * Math.cos(toR(c)) * Math.sin(dLng / 2) ** 2;
+        return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+        }
+
+        TUTORS.forEach(t => {
+        const m = L.marker([t.lat, t.lng]).addTo(map);
+        const stars = t.rating > 0 ? `★ ${t.rating}` : 'Chưa có đánh giá';
+        m.bindPopup(`
+        <div style="min-width:170px;">
+        <strong>${t.name}</strong><br>
+        <span style="color:#666;font-size:12px;">${t.area || ''}</span><br>
+        <span style="font-size:12px;">${t.subjects.join(', ')}</span><br>
+        <span style="font-size:12px;">${stars} · ${fmtRate(t.rate)}</span><br>
+        <a href="/Tutor/Detail/${t.id}" style="font-size:12px;">Xem hồ sơ →</a>
+        <button onclick="routeTo(${t.lat},${t.lng})" style="font-size:12px;margin-left:6px;cursor:pointer;">Chỉ đường</button>
+        </div>`);
+        markers[t.id] = m;
+        bounds.push([t.lat, t.lng]);
+        });
+        if (bounds.length) map.fitBounds(bounds, { padding: [40, 40] });
+
+        function renderList(list) {
+        const box = document.getElementById('tutorList');
+        if (!list.length) { box.innerHTML = '<div class="text-muted p-3">Không có gia sư phù hợp.</div>'; return; }
+        box.innerHTML = list.map(t => `
+        <div class="card" style="cursor:pointer;" onclick="focusTutor(${t.id},${t.lat},${t.lng})">
+        <div class="card-body py-2 px-3">
+        <div style="font-weight:700;font-size:0.9rem;">${t.name}</div>
+        <div style="color:var(--text-muted);font-size:0.75rem;">${t.area || ''} · ${fmtRate(t.rate)}</div>
+        ${t._dist != null ? `<div style="font-size:0.75rem;color:var(--primary);font-weight:600;">Cách bạn ${t._dist.toFixed(1)} km</div>` : ''}
+        </div>
+        </div>`).join('');
+        }
+        renderList(TUTORS);
+
+        window.focusTutor = (id, lat, lng) => { map.setView([lat, lng], 15); markers[id]?.openPopup(); };
+
+        // Vẽ tuyến đường từ vị trí người dùng đến gia sư (OSRM, miễn phí)
+        window.routeTo = async (lat, lng) => {
+        if (!userPos) { alert('Hãy bấm "Gia sư gần tôi" để lấy vị trí của bạn trước.'); return; }
+        try {
+        const url = `https://router.project-osrm.org/route/v1/driving/${userPos[1]},${userPos[0]};${lng},${lat}?overview=full&geometries=geojson`;
+        const r = await (await fetch(url)).json();
+        if (!r.routes || !r.routes.length) return;
+        const route = r.routes[0];
+        const coords = route.geometry.coordinates.map(c => [c[1], c[0]]);
+        if (routeLayer) map.removeLayer(routeLayer);
+        routeLayer = L.polyline(coords, { color: '#4F46E5', weight: 5, opacity: 0.8 }).addTo(map);
+        map.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
+        document.getElementById('statusText').textContent =
+        `Quãng đường ~${(route.distance / 1000).toFixed(1)} km · ~${Math.round(route.duration / 60)} phút lái xe`;
+        } catch { document.getElementById('statusText').textContent = 'Không lấy được chỉ đường.'; }
+        };
+
+        document.getElementById('nearMeBtn').addEventListener('click', () => {
+        const status = document.getElementById('statusText');
+        if (!navigator.geolocation) { status.textContent = 'Trình duyệt không hỗ trợ định vị.'; return; }
+        status.textContent = 'Đang lấy vị trí của bạn...';
+        navigator.geolocation.getCurrentPosition(pos => {
+        userPos = [pos.coords.latitude, pos.coords.longitude];
+        L.marker(userPos, {
+        icon: L.divIcon({ className: '', html: '<div style="background:#10b981;width:16px;height:16px;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px #10b981;"></div>' })
+        }).addTo(map).bindPopup('Vị trí của bạn');
+        applyRadius();
+        status.textContent = 'Đã lấy vị trí. Đã sắp xếp gia sư theo khoảng cách.';
+        }, () => { status.textContent = 'Không lấy được vị trí (bạn cần cho phép quyền định vị).'; });
+        });
+
+        function applyRadius() {
+        const radius = parseFloat(document.getElementById('radiusSel').value);
+        let list = TUTORS.map(t => ({ ...t }));
+        if (userPos) {
+        list.forEach(t => t._dist = distanceKm(userPos[0], userPos[1], t.lat, t.lng));
+        list.sort((a, b) => a._dist - b._dist);
+        if (radius > 0) list = list.filter(t => t._dist <= radius);
+        }
+        // Ẩn/hiện marker theo bán kính
+        TUTORS.forEach(t => {
+        const inList = list.some(x => x.id === t.id);
+        if (inList) markers[t.id].addTo(map); else map.removeLayer(markers[t.id]);
+        });
+        renderList(list);
+        }
+        document.getElementById('radiusSel').addEventListener('change', applyRadius);
+
+        setTimeout(() => map.invalidateSize(), 300);
+    </script>
+}

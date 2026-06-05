@@ -65,6 +65,36 @@ public class TutorController : Controller
         return View(tutors);
     }
 
+    // ── BẢN ĐỒ GIA SƯ ───────────────────────────────────────────────
+    [HttpGet]
+    public async Task<IActionResult> Map()
+    {
+        var tutors = await _db.TutorProfiles
+            .AsNoTracking()
+            .Include(t => t.User)
+            .Include(t => t.TutorSubjects).ThenInclude(ts => ts.Subject)
+            .Include(t => t.ReceivedReviews)
+            .Where(t => t.IsApproved && !t.User.IsLocked
+                        && t.Latitude != null && t.Longitude != null)
+            .ToListAsync();
+
+        var data = tutors.Select(t => new
+        {
+            id = t.Id,
+            name = t.User.FullName,
+            avatar = t.User.AvatarUrl,
+            area = t.TeachingArea,
+            rate = t.HourlyRate,
+            lat = t.Latitude,
+            lng = t.Longitude,
+            rating = t.ReceivedReviews.Any() ? Math.Round(t.ReceivedReviews.Average(r => r.Rating), 1) : 0,
+            subjects = t.TutorSubjects.Select(ts => ts.Subject.Name).ToList()
+        }).ToList();
+
+        ViewBag.TutorsJson = System.Text.Json.JsonSerializer.Serialize(data);
+        ViewBag.Count = data.Count;
+        return View();
+    }
     public async Task<IActionResult> Detail(int id)
     {
         var tutor = await _db.TutorProfiles
@@ -207,6 +237,8 @@ public class TutorController : Controller
             TeachingMode = profile.TeachingMode,
             Bio = profile.Bio,
             SelectedSubjectIds = profile.TutorSubjects.Select(ts => ts.SubjectId).ToList(),
+            Latitude = profile.Latitude,
+            Longitude = profile.Longitude,
             AvatarUrl = user!.AvatarUrl
         });
     }
@@ -253,6 +285,8 @@ public class TutorController : Controller
         profile.HourlyRate = model.HourlyRate;
         profile.TeachingMode = model.TeachingMode;
         profile.Bio = model.Bio;
+        profile.Latitude = model.Latitude;
+        profile.Longitude = model.Longitude;
 
         _db.TutorSubjects.RemoveRange(profile.TutorSubjects);
         foreach (var id in model.SelectedSubjectIds)
