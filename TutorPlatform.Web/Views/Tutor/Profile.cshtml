@@ -12,22 +12,29 @@
         position: relative;
         overflow: hidden;
     }
-    .profile-banner::before {
-        content: '';
-        position: absolute;
-        top: -50px; right: -50px;
-        width: 250px; height: 250px;
-        border-radius: 50%;
-        background: rgba(255,255,255,0.05);
-    }
-    .profile-banner::after {
-        content: '';
-        position: absolute;
-        bottom: -70px; left: -30px;
-        width: 200px; height: 200px;
-        border-radius: 50%;
-        background: rgba(255,255,255,0.04);
-    }
+
+        .profile-banner::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+        }
+
+        .profile-banner::after {
+            content: '';
+            position: absolute;
+            bottom: -70px;
+            left: -30px;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.04);
+        }
+
     .form-card {
         margin-top: -48px;
         position: relative;
@@ -36,6 +43,7 @@
         border: none;
         box-shadow: var(--shadow-lg);
     }
+
     .field-group {
         background: var(--bg);
         border-radius: 14px;
@@ -43,6 +51,7 @@
         border: 1.5px solid var(--border);
         margin-bottom: 1.25rem;
     }
+
     .field-group-title {
         font-size: 0.72rem;
         font-weight: 800;
@@ -54,6 +63,7 @@
         align-items: center;
         gap: 0.5rem;
     }
+
     .tp-input {
         background: var(--surface);
         border: 1.5px solid var(--border);
@@ -63,14 +73,16 @@
         width: 100%;
         color: var(--text-primary);
         font-family: 'Plus Jakarta Sans', sans-serif;
-        transition:var(--transition);
+        transition: var(--transition);
     }
-    .tp-input:focus {
-        outline: none;
-        border-color: var(--primary);
-        box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
-        background: #fff;
-    }
+
+        .tp-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37,99,235,0.1);
+            background: #fff;
+        }
+
     .subject-chip {
         display: flex;
         align-items: center;
@@ -86,17 +98,23 @@
         color: var(--text-secondary);
         user-select: none;
     }
-    .subject-chip:hover {
-        border-color: var(--primary);
-        color: var(--primary);
-        background: var(--primary-light);
-    }
-    .subject-chip.selected {
-        border-color: var(--primary);
-        background: var(--primary);
-        color: #fff;
-    }
-    .subject-chip input { display: none; }
+
+        .subject-chip:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .subject-chip.selected {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #fff;
+        }
+
+        .subject-chip input {
+            display: none;
+        }
+
     .mode-card {
         border: 2px solid var(--border);
         border-radius: 14px;
@@ -106,31 +124,42 @@
         transition: all 0.18s;
         background: var(--surface);
     }
-    .mode-card:hover {
-        border-color: var(--primary);
-        background: var(--primary-light);
-    }
-    .mode-card.selected {
-        border-color: var(--primary);
-        background: var(--primary-light);
-    }
-    .mode-card.selected .mode-label { color: var(--primary); }
-    .mode-card input { display: none; }
+
+        .mode-card:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+        .mode-card.selected {
+            border-color: var(--primary);
+            background: var(--primary-light);
+        }
+
+            .mode-card.selected .mode-label {
+                color: var(--primary);
+            }
+
+        .mode-card input {
+            display: none;
+        }
+
     .save-btn {
         background: linear-gradient(135deg, #1E40AF, #4F46E5);
-        color: #fff; border: none;
+        color: #fff;
+        border: none;
         border-radius: 14px;
         padding: 0.9rem 2.5rem;
         font-weight: 800;
         font-size: 1rem;
         cursor: pointer;
-        transition:var(--transition);
+        transition: var(--transition);
         box-shadow: 0 4px 16px rgba(30,64,175,0.3);
     }
-    .save-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(30,64,175,0.4);
-    }
+
+        .save-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(30,64,175,0.4);
+        }
 </style>
 
 <!-- Banner -->
@@ -138,13 +167,13 @@
     <div class="container" style="position:relative;z-index:1;">
         <div class="d-flex align-items-center gap-3">
             <div style="width:52px;height:52px;border-radius:var(--radius-lg);
-                        background:rgba(255,255,255,0.15);
-                        display:flex;align-items:center;justify-content:center;
-                        border:1px solid rgba(255,255,255,0.25);">
+                background:rgba(255,255,255,0.15);
+                display:flex;align-items:center;justify-content:center;
+                border:1px solid rgba(255,255,255,0.25);">
                 <svg width="26" height="26" fill="none" stroke="#fff"
                      stroke-width="1.8" viewBox="0 0 24 24">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
                 </svg>
             </div>
             <div>
@@ -175,8 +204,84 @@
                             </div>
                         }
 
-                        <form asp-action="Profile" method="post">
+                        <form asp-action="Profile" method="post" enctype="multipart/form-data">
                             @Html.AntiForgeryToken()
+
+                            <!-- ẢNH ĐẠI DIỆN -->
+                            <div class="field-group">
+                                <div class="field-group-title">
+                                    <svg width="14" height="14" fill="none"
+                                         stroke="currentColor" stroke-width="2"
+                                         viewBox="0 0 24 24">
+                                        <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                        <circle cx="12" cy="13" r="4" />
+                                    </svg>
+                                    Ảnh đại diện
+                                </div>
+                                <div class="d-flex align-items-center gap-4">
+                                    <!-- Avatar preview -->
+                                    <div class="avatar-upload-wrap"
+                                         onclick="document.getElementById('avatarInput').click()"
+                                         title="Nhấn để đổi ảnh đại diện"
+                                         style="position:relative;display:inline-block;cursor:pointer;flex-shrink:0;">
+                                        @if (!string.IsNullOrEmpty(Model.AvatarUrl))
+                                        {
+                                            <img id="avatarPreview"
+                                                 src="@Model.AvatarUrl"
+                                                 alt="Avatar"
+                                                 style="width:88px;height:88px;border-radius:50%;
+                                            object-fit:cover;
+                                            border:3px solid var(--border);" />
+                                        }
+                                        else
+                                        {
+                                            <div id="avatarPreview"
+                                                 style="width:88px;height:88px;border-radius:50%;
+                                                background:linear-gradient(135deg,#1E40AF,#4F46E5);
+                                                display:flex;align-items:center;justify-content:center;
+                                                font-size:2rem;font-weight:800;color:#fff;
+                                                border:3px solid var(--border);">
+                                                @((Model.Education ?? "G").First().ToString().ToUpper())
+                                            </div>
+                                        }
+                                        <div style="position:absolute;inset:0;border-radius:50%;
+                                            background:rgba(0,0,0,0.45);
+                                            display:flex;align-items:center;justify-content:center;
+                                            opacity:0;transition:opacity 0.2s;"
+                                             class="avatar-overlay">
+                                            <svg width="20" height="20" fill="none" stroke="#fff"
+                                                 stroke-width="2" viewBox="0 0 24 24">
+                                                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                                                <circle cx="12" cy="13" r="4" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <!-- Upload hint -->
+                                    <div>
+                                        <p style="font-size:0.85rem;font-weight:600;
+                                            color:var(--text-primary);margin:0 0 0.25rem;">
+                                            Ảnh đại diện của bạn
+                                        </p>
+                                        <p style="font-size:0.78rem;color:var(--text-muted);margin:0 0 0.75rem;">
+                                            JPG, PNG — tối đa 5MB. Học viên sẽ thấy ảnh này.
+                                        </p>
+                                        <button type="button"
+                                                onclick="document.getElementById('avatarInput').click()"
+                                                style="font-size:0.8rem;font-weight:600;
+                                            padding:0.4rem 1rem;border-radius:8px;
+                                            border:1.5px solid var(--primary);
+                                            background:transparent;color:var(--primary);
+                                            cursor:pointer;transition:all 0.18s;"
+                                                onmouseover="this.style.background='var(--primary-light)'"
+                                                onmouseout="this.style.background='transparent'">
+                                            Chọn ảnh
+                                        </button>
+                                    </div>
+                                </div>
+                                <input type="file" id="avatarInput" name="avatarFile"
+                                       accept="image/*" style="display:none"
+                                       onchange="previewAvatar(this)" />
+                            </div>
 
                             <!-- Học vấn & Kinh nghiệm -->
                             <div class="field-group">
@@ -184,8 +289,8 @@
                                     <svg width="14" height="14" fill="none"
                                          stroke="currentColor" stroke-width="2"
                                          viewBox="0 0 24 24">
-                                        <path d="M22 10v6M2 10l10-5 10 5"/>
-                                        <path d="M6 12v5c3 3 9 3 12 0v-5"/>
+                                        <path d="M22 10v6M2 10l10-5 10 5" />
+                                        <path d="M6 12v5c3 3 9 3 12 0v-5" />
                                     </svg>
                                     Học vấn & Kinh nghiệm
                                 </div>
@@ -211,11 +316,11 @@
                                                    class="tp-input"
                                                    style="padding-right:2.5rem;" />
                                             <span style="position:absolute;
-                                                         right:12px;top:50%;
-                                                         transform:translateY(-50%);
-                                                         font-size:0.78rem;
-                                                         color:var(--text-muted);
-                                                         font-weight:600;">
+                                                right:12px;top:50%;
+                                                transform:translateY(-50%);
+                                                font-size:0.78rem;
+                                                color:var(--text-muted);
+                                                font-weight:600;">
                                                 năm
                                             </span>
                                         </div>
@@ -230,11 +335,11 @@
                                                    class="tp-input"
                                                    style="padding-right:2rem;" />
                                             <span style="position:absolute;
-                                                         right:12px;top:50%;
-                                                         transform:translateY(-50%);
-                                                         font-size:0.78rem;
-                                                         color:var(--text-muted);
-                                                         font-weight:600;">
+                                                right:12px;top:50%;
+                                                transform:translateY(-50%);
+                                                font-size:0.78rem;
+                                                color:var(--text-muted);
+                                                font-weight:600;">
                                                 đ
                                             </span>
                                         </div>
@@ -248,8 +353,8 @@
                                     <svg width="14" height="14" fill="none"
                                          stroke="currentColor" stroke-width="2"
                                          viewBox="0 0 24 24">
-                                        <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/>
-                                        <circle cx="12" cy="10" r="3"/>
+                                        <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z" />
+                                        <circle cx="12" cy="10" r="3" />
                                     </svg>
                                     Khu vực & Hình thức dạy
                                 </div>
@@ -279,7 +384,7 @@
                                                    data-value="@val">
                                                 <input type="radio"
                                                        asp-for="TeachingMode"
-                                                       id="teaching-@val" class="peer sr-only"  value="@val" />
+                                                       id="teaching-@val" class="peer sr-only" value="@val" />
                                                 <svg width="22" height="22" fill="none"
                                                      stroke="currentColor"
                                                      stroke-width="1.8"
@@ -287,12 +392,12 @@
                                                      style="display:block;margin:0 auto 0.4rem;">
                                                     <path d="@icon"
                                                           stroke-linecap="round"
-                                                          stroke-linejoin="round"/>
+                                                          stroke-linejoin="round" />
                                                 </svg>
                                                 <div class="mode-label"
                                                      style="font-size:0.8rem;
-                                                            font-weight:700;
-                                                            color:var(--text-secondary);">
+                                                    font-weight:700;
+                                                    color:var(--text-secondary);">
                                                     @lbl
                                                 </div>
                                             </label>
@@ -307,7 +412,7 @@
                                     <svg width="14" height="14" fill="none"
                                          stroke="currentColor" stroke-width="2"
                                          viewBox="0 0 24 24">
-                                        <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                                        <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
                                     </svg>
                                     Giới thiệu bản thân
                                 </div>
@@ -327,12 +432,12 @@
                                     <svg width="14" height="14" fill="none"
                                          stroke="currentColor" stroke-width="2"
                                          viewBox="0 0 24 24">
-                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+                                        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
                                     </svg>
                                     Môn học giảng dạy
                                     <span style="font-size:0.68rem;color:var(--text-muted);
-                                                 font-weight:500;text-transform:none;
-                                                 letter-spacing:0;margin-left:4px;">
+                                        font-weight:500;text-transform:none;
+                                        letter-spacing:0;margin-left:4px;">
                                         (chọn ít nhất 1)
                                     </span>
                                 </div>
@@ -346,18 +451,18 @@
                                             <input type="checkbox"
                                                    name="SelectedSubjectIds"
                                                    value="@s.Id"
-                                                   @(isSelected ? "checked" : "") />
+                                            @(isSelected ? "checked" : "") />
                                             <svg width="13" height="13" fill="none"
                                                  stroke="currentColor"
                                                  stroke-width="2.5"
                                                  viewBox="0 0 24 24"
                                                  class="check-icon"
                                                  style="@(isSelected ? "" : "display:none")">
-                                                <polyline points="20 6 9 17 4 12"/>
+                                                <polyline points="20 6 9 17 4 12" />
                                             </svg>
                                             @s.Name
                                             <span style="font-size:0.68rem;
-                                                         opacity:0.7;">
+                                                opacity:0.7;">
                                                 · @s.Level
                                             </span>
                                         </label>
@@ -366,7 +471,7 @@
                                 @if (!subjects.Any())
                                 {
                                     <p style="color:var(--text-muted);
-                                              font-size:0.85rem;margin:0;">
+                                        font-size:0.85rem;margin:0;">
                                         Chưa có môn học nào. Admin cần thêm môn học trước.
                                     </p>
                                 }
@@ -383,7 +488,7 @@
                                     <svg width="17" height="17" fill="none"
                                          stroke="currentColor" stroke-width="2.5"
                                          viewBox="0 0 24 24" class="me-1">
-                                        <polyline points="20 6 9 17 4 12"/>
+                                        <polyline points="20 6 9 17 4 12" />
                                     </svg>
                                     Lưu hồ sơ
                                 </button>
@@ -399,6 +504,35 @@
 @section Scripts {
     @await Html.PartialAsync("_ValidationScriptsPartial")
     <script>
+        // Avatar hover overlay
+        const wrap = document.querySelector('.avatar-upload-wrap');
+        const overlay = wrap ? wrap.querySelector('.avatar-overlay') : null;
+        if (wrap && overlay) {
+            wrap.addEventListener('mouseenter', () => overlay.style.opacity = '1');
+            wrap.addEventListener('mouseleave', () => overlay.style.opacity = '0');
+        }
+
+        // Avatar live preview
+        function previewAvatar(input) {
+            if (!input.files || !input.files[0]) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                const prev = document.getElementById('avatarPreview');
+                if (prev.tagName === 'IMG') {
+                    prev.src = e.target.result;
+                } else {
+                    // Replace div with img
+                    const img = document.createElement('img');
+                    img.id = 'avatarPreview';
+                    img.src = e.target.result;
+                    img.alt = 'Avatar';
+                    img.style = 'width:88px;height:88px;border-radius:50%;object-fit:cover;border:3px solid var(--border);';
+                    prev.parentNode.replaceChild(img, prev);
+                }
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+
         // Subject chip toggle
         document.querySelectorAll('.subject-chip').forEach(chip => {
             chip.addEventListener('click', () => {
@@ -423,7 +557,7 @@
         });
 
         // Bio char counter
-        const bioArea  = document.getElementById('Bio');
+        const bioArea = document.getElementById('Bio');
         const bioCount = document.getElementById('bioCount');
         if (bioArea) {
             bioCount.textContent = bioArea.value.length;
@@ -437,4 +571,4 @@
             });
         }
     </script>
-}}
+}

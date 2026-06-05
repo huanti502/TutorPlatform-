@@ -193,7 +193,10 @@ public class TutorController : Controller
         var subjects = await _db.Subjects.Where(s => s.IsActive).ToListAsync();
         ViewBag.Subjects = subjects;
 
-        if (profile == null) return View(new TutorProfileFormViewModel());
+        if (profile == null) return View(new TutorProfileFormViewModel
+        {
+            AvatarUrl = user!.AvatarUrl
+        });
 
         return View(new TutorProfileFormViewModel
         {
@@ -203,21 +206,36 @@ public class TutorController : Controller
             HourlyRate = profile.HourlyRate,
             TeachingMode = profile.TeachingMode,
             Bio = profile.Bio,
-            SelectedSubjectIds = profile.TutorSubjects.Select(ts => ts.SubjectId).ToList()
+            SelectedSubjectIds = profile.TutorSubjects.Select(ts => ts.SubjectId).ToList(),
+            AvatarUrl = user!.AvatarUrl
         });
     }
 
     [Authorize(Roles = "Tutor")]
     [HttpPost]
-    public async Task<IActionResult> Profile(TutorProfileFormViewModel model)
+    public async Task<IActionResult> Profile(TutorProfileFormViewModel model, IFormFile? avatarFile)
     {
         if (!ModelState.IsValid)
         {
             ViewBag.Subjects = await _db.Subjects.Where(s => s.IsActive).ToListAsync();
+            var currentUser2 = await _userManager.GetUserAsync(User);
+            model.AvatarUrl = currentUser2?.AvatarUrl;
             return View(model);
         }
 
         var user = await _userManager.GetUserAsync(User);
+
+        // ── Upload Avatar lên Cloudinary ─────────────────────
+        if (avatarFile != null && avatarFile.Length > 0)
+        {
+            var avatarUrl = await _cloudinary.UploadImageAsync(avatarFile, "avatars");
+            if (!string.IsNullOrEmpty(avatarUrl))
+            {
+                user!.AvatarUrl = avatarUrl;
+                await _userManager.UpdateAsync(user);
+            }
+        }
+
         var profile = await _db.TutorProfiles
             .Include(t => t.TutorSubjects)
             .FirstOrDefaultAsync(t => t.UserId == user!.Id);
