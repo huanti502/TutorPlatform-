@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TutorPlatform.Core.Models;
 using TutorPlatform.Infrastructure.Data;
+using TutorPlatform.Web.Services;
 
 namespace TutorPlatform.Web.Controllers;
 
@@ -12,12 +13,14 @@ public class BlogController : Controller
     private readonly AppDbContext _db;
     private readonly UserManager<AppUser> _userManager;
     private readonly IWebHostEnvironment _env; // Cần thiết để lưu file
+    private readonly CloudinaryService _cloudinary;
 
-    public BlogController(AppDbContext db, UserManager<AppUser> userManager, IWebHostEnvironment env)
+    public BlogController(AppDbContext db, UserManager<AppUser> userManager, IWebHostEnvironment env, CloudinaryService cloudinary)
     {
         _db = db;
         _userManager = userManager;
         _env = env; // Đừng quên gán biến này nhé!
+        _cloudinary = cloudinary;
     }
 
     // Xem danh sách bài viết (Đã sửa - thêm search, sort và bài nổi bật)
@@ -102,21 +105,14 @@ public class BlogController : Controller
             IsPublished = true // Đảm bảo bài viết được hiển thị theo điều kiện Where(p => p.IsPublished)
         };
 
-        // XỬ LÝ LƯU ẢNH (NẾU CÓ)
+        // XỬ LÝ LƯU ẢNH (NẾU CÓ) — lưu lên Cloudinary để không mất khi redeploy
         if (imageFile != null && imageFile.Length > 0)
         {
-            string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "posts");
-            if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
-
-            string uniqueFileName = Guid.NewGuid().ToString() + "_" + imageFile.FileName;
-            string filePath = Path.Combine(uploadsFolder, uniqueFileName);
-
-            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            var imageUrl = await _cloudinary.UploadImageAsync(imageFile, "posts");
+            if (!string.IsNullOrEmpty(imageUrl))
             {
-                await imageFile.CopyToAsync(fileStream);
+                post.ImageUrl = imageUrl;
             }
-
-            post.ImageUrl = "/uploads/posts/" + uniqueFileName;
         }
 
         _db.Posts.Add(post);
@@ -203,7 +199,7 @@ public class BlogController : Controller
             TempData["Success"] = "Đã xóa bài viết thành công!";
             return RedirectToAction(nameof(Index));
         }
-        catch (Exception )
+        catch (Exception)
         {
             // Trong trường hợp có lỗi (ví dụ: lỗi khóa ngoại do DB chưa cascade delete)
             TempData["Error"] = "Đã xảy ra lỗi khi xóa bài viết. Vui lòng thử lại.";
