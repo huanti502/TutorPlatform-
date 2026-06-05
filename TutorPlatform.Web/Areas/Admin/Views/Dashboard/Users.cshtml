@@ -1,9 +1,8 @@
-﻿
-@model IEnumerable<TutorPlatform.Core.Models.AppUser>
+﻿@model IEnumerable<TutorPlatform.Core.Models.AppUser>
 @{
     Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
     ViewData["Title"] = "Quản lý người dùng";
-    var roleStyle = new Dictionary<string,(string bg,string color)>{
+    var roleStyle = new Dictionary<string, (string bg, string color)>{
         {"Admin",   ("#FDF4FF","#A855F7")},
         {"Tutor",   ("#EFF6FF","#2563EB")},
         {"Student", ("#F0FDF4","#059669")},
@@ -46,23 +45,23 @@
                             var initial = u.FullName.FirstOrDefault()
                                            .ToString().ToUpper();
                             var (rbg, rcolor) = roleStyle.GetValueOrDefault(
-                                u.Role, ("#F1F5F9","#64748B"));
+                                u.Role, ("#F1F5F9", "#64748B"));
                             <tr>
                                 <td style="padding:0.85rem 1.25rem;">
                                     <div class="d-flex align-items-center gap-2">
                                         <div class="avatar avatar-sm"
                                              style="@(u.IsLocked ?
-                                                "background:#E2E8F0;color:#94A3B8;" :
-                                                "")">
+                                                                                             "background:#E2E8F0;color:#94A3B8;" :
+                                                                                             "")">
                                             @initial
                                         </div>
                                         <div>
                                             <div style="font-weight:700;
-                                                        font-size:0.875rem;">
+                                                font-size:0.875rem;">
                                                 @u.FullName
                                             </div>
                                             <div style="font-size:0.75rem;
-                                                        color:var(--text-muted);">
+                                                color:var(--text-muted);">
                                                 @u.Email
                                             </div>
                                         </div>
@@ -75,49 +74,42 @@
                                     </span>
                                 </td>
                                 <td style="font-size:0.875rem;
-                                           color:var(--text-secondary);">
+                                    color:var(--text-secondary);">
                                     @(u.PhoneNumber ?? "—")
                                 </td>
                                 <td style="font-size:0.8rem;
-                                           color:var(--text-muted);">
+                                    color:var(--text-muted);">
                                     @u.CreatedAt.ToString("dd/MM/yyyy")
                                 </td>
                                 <td>
                                     @if (u.IsLocked)
                                     {
-                                        <span class="badge"
-                                              style="background:#FEF2F2;
-                                                     color:#DC2626;">
-                                            Đã khoá
-                                        </span>
+                                        <span class="status-badge status-rejected">Đã khoá</span>
                                     }
                                     else
                                     {
-                                        <span class="badge"
-                                              style="background:#F0FDF4;
-                                                     color:#059669;">
-                                            Hoạt động
-                                        </span>
+                                        <span class="status-badge status-completed">Hoạt động</span>
                                     }
                                 </td>
                                 <td>
                                     <form asp-action="ToggleLock" method="post">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id"
-                                               value="@u.Id"/>
-                                        <button type="submit" class="btn btn-sm"
-                                                style="border-radius:8px;
-                                                       font-size:0.78rem;
-                                                       font-weight:600;
-                                                       background:@(u.IsLocked ?
-                                                         "var(--success-light)" :
-                                                         "var(--danger-light)");
-                                                       color:@(u.IsLocked ?
-                                                         "#059669" :
-                                                         "var(--danger)");
-                                                       border:none;">
-                                            @(u.IsLocked ? "Mở khoá" : "Khoá")
-                                        </button>
+                                               value="@u.Id" />
+                                        @if (u.IsLocked)
+                                        {
+                                            <button type="submit" class="btn btn-sm btn-outline-success">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" /></svg>
+                                                Mở khoá
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                                                Khoá
+                                            </button>
+                                        }
                                     </form>
                                 </td>
                             </tr>

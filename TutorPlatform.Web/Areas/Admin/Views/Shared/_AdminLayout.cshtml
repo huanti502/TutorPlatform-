@@ -115,6 +115,7 @@
                 .admin-sidebar {
                     transform: translateX(-100%);
                     transition: transform 0.25s ease;
+                    box-shadow: var(--shadow-xl);
                 }
 
                     .admin-sidebar.open {
@@ -124,6 +125,32 @@
                 .admin-main {
                     margin-left: 0;
                 }
+                /* backdrop behind the open sidebar */
+                .admin-backdrop {
+                    position: fixed;
+                    inset: 0;
+                    background: rgba(15,23,42,0.45);
+                    backdrop-filter: blur(1px);
+                    z-index: 150;
+                    opacity: 0;
+                    visibility: hidden;
+                    transition: opacity 0.25s ease;
+                }
+
+                    .admin-backdrop.show {
+                        opacity: 1;
+                        visibility: visible;
+                    }
+
+                body.admin-no-scroll {
+                    overflow: hidden;
+                }
+            }
+
+            @@media (min-width: 992px) {
+                .admin-backdrop {
+                    display: none;
+                }
             }
     </style>
 </head>
@@ -132,7 +159,7 @@
     <!-- ── Sidebar ── -->
     <aside class="admin-sidebar" id="adminSidebar" role="navigation" aria-label="Admin navigation">
         <div class="admin-sidebar-logo">
-            <div style="width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--primary),#7C3AED);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+            <div class="brand-logo">
                 <svg width="16" height="16" viewBox="0 0 28 28" fill="none" aria-hidden="true">
                     <path d="M6 10L14 6L22 10V14C22 18.4 18.4 21.6 14 22C9.6 21.6 6 18.4 6 14V10Z" fill="white" />
                 </svg>
@@ -184,6 +211,9 @@
             </div>
         </nav>
     </aside>
+
+    <!-- Backdrop for mobile sidebar -->
+    <div class="admin-backdrop" id="adminBackdrop" aria-hidden="true"></div>
 
     <!-- ── Main ── -->
     <div class="admin-main">
@@ -243,9 +273,30 @@
 
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.getElementById('sidebarToggle')?.addEventListener('click', () => {
-        document.getElementById('adminSidebar')?.classList.toggle('open');
+        (function () {
+        const sidebar = document.getElementById('adminSidebar');
+        const toggle = document.getElementById('sidebarToggle');
+        const backdrop = document.getElementById('adminBackdrop');
+
+        function openSidebar() {
+        sidebar?.classList.add('open');
+        backdrop?.classList.add('show');
+        document.body.classList.add('admin-no-scroll');
+        }
+        function closeSidebar() {
+        sidebar?.classList.remove('open');
+        backdrop?.classList.remove('show');
+        document.body.classList.remove('admin-no-scroll');
+        }
+
+        toggle?.addEventListener('click', () => {
+        sidebar?.classList.contains('open') ? closeSidebar() : openSidebar();
         });
+        backdrop?.addEventListener('click', closeSidebar);
+        document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSidebar(); });
+        // close after navigating on mobile
+        sidebar?.querySelectorAll('a.nav-link').forEach(a => a.addEventListener('click', closeSidebar));
+        })();
     </script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>

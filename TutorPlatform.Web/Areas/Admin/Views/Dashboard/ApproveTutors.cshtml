@@ -9,7 +9,7 @@
         <div class="d-flex align-items-center gap-3 mb-4">
             <a href="/Admin/Dashboard"
                style="color:var(--text-muted);text-decoration:none;
-                      font-size:0.875rem;">
+                font-size:0.875rem;">
                 ← Dashboard
             </a>
             <div>
@@ -40,13 +40,13 @@
                     <div class="col-md-6 col-xl-4">
                         <div class="card h-100"
                              style="border-radius:var(--radius-lg);
-                                    border:2px solid @(t.IsApproved ?
-                                      "var(--success-light)" :
-                                      "var(--border)");">
+                            border:2px solid @(t.IsApproved ?
+                                                                   "var(--success-light)" :
+                                                                   "var(--border)");">
                             <div class="card-body p-4">
 
                                 <div class="d-flex align-items-start
-                                            justify-content-between mb-3">
+                                    justify-content-between mb-3">
                                     <div class="d-flex align-items-center gap-2">
                                         <a href="/Tutor/Detail/@t.Id" class="d-flex align-items-center gap-2 text-decoration-none" style="color:inherit;">
                                             <div class="avatar avatar-md">
@@ -62,36 +62,32 @@
                                             </div>
                                         </a>
                                     </div>
-                                    <span class="badge"
-                                          style="background:@(t.IsApproved ?
-                                                   "#F0FDF4" : "#FFF7ED");
-                                                 color:@(t.IsApproved ?
-                                                   "#059669" : "#D97706");">
+                                    <span class="status-badge @(t.IsApproved ? "status-completed" : "status-pending")">
                                         @(t.IsApproved ? "Đã duyệt" : "Chờ duyệt")
                                     </span>
                                 </div>
 
                                 <!-- Info -->
                                 <div style="font-size:0.82rem;
-                                            color:var(--text-secondary);
-                                            margin-bottom:1rem;">
+                                    color:var(--text-secondary);
+                                    margin-bottom:1rem;">
                                     <div class="mb-1">
                                         <span style="color:var(--text-muted);
-                                                     font-weight:500;">
+                                            font-weight:500;">
                                             Học vấn:
                                         </span>
                                         @t.Education
                                     </div>
                                     <div class="mb-1">
                                         <span style="color:var(--text-muted);
-                                                     font-weight:500;">
+                                            font-weight:500;">
                                             Kinh nghiệm:
                                         </span>
                                         @t.ExperienceYears năm
                                     </div>
                                     <div class="mb-1">
                                         <span style="color:var(--text-muted);
-                                                     font-weight:500;">
+                                            font-weight:500;">
                                             Học phí:
                                         </span>
                                         @t.HourlyRate.ToString("N0")đ/h
@@ -104,8 +100,8 @@
                                     {
                                         <span class="badge"
                                               style="background:var(--primary-light);
-                                                     color:var(--primary);
-                                                     font-weight:500;">
+                                            color:var(--primary);
+                                            font-weight:500;">
                                             @ts.Subject.Name
                                         </span>
                                     }
@@ -114,17 +110,21 @@
                                 <!-- Action -->
                                 <form asp-action="ToggleApprove" method="post">
                                     @Html.AntiForgeryToken()
-                                    <input type="hidden" name="id" value="@t.Id"/>
-                                    <button type="submit" class="btn btn-sm w-100"
-                                            style="border-radius:8px;
-                                                   font-weight:600;border:none;
-                                                   background:@(t.IsApproved ?
-                                                     "var(--danger-light)" :
-                                                     "var(--success-light)");
-                                                   color:@(t.IsApproved ?
-                                                     "var(--danger)" : "#059669");">
-                                        @(t.IsApproved ? "Huỷ duyệt" : "✓ Duyệt gia sư")
-                                    </button>
+                                    <input type="hidden" name="id" value="@t.Id" />
+                                    @if (t.IsApproved)
+                                    {
+                                        <button type="submit" class="btn btn-sm btn-outline-danger w-100">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><line x1="15" y1="9" x2="9" y2="15" /><line x1="9" y1="9" x2="15" y2="15" /></svg>
+                                            Huỷ duyệt
+                                        </button>
+                                    }
+                                    else
+                                    {
+                                        <button type="submit" class="btn btn-sm btn-success w-100">
+                                            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12" /></svg>
+                                            Duyệt gia sư
+                                        </button>
+                                    }
                                 </form>
 
                             </div>
