@@ -144,9 +144,43 @@ public class DocumentController : Controller
         doc.DownloadCount++;
         await _db.SaveChangesAsync();
 
-        // File lưu trên Cloudinary → chuyển hướng thẳng tới URL (không mất khi redeploy)
+        // File lưu trên Cloudinary.
+        // KHÔNG redirect thẳng tới URL gốc vì file raw/PDF bị Cloudinary chặn
+        // ("Restricted media types") → trả về HTTP 401.
+        // Thay vào đó: tạo URL CÓ CHỮ KÝ rồi server tự tải về và stream cho người dùng.
         if (doc.FilePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-            return Redirect(doc.FilePath);
+        {
+            var signedUrl = _cloudinary.GetSignedDeliveryUrl(doc.FilePath);
+            try
+            {
+                var http = _httpClientFactory.CreateClient();
+                var resp = await http.GetAsync(signedUrl, HttpCompletionOption.ResponseHeadersRead);
+
+                // Nếu vẫn lỗi (vd: cấu hình Cloudinary đặc biệt) thì thử redirect URL đã ký.
+                if (!resp.IsSuccessStatusCode)
+                    return Redirect(signedUrl);
+
+                var stream = await resp.Content.ReadAsStreamAsync();
+                var contentType = doc.FileType switch
+                {
+                    "pdf" => "application/pdf",
+                    "word" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "powerpoint" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    "excel" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "image" => resp.Content.Headers.ContentType?.MediaType ?? "image/jpeg",
+                    _ => "application/octet-stream"
+                };
+
+                // Đặt tên file gốc khi tải về
+                var downloadName = string.IsNullOrWhiteSpace(doc.FileName) ? $"document-{doc.Id}" : doc.FileName;
+                return File(stream, contentType, downloadName);
+            }
+            catch
+            {
+                // Dự phòng: chuyển hướng tới URL đã ký để trình duyệt tự tải.
+                return Redirect(signedUrl);
+            }
+        }
 
         // Tương thích ngược: file cũ lưu local (sẽ mất sau khi server restart)
         var fullPath = Path.Combine(_env.WebRootPath, doc.FilePath.TrimStart('/'));
@@ -198,7 +232,9 @@ public class DocumentController : Controller
             if (doc.FilePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
             {
                 var http = _httpClientFactory.CreateClient();
-                fileBytes = await http.GetByteArrayAsync(doc.FilePath);
+                // Dùng URL có chữ ký để tránh bị Cloudinary trả 401 với file raw/PDF.
+                var signedUrl = _cloudinary.GetSignedDeliveryUrl(doc.FilePath);
+                fileBytes = await http.GetByteArrayAsync(signedUrl);
             }
             else
             {

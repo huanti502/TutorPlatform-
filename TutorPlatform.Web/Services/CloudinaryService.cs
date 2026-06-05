@@ -79,4 +79,70 @@ public class CloudinaryService
             return result.SecureUrl?.ToString();
         }
     }
+
+    /// <summary>
+    /// Tạo URL tải file CÓ CHỮ KÝ (signed) từ URL Cloudinary đã lưu trong DB.
+    ///
+    /// Lý do: Tài khoản Cloudinary đời mới mặc định bật "Restricted media types",
+    /// chặn phân phối công khai file PDF / raw → truy cập URL gốc bị HTTP 401.
+    /// File loại bị hạn chế chỉ được phân phối khi URL có chữ ký hợp lệ
+    /// (đoạn "s--xxxxx--"). Hàm này phân tích URL gốc rồi dựng lại URL có ký.
+    ///
+    /// Trả về chính URL gốc nếu không phải file Cloudinary hoặc nếu không cần ký
+    /// (ví dụ ảnh image/upload vẫn tải bình thường).
+    /// </summary>
+    public string GetSignedDeliveryUrl(string storedUrl)
+    {
+        if (string.IsNullOrWhiteSpace(storedUrl)) return storedUrl;
+        if (!storedUrl.Contains("res.cloudinary.com", StringComparison.OrdinalIgnoreCase))
+            return storedUrl;
+
+        try
+        {
+            var uri = new Uri(storedUrl);
+            // Bỏ "/" đầu/cuối rồi tách: [cloud, resourceType, type, (version?), ...publicId]
+            var segs = uri.AbsolutePath.Trim('/').Split('/');
+            if (segs.Length < 4) return storedUrl;
+
+            var resourceType = segs[1];   // raw | image | video
+            var type = segs[2];           // upload | authenticated | private...
+
+            int idx = 3;
+            string? version = null;
+            // Đoạn version có dạng "v1780665271"
+            if (segs[idx].Length > 1 && segs[idx][0] == 'v'
+                && segs[idx].Skip(1).All(char.IsDigit))
+            {
+                version = segs[idx].Substring(1);
+                idx++;
+            }
+
+            var publicId = string.Join('/', segs.Skip(idx));
+            publicId = Uri.UnescapeDataString(publicId);
+
+            // raw: public_id GIỮ phần mở rộng (.pdf...).
+            // image/video: public_id BỎ phần mở rộng.
+            if (!resourceType.Equals("raw", StringComparison.OrdinalIgnoreCase))
+            {
+                var dot = publicId.LastIndexOf('.');
+                if (dot > 0) publicId = publicId.Substring(0, dot);
+            }
+
+            var builder = _cloudinary.Api.Url
+                .Secure(true)
+                .ResourceType(resourceType)
+                .Action(type)
+                .Signed(true);
+
+            if (version != null)
+                builder = builder.Version(version);
+
+            return builder.BuildUrl(publicId);
+        }
+        catch
+        {
+            // Nếu phân tích lỗi thì dùng URL gốc để không chặn người dùng.
+            return storedUrl;
+        }
+    }
 }
