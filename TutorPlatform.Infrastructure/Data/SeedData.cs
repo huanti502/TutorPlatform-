@@ -16,8 +16,8 @@ public static class SeedData
         UserManager<AppUser> userManager,
         RoleManager<IdentityRole> roleManager)
     {
-        // Đã comment dòng này để luôn chạy Seed Data
-        // if (await db.TutorProfiles.CountAsync() >= 5) return;
+        // Nếu DB đã có dữ liệu mẫu thì bỏ qua seed để tránh chèn trùng (gây DbUpdateException khi deploy lại)
+        if (await db.TutorProfiles.CountAsync() >= 5) return;
 
         // ── ROLES ─────────────────────────────────────────
         foreach (var role in new[] { "Admin", "Tutor", "Student" })
