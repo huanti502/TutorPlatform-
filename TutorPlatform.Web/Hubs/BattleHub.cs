@@ -27,6 +27,18 @@ public class BattleHub : Hub
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string>
         _userConnections = new();
 
+    // ─── Lưu câu hỏi của mỗi phòng (in-memory) để khi người chơi F5 / reconnect
+    // còn gửi lại được. Key = roomId, Value = JSON câu hỏi.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, string>
+        _roomQuestions = new();
+
+    // ─── Lưu các câu mỗi người đã trả lời, chống cộng điểm trùng khi F5 trả lời lại.
+    // Key = "roomId:userId", Value = tập chỉ số câu đã trả lời.
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, HashSet<int>>
+        _answeredQuestions = new();
+
+    private const int BattleDurationSeconds = 60;
+
     public BattleHub(
         UserManager<AppUser> userManager,
         XpService xpService,
@@ -371,6 +383,10 @@ public class BattleHub : Hub
                 return;
             }
 
+            // Nếu phòng đã ở trạng thái "Playing" ngay lúc vào → đây là REJOIN
+            // (người chơi F5 hoặc reconnect giữa trận), không phải lần bắt đầu đầu tiên.
+            bool isRejoin = room.Status == "Playing";
+
             var userId = _userManager.GetUserId(Context.User!);
             if (string.IsNullOrWhiteSpace(userId))
             {
@@ -447,6 +463,27 @@ public class BattleHub : Hub
                 await Clients.Group(freshRoom.RoomId).SendAsync("RoomInfo", roomInfoPayload);
                 await Clients.Group(freshRoom.RoomId).SendAsync("BothReady");
             }
+            else if (isRejoin && _roomQuestions.TryGetValue(roomId, out var savedQuestions))
+            {
+                // ─── KHÔI PHỤC SAU F5: gửi lại câu hỏi + điểm + thời gian còn lại
+                // cho riêng người vừa quay lại, để họ chơi tiếp đúng chỗ.
+                int secondsLeft = freshRoom.StartTime.HasValue
+                    ? Math.Max(0, BattleDurationSeconds - (int)(DateTime.UtcNow - freshRoom.StartTime.Value).TotalSeconds)
+                    : BattleDurationSeconds;
+
+                int answeredCount = _answeredQuestions.TryGetValue($"{roomId}:{userId}", out var done)
+                    ? done.Count
+                    : 0;
+
+                await Clients.Caller.SendAsync("ResumeBattle", new
+                {
+                    questionsJson = savedQuestions,
+                    score1 = freshRoom.Score1,
+                    score2 = freshRoom.Score2,
+                    secondsLeft,
+                    answeredCount
+                });
+            }
         }
         catch (Exception ex)
         {
@@ -465,6 +502,16 @@ public class BattleHub : Hub
             if (room == null) return;
 
             var userId = _userManager.GetUserId(Context.User!);
+
+            // Chống cộng điểm trùng: nếu người chơi F5 và trả lời lại câu đã trả lời,
+            // bỏ qua lần thứ hai.
+            var answeredKey = $"{roomId}:{userId}";
+            var answeredSet = _answeredQuestions.GetOrAdd(answeredKey, _ => new HashSet<int>());
+            lock (answeredSet)
+            {
+                if (!answeredSet.Add(questionIndex))
+                    return; // câu này đã được tính rồi
+            }
 
             if (userId == room.Player1Id && isCorrect) room.Score1++;
             else if (userId == room.Player2Id && isCorrect) room.Score2++;
@@ -530,6 +577,11 @@ public class BattleHub : Hub
                 xpWinner,
                 xpLoser
             });
+
+            // Dọn state in-memory của phòng để tránh rò rỉ bộ nhớ.
+            _roomQuestions.TryRemove(room.RoomId, out _);
+            _answeredQuestions.TryRemove($"{room.RoomId}:{room.Player1Id}", out _);
+            _answeredQuestions.TryRemove($"{room.RoomId}:{room.Player2Id}", out _);
         }
         catch (Exception ex)
         {
@@ -549,6 +601,9 @@ public class BattleHub : Hub
                 await Clients.Caller.SendAsync("RoomError", "Không tìm thấy phòng Battle hoặc trận chưa bắt đầu.");
                 return;
             }
+
+            // Lưu lại câu hỏi để phục vụ khôi phục khi F5 / reconnect.
+            _roomQuestions[room.RoomId] = questionsJson;
 
             await Clients.Group(room.RoomId).SendAsync("ReceiveQuestions", questionsJson);
         }

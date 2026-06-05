@@ -276,6 +276,41 @@
         startBattle();
         });
 
+        // ── KHÔI PHỤC SAU F5: server gửi lại câu hỏi + điểm + thời gian còn lại
+        conn.on("ResumeBattle", ({ questionsJson, score1, score2, secondsLeft, answeredCount }) => {
+        if (battleStarted || finished) return;
+        try {
+        questions = JSON.parse(questionsJson);
+        } catch (err) {
+        showLoadingError("Dữ liệu câu hỏi bị lỗi.");
+        return;
+        }
+        if (!questions || questions.length === 0) {
+        showLoadingError("Không có câu hỏi để tiếp tục trận đấu.");
+        return;
+        }
+
+        // Khôi phục điểm
+        document.getElementById("score1").textContent = score1;
+        document.getElementById("score2").textContent = score2;
+
+        // Nhảy tới câu chưa trả lời (client trả lời tuần tự nên = số câu đã trả lời)
+        currentQ = Math.min(answeredCount || 0, questions.length);
+
+        document.getElementById("loading-card").style.display = "none";
+        document.getElementById("battle-card").style.display = "block";
+
+        // Bắt đầu lại với thời gian còn lại của server
+        startBattle(secondsLeft);
+
+        // Nếu đã trả lời hết câu thì hiện thông báo chờ kết quả
+        if (currentQ >= questions.length) {
+        document.getElementById("question-text").textContent =
+        "Bạn đã trả lời hết câu hỏi. Chờ hết giờ để xem kết quả.";
+        document.getElementById("options-wrap").innerHTML = "";
+        }
+        });
+
         // ── Cập nhật điểm
         conn.on("ScoreUpdate", ({ score1, score2 }) => {
         document.getElementById("score1").textContent = score1;
@@ -361,14 +396,23 @@
         }
         }, 120000);
 
-        function startBattle() {
+        function startBattle(startSeconds) {
         if (battleStarted) return;
         battleStarted = true;
-        timeLeft = 60;
+        timeLeft = (typeof startSeconds === "number" && startSeconds >= 0) ? startSeconds : 60;
+
+        const circle = document.getElementById("timer-circle");
+        circle.textContent = timeLeft;
+        if (timeLeft <= 10) circle.classList.add("urgent");
+
+        // Nếu khôi phục mà đã hết giờ → kết thúc luôn
+        if (timeLeft <= 0) {
+        conn.invoke("FinishBattle", roomId).catch(console.error);
+        return;
+        }
 
         timerHandle = setInterval(() => {
         timeLeft--;
-        const circle = document.getElementById("timer-circle");
         circle.textContent = timeLeft;
         if (timeLeft <= 10) circle.classList.add("urgent");
         if (timeLeft <= 0) {
@@ -377,7 +421,8 @@
         }
         }, 1000);
 
-        renderQuestion();
+        // Chỉ render nếu còn câu chưa trả lời
+        if (currentQ < questions.length) renderQuestion();
         }
 
         function renderQuestion() {
