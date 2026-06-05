@@ -41,10 +41,17 @@ public class BattleController : Controller
         return View();
     }
 
-    public async Task<IActionResult> Room(string roomId)
+    // Route mặc định là {controller}/{action}/{id?}, nên đoạn cuối URL
+    // /Battle/Room/abc123 được bind vào "id". Nhận cả "id" (route) lẫn "roomId"
+    // (query) để chắc chắn luôn lấy được mã phòng dù gọi kiểu nào.
+    public async Task<IActionResult> Room(string? id, string? roomId)
     {
         var me = await _userManager.GetUserAsync(User);
-        ViewBag.RoomId = roomId;
+
+        // Ưu tiên id từ route, fallback sang roomId từ query string.
+        var actualRoomId = !string.IsNullOrWhiteSpace(id) ? id : roomId;
+
+        ViewBag.RoomId = actualRoomId;
         ViewBag.MyId = me!.Id;
         ViewBag.MyName = me.FullName;
         return View();
