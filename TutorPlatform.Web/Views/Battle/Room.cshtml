@@ -324,7 +324,7 @@
         });
 
         // ── Kết quả trận
-        conn.on("BattleResult", ({ result, winnerName, score1, score2, xpWinner, xpLoser }) => {
+        conn.on("BattleResult", ({ result, winnerId, winnerName, score1, score2, xpWinner, xpLoser }) => {
         if (finished) return;
         finished = true;
         clearInterval(timerHandle);
@@ -333,10 +333,14 @@
         document.getElementById("loading-card").style.display = "none";
         document.getElementById("result-card").style.display = "block";
 
+        // So sánh bằng ID người dùng (chắc chắn), KHÔNG so bằng tên hiển thị
+        // vì tên tiếng Việt có dấu dễ lệch nhau ở mức mã Unicode.
+        const iWon = result !== "draw" && winnerId === myId;
+
         let emoji, title, detail;
         if (result === "draw") {
         emoji = "🤝"; title = "Hòa!"; detail = "Hai bên cân tài nhau!";
-        } else if (winnerName === myName) {
+        } else if (iWon) {
         emoji = "🏆"; title = "Bạn thắng!"; detail = "Xuất sắc!";
         } else {
         emoji = "😤"; title = "Bạn thua!"; detail = `${winnerName} giỏi hơn lần này!`;
@@ -348,7 +352,7 @@
         document.getElementById("final-score1").textContent = score1;
         document.getElementById("final-score2").textContent = score2;
 
-        const xpGained = winnerName === myName ? xpWinner : xpLoser;
+        const xpGained = iWon ? xpWinner : xpLoser;
         if (xpGained > 0) {
         const xpAlert = document.getElementById("xp-alert");
         xpAlert.textContent = `+${xpGained} XP nhận được!`;
