@@ -77,9 +77,10 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 // ======================================================
-// MVC + SIGNALR
+// MVC + WEB API + SIGNALR
 // ======================================================
 builder.Services.AddControllersWithViews();
+builder.Services.AddControllers();          // <-- THÊM: bật Web API ([ApiController] + route api/...)
 builder.Services.AddSignalR();
 
 // ======================================================
@@ -219,6 +220,8 @@ app.MapHub<BattleHub>("/battleHub");
 // ======================================================
 // ROUTES
 // ======================================================
+app.MapControllers();   // <-- THÊM: map các API controller dùng attribute routing (api/...)
+
 app.MapControllerRoute(
     name: "areas",
     pattern: "{area:exists}/{controller=Dashboard}/{action=Index}/{id?}");
