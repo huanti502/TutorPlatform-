@@ -4,7 +4,7 @@
 
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3 class="fw-bold"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> Lịch học của tôi</h3>
+        <h3 class="fw-bold"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg> Lịch học của tôi</h3>
         <a href="@(User.IsInRole("Tutor") ? "/Booking/TutorRequests" : "/Booking/MyBookings")"
            class="btn btn-outline-primary btn-sm">📋 Danh sách</a>
     </div>
@@ -58,9 +58,10 @@
         right: "dayGridMonth,timeGridWeek,timeGridDay,listWeek"
         },
         height: "auto",
-        events: (info, ok, fail) =>
-        fetch(`/Booking/GetCalendarEvents?start=${info.startStr}&end=${info.endStr}`)
-        .then(r => r.json()).then(ok).catch(fail),
+
+        // 🚀 FIX: Xóa fetch thủ công. Giao phó URL cho FullCalendar,
+        // nó sẽ tự động gửi "?start=...&end=..." chuẩn xác và không bị lỗi dấu cộng (+)
+        events: '/Booking/GetCalendarEvents',
 
         eventClick: info => {
         const e = info.event, p = e.extendedProps;
@@ -68,19 +69,20 @@
         Pending: "🟠 Chờ xác nhận", Confirmed: "🔵 Đã xác nhận",
         Completed: "🟢 Hoàn thành", Cancelled: "⚪ Đã hủy", Rejected: "🔴 Bị từ chối"
         };
+
         document.getElementById("modalTitle").textContent = e.title;
+
+        // Xử lý an toàn nếu start/end bị null
+        const startTimeStr = e.start ? e.start.toLocaleString("vi-VN") : "—";
+        const endTimeStr = e.end ? e.end.toLocaleString("vi-VN") : "—";
+
         document.getElementById("modalBody").innerHTML = `
         <table class="table table-borderless mb-0">
-        <tr><td class="fw-semibold" width="130">Bắt đầu:</td>
-        <td>${e.start?.toLocaleString("vi-VN")}</td></tr>
-        <tr><td class="fw-semibold">Kết thúc:</td>
-        <td>${e.end?.toLocaleString("vi-VN") ?? "—"}</td></tr>
-        <tr><td class="fw-semibold">Trạng thái:</td>
-        <td>${statusMap[p.status] ?? p.status}</td></tr>
-        <tr><td class="fw-semibold">Hình thức:</td>
-        <td>${p.teachMode ?? "—"}</td></tr>
-        <tr><td class="fw-semibold">Ghi chú:</td>
-        <td>${p.note ?? "Không có"}</td></tr>
+        <tr><td class="fw-semibold" width="130">Bắt đầu:</td><td>${startTimeStr}</td></tr>
+        <tr><td class="fw-semibold">Kết thúc:</td><td>${endTimeStr}</td></tr>
+        <tr><td class="fw-semibold">Trạng thái:</td><td>${statusMap[p.status] ?? p.status}</td></tr>
+        <tr><td class="fw-semibold">Hình thức:</td><td>${p.teachMode ?? "—"}</td></tr>
+        <tr><td class="fw-semibold">Ghi chú:</td><td>${p.note ?? "Không có"}</td></tr>
         </table>`;
         new bootstrap.Modal(document.getElementById("detailModal")).show();
         }

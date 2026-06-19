@@ -5,20 +5,29 @@
 @{
     ViewData["Title"] = "Quản lý người dùng";
 }
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h3 class="fw-bold mb-0">👥 Quản lý người dùng</h3>
-            <p class="text-muted mb-0">@Model.Count() tài khoản</p>
+<div class="container-fluid py-4 px-4">
+
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div class="d-flex align-items-center gap-3">
+            <a href="/Admin" class="d-inline-flex align-items-center gap-1" style="color:var(--text-muted);text-decoration:none;font-size:0.875rem;font-weight:500;">
+                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6" /></svg>
+                Dashboard
+            </a>
+            <div>
+                <h4 style="font-weight:800;margin:0;letter-spacing:-0.03em;">Người dùng</h4>
+                <p style="color:var(--text-muted);font-size:0.85rem;margin:2px 0 0;">@Model.Count() tài khoản</p>
+            </div>
         </div>
-        <a href="/Admin" class="btn btn-outline-secondary">← Dashboard</a>
     </div>
 
-    <form method="get" class="card shadow-sm mb-4">
-        <div class="card-body d-flex gap-3">
-            <input name="search" value="@ViewBag.Search" type="text"
-                   class="form-control" placeholder="🔍 Tìm tên hoặc email...">
-            <select name="role" class="form-select" style="max-width:160px">
+    <!-- Bộ lọc -->
+    <form method="get" class="card mb-4">
+        <div class="card-body d-flex flex-column flex-md-row gap-3">
+            <div class="flex-grow-1 position-relative">
+                <svg width="16" height="16" fill="none" stroke="var(--text-muted)" stroke-width="2" viewBox="0 0 24 24" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);" aria-hidden="true"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
+                <input name="search" value="@ViewBag.Search" type="text" class="form-control" style="padding-left:38px;" placeholder="Tìm tên hoặc email..." />
+            </div>
+            <select name="role" class="form-select" style="max-width:180px;">
                 <option value="">Tất cả Role</option>
                 <option value="Student" selected="@(ViewBag.Role == "Student" ? "selected" : null)">Student</option>
                 <option value="Tutor" selected="@(ViewBag.Role == "Tutor" ? "selected" : null)">Tutor</option>
@@ -28,74 +37,83 @@
         </div>
     </form>
 
-    @if (TempData["Success"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
-            @TempData["Success"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
-    @if (TempData["Info"] != null)
-    {
-        <div class="alert alert-info alert-dismissible fade show mb-3" role="alert">
-            @TempData["Info"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    }
-
-    <div class="card shadow-sm">
-        <div class="card-body p-0">
+    <!-- Bảng người dùng -->
+    <div class="table-card">
+        <div class="table-responsive">
             <table class="table table-hover mb-0">
-                <thead class="">
+                <thead>
                     <tr>
                         <th class="ps-4">Người dùng</th>
                         <th>Role</th>
                         <th>SĐT</th>
                         <th>Ngày tạo</th>
                         <th>Trạng thái</th>
-                        <th class="pe-4">Hành động</th>
+                        <th class="pe-4 text-end">Hành động</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach (var u in Model)
                     {
+                        var roleClass = u.Role == "Tutor" ? "badge-soft-success"
+                                        : u.Role == "Admin" ? "badge-soft-danger"
+                                        : "badge-soft-primary";
                         <tr>
                             <td class="ps-4">
-                                <a href="/Admin/UserDetail/@u.Id"
-                                   class="d-flex align-items-center gap-2 text-decoration-none text-dark">
-                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center
-                                        justify-content-center fw-bold"
-                                         style="width:38px;height:38px;font-size:14px;flex-shrink:0">
-                                        @u.FullName.FirstOrDefault()
-                                    </div>
+                                <a href="/Admin/UserDetail/@u.Id" class="d-flex align-items-center gap-2 text-decoration-none" style="color:inherit;">
+                                    @if (!string.IsNullOrEmpty(u.AvatarUrl))
+                                    {
+                                        <img src="@u.AvatarUrl" alt="@u.FullName"
+                                             class="avatar avatar-sm avatar-img"
+                                             style="@(u.IsLocked ? "filter:grayscale(1);opacity:0.55;" : "")" />
+                                    }
+                                    else
+                                    {
+                                        <div class="avatar avatar-sm" style="@(u.IsLocked ? "background:#E2E8F0;color:#94A3B8;" : "")">
+                                            @u.FullName.FirstOrDefault()
+                                        </div>
+                                    }
                                     <div>
-                                        <div class="fw-semibold">@u.FullName</div>
-                                        <div class="text-muted small">@u.Email</div>
+                                        <div style="font-weight:700;font-size:0.875rem;color:var(--text-primary);">@u.FullName</div>
+                                        <div style="font-size:0.75rem;color:var(--text-muted);">@u.Email</div>
                                     </div>
                                 </a>
                             </td>
+                            <td><span class="badge @roleClass">@u.Role</span></td>
+                            <td style="font-size:0.875rem;color:var(--text-secondary);">@(u.PhoneNumber ?? "—")</td>
+                            <td style="font-size:0.8rem;color:var(--text-muted);">@u.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
                             <td>
-                                <span class="badge bg-@(u.Role == "Tutor" ? "success" : u.Role == "Admin" ? "danger" : "primary")">
-                                    @u.Role
-                                </span>
-                            </td>
-                            <td class="text-muted">@(u.PhoneNumber ?? "—")</td>
-                            <td class="text-muted small">@u.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</td>
-                            <td>
-                                <span class="badge bg-@(u.IsLocked ? "danger" : "success")">
-                                    @(u.IsLocked ? "Đã khoá" : "Hoạt động")
-                                </span>
+                                @if (u.IsLocked)
+                                {
+                                    <span class="status-badge status-rejected">Đã khoá</span>
+                                }
+                                else
+                                {
+                                    <span class="status-badge status-completed">Hoạt động</span>
+                                }
                             </td>
                             <td class="pe-4">
-                                <div class="d-flex gap-2 align-items-center">
-                                    <a href="/Admin/UserDetail/@u.Id"
-                                       class="btn btn-sm btn-outline-primary">Xem</a>
+                                <div class="d-flex gap-2 align-items-center justify-content-end">
+                                    <a href="/Admin/UserDetail/@u.Id" class="btn btn-sm btn-outline-primary">
+                                        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle cx="12" cy="12" r="3" /></svg>
+                                        Xem
+                                    </a>
                                     <form method="post" action="/Admin/ToggleLock" class="d-inline">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="userId" value="@u.Id">
-                                        <button class="btn btn-sm btn-@(u.IsLocked ? "success" : "danger")">
-                                            @(u.IsLocked ? "Mở khoá" : "Khoá")
-                                        </button>
+                                        @if (u.IsLocked)
+                                        {
+                                            <button class="btn btn-sm btn-outline-success">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 9.9-1" /></svg>
+                                                Mở khoá
+                                            </button>
+                                        }
+                                        else
+                                        {
+                                            <button class="btn btn-sm btn-outline-danger">
+                                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
+                                                Khoá
+                                            </button>
+                                        }
                                     </form>
                                 </div>
                             </td>

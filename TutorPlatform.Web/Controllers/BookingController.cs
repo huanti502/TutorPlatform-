@@ -209,6 +209,17 @@ public class BookingController : Controller
 
         if (booking == null) return NotFound();
 
+        // ✅ Chỉ gia sư sở hữu booking mới được xác nhận/từ chối (chặn IDOR)
+        var currentUserId = _userManager.GetUserId(User);
+        if (booking.TutorProfile?.UserId != currentUserId) return Forbid();
+
+        // ✅ Chỉ xử lý yêu cầu đang chờ, tránh ghi đè trạng thái đã xử lý
+        if (booking.Status != "Pending")
+        {
+            TempData["Error"] = "Yêu cầu này đã được xử lý trước đó.";
+            return RedirectToAction("TutorRequests");
+        }
+
         booking.Status = status;
 
         // ✅ Tự động tạo Jitsi room ID khi Confirm
@@ -249,8 +260,21 @@ public class BookingController : Controller
     [HttpPost]
     public async Task<IActionResult> Complete(int id)
     {
-        var booking = await _db.Bookings.FindAsync(id);
+        var currentUserId = _userManager.GetUserId(User);
+        var booking = await _db.Bookings
+            .Include(b => b.TutorProfile)
+            .FirstOrDefaultAsync(b => b.Id == id);
         if (booking == null) return NotFound();
+
+        // ✅ Chỉ gia sư sở hữu booking mới được đánh dấu hoàn thành (chặn IDOR)
+        if (booking.TutorProfile?.UserId != currentUserId) return Forbid();
+
+        // ✅ Chỉ hoàn thành buổi đã xác nhận, tránh hoàn thành 2 lần → cộng XP lặp
+        if (booking.Status != "Confirmed")
+        {
+            TempData["Error"] = "Chỉ buổi học đã xác nhận mới được đánh dấu hoàn thành.";
+            return RedirectToAction("TutorRequests");
+        }
 
         booking.Status = "Completed";
         _db.Notifications.Add(new Notification
@@ -319,19 +343,18 @@ public class BookingController : Controller
     public async Task<IActionResult> GetCalendarEvents(DateTime start, DateTime end)
     {
         var userId = _userManager.GetUserId(User);
-
-        // 🛠️ SỬA LỖI POSTGRESQL: Ép biến Start / End thành UTC
-        var startUtc = start.ToUniversalTime();
-        var endUtc = end.ToUniversalTime();
-
         List<Booking> bookings;
+
+        // Mở rộng ±2 ngày để tránh lệch timezone
+        var startUtc = start.AddDays(-2);
+        var endUtc = end.AddDays(2);
 
         if (User.IsInRole("Tutor"))
         {
             var profile = await _db.TutorProfiles.FirstOrDefaultAsync(t => t.UserId == userId);
             bookings = profile == null ? new() : await _db.Bookings
                 .Include(b => b.Student).Include(b => b.Subject)
-                .Where(b => b.TutorProfileId == profile.Id && b.StartTime >= startUtc && b.EndTime <= endUtc)
+                .Where(b => b.TutorProfileId == profile.Id && b.StartTime >= startUtc && b.StartTime <= endUtc)
                 .ToListAsync();
         }
         else
@@ -339,7 +362,7 @@ public class BookingController : Controller
             bookings = await _db.Bookings
                 .Include(b => b.TutorProfile).ThenInclude(t => t.User)
                 .Include(b => b.Subject)
-                .Where(b => b.StudentId == userId && b.StartTime >= startUtc && b.EndTime <= endUtc)
+                .Where(b => b.StudentId == userId && b.StartTime >= startUtc && b.StartTime <= endUtc)
                 .ToListAsync();
         }
 

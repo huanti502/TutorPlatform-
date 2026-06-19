@@ -66,4 +66,8 @@ public class TutorProfileFormViewModel
     public string TeachingMode { get; set; } = "Both";
     public string? Bio { get; set; }
     public List<int> SelectedSubjectIds { get; set; } = new();
+
+    // Avatar
+    public string? AvatarUrl { get; set; }
+    public IFormFile? AvatarFile { get; set; }
 }

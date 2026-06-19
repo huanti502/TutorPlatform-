@@ -1,6 +1,8 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using TutorPlatform.Core.Models;
 using TutorPlatform.Infrastructure.Data;
 
 namespace TutorPlatform.Web.Controllers;
@@ -9,10 +11,12 @@ namespace TutorPlatform.Web.Controllers;
 public class PaymentController : Controller
 {
     private readonly AppDbContext _db;
+    private readonly UserManager<AppUser> _userManager;
 
-    public PaymentController(AppDbContext db)
+    public PaymentController(AppDbContext db, UserManager<AppUser> userManager)
     {
         _db = db;
+        _userManager = userManager;
     }
 
     // Hiển thị trang quét mã QR
@@ -24,6 +28,11 @@ public class PaymentController : Controller
             .FirstOrDefaultAsync(b => b.Id == bookingId);
 
         if (booking == null || booking.Status != "Confirmed" || booking.IsPaid)
+            return RedirectToAction("MyBookings", "Booking");
+
+        // ✅ Chỉ học viên sở hữu booking mới được xem trang thanh toán (chặn IDOR)
+        var userId = _userManager.GetUserId(User);
+        if (booking.StudentId != userId)
             return RedirectToAction("MyBookings", "Booking");
 
         // 1. Tính toán số tiền (Số giờ * Học phí của gia sư)
@@ -48,12 +57,20 @@ public class PaymentController : Controller
     [HttpPost]
     public async Task<IActionResult> ConfirmPayment(int bookingId)
     {
+        var userId = _userManager.GetUserId(User);
         var booking = await _db.Bookings.FindAsync(bookingId);
-        if (booking != null)
+
+        // ✅ Chỉ học viên sở hữu booking, đã xác nhận và chưa thanh toán (chặn IDOR)
+        if (booking != null && booking.StudentId == userId &&
+            booking.Status == "Confirmed" && !booking.IsPaid)
         {
             booking.IsPaid = true;
             await _db.SaveChangesAsync();
             TempData["Success"] = "Đã xác nhận thanh toán thành công!";
+        }
+        else
+        {
+            TempData["Error"] = "Không thể xác nhận thanh toán cho lịch học này.";
         }
         return RedirectToAction("MyBookings", "Booking");
     }

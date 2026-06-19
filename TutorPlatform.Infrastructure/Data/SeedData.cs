@@ -96,7 +96,7 @@ public static class SeedData
             );
             await db.SaveChangesAsync();
         }
-      
+
 
 
 
@@ -308,43 +308,48 @@ public static class SeedData
             "Phong cách dạy sinh động, không nhàm chán, học rất vào."
         };
 
-        int bookingIdCounter = 1;
-
-        for (int ti = 0; ti < Math.Min(tutorProfiles.Count, 8); ti++)
+        // FIX: chỉ seed booking/review MỘT LẦN. Nếu DB đã có booking thì bỏ qua,
+        // tránh việc mỗi lần app khởi động lại (Render free tier hay restart) lại
+        // sinh thêm hàng loạt booking + review trùng lặp.
+        if (!await db.Bookings.AnyAsync())
         {
-            var tutor = tutorProfiles[ti];
-            int bookingCount = rng.Next(8, 16);
-            var subId = tutor.TutorSubjects.FirstOrDefault()?.SubjectId ?? 1;
+            int bookingIdCounter = 1;
 
-            for (int bi = 0; bi < bookingCount; bi++)
+            for (int ti = 0; ti < Math.Min(tutorProfiles.Count, 8); ti++)
             {
-                var student = studentUsers[rng.Next(studentUsers.Count)];
-                int daysAgo = rng.Next(-7, 90);
+                var tutor = tutorProfiles[ti];
+                int bookingCount = rng.Next(8, 16);
+                var subId = tutor.TutorSubjects.FirstOrDefault()?.SubjectId ?? 1;
 
-                // FIX LỖI POSTGRESQL UTC: Ép chuẩn DateTimeKind.Utc 
-                var baseDate = DateTime.UtcNow.AddDays(-daysAgo);
-                var startTime = new DateTime(baseDate.Year, baseDate.Month, baseDate.Day, rng.Next(17, 20), rng.Next(0, 2) * 30, 0, DateTimeKind.Utc);
-                var endTime = startTime.AddHours(rng.Next(1, 3));
-
-                string status;
-                string? meetingRoomId = null;
-                if (daysAgo > 14)
-                    status = rng.Next(10) < 8 ? "Completed" : "Cancelled";
-                else if (daysAgo > 2)
+                for (int bi = 0; bi < bookingCount; bi++)
                 {
-                    status = rng.Next(10) < 7 ? "Confirmed" : "Completed";
-                    meetingRoomId = $"TutorPlatform-{bookingIdCounter}-{Guid.NewGuid().ToString("N")[..8]}";
-                }
-                else if (daysAgo < 0)
-                    status = "Pending";
-                else
-                    status = rng.Next(2) == 0 ? "Confirmed" : "Pending";
+                    var student = studentUsers[rng.Next(studentUsers.Count)];
+                    int daysAgo = rng.Next(-7, 90);
 
-                if (status == "Confirmed")
-                    meetingRoomId = $"TutorPlatform-{bookingIdCounter}-{Guid.NewGuid().ToString("N")[..8]}";
+                    // FIX LỖI POSTGRESQL UTC: Ép chuẩn DateTimeKind.Utc 
+                    var baseDate = DateTime.UtcNow.AddDays(-daysAgo);
+                    var startTime = new DateTime(baseDate.Year, baseDate.Month, baseDate.Day, rng.Next(17, 20), rng.Next(0, 2) * 30, 0, DateTimeKind.Utc);
+                    var endTime = startTime.AddHours(rng.Next(1, 3));
 
-                var modes = new[] { "Online", "Offline" };
-                var notes = new[] {
+                    string status;
+                    string? meetingRoomId = null;
+                    if (daysAgo > 14)
+                        status = rng.Next(10) < 8 ? "Completed" : "Cancelled";
+                    else if (daysAgo > 2)
+                    {
+                        status = rng.Next(10) < 7 ? "Confirmed" : "Completed";
+                        meetingRoomId = $"TutorPlatform-{bookingIdCounter}-{Guid.NewGuid().ToString("N")[..8]}";
+                    }
+                    else if (daysAgo < 0)
+                        status = "Pending";
+                    else
+                        status = rng.Next(2) == 0 ? "Confirmed" : "Pending";
+
+                    if (status == "Confirmed")
+                        meetingRoomId = $"TutorPlatform-{bookingIdCounter}-{Guid.NewGuid().ToString("N")[..8]}";
+
+                    var modes = new[] { "Online", "Offline" };
+                    var notes = new[] {
                     "Cần ôn tập phần đạo hàm và tích phân",
                     "Muốn luyện Speaking và Writing IELTS",
                     "Học lập trình Web từ cơ bản",
@@ -354,41 +359,42 @@ public static class SeedData
                     null
                 };
 
-                var booking = new Booking
-                {
-                    StudentId = student.Id,
-                    TutorProfileId = tutor.Id,
-                    SubjectId = subId,
-                    StartTime = startTime,
-                    EndTime = endTime,
-                    Status = status,
-                    TeachingMode = tutor.TeachingMode == "Both"
-                        ? modes[rng.Next(modes.Length)]
-                        : (tutor.TeachingMode == "Online" ? "Online" : "Offline"),
-                    Note = notes[rng.Next(notes.Length)],
-                    MeetingRoomId = meetingRoomId,
-                    CreatedAt = startTime.AddDays(-rng.Next(1, 7))
-                };
-                db.Bookings.Add(booking);
-                await db.SaveChangesAsync();
-                bookingIdCounter++;
-
-                if (status == "Completed" && rng.Next(10) < 8)
-                {
-                    int rating = rng.Next(10) < 7 ? rng.Next(4, 6) : rng.Next(3, 5);
-                    db.Reviews.Add(new Review
+                    var booking = new Booking
                     {
                         StudentId = student.Id,
                         TutorProfileId = tutor.Id,
-                        BookingId = booking.Id,
-                        Rating = rating,
-                        Comment = comments[rng.Next(comments.Length)],
-                        CreatedAt = endTime.AddHours(rng.Next(1, 48))
-                    });
+                        SubjectId = subId,
+                        StartTime = startTime,
+                        EndTime = endTime,
+                        Status = status,
+                        TeachingMode = tutor.TeachingMode == "Both"
+                            ? modes[rng.Next(modes.Length)]
+                            : (tutor.TeachingMode == "Online" ? "Online" : "Offline"),
+                        Note = notes[rng.Next(notes.Length)],
+                        MeetingRoomId = meetingRoomId,
+                        CreatedAt = startTime.AddDays(-rng.Next(1, 7))
+                    };
+                    db.Bookings.Add(booking);
+                    await db.SaveChangesAsync();
+                    bookingIdCounter++;
+
+                    if (status == "Completed" && rng.Next(10) < 8)
+                    {
+                        int rating = rng.Next(10) < 7 ? rng.Next(4, 6) : rng.Next(3, 5);
+                        db.Reviews.Add(new Review
+                        {
+                            StudentId = student.Id,
+                            TutorProfileId = tutor.Id,
+                            BookingId = booking.Id,
+                            Rating = rating,
+                            Comment = comments[rng.Next(comments.Length)],
+                            CreatedAt = endTime.AddHours(rng.Next(1, 48))
+                        });
+                    }
                 }
+                await db.SaveChangesAsync();
             }
-            await db.SaveChangesAsync();
-        }
+        } // hết khối seed booking/review (chỉ chạy khi DB chưa có booking)
 
         // ════════════════════════════════════════════════════
         //  TẠO BADGES CHO GIA SƯ

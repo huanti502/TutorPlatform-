@@ -14,28 +14,153 @@
     @@keyframes pulse {
         0% {
             transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4);
+            box-shadow: 0 0 0 0 rgba(16,185,129,.4);
         }
 
         70% {
             transform: scale(1.02);
-            box-shadow: 0 0 0 6px rgba(16, 185, 129, 0);
+            box-shadow: 0 0 0 6px rgba(16,185,129,0);
         }
 
         100% {
             transform: scale(1);
-            box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+            box-shadow: 0 0 0 0 rgba(16,185,129,0);
         }
+    }
+
+    /* ── Filter Bar ── */
+    .filter-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .625rem;
+        align-items: center;
+        background: #fff;
+        border: 1px solid #e2e8f0;
+        border-radius: 14px;
+        padding: .75rem 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .filter-label {
+        font-size: .75rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: .05em;
+        margin-right: .25rem;
+    }
+
+    .filter-chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: .375rem;
+    }
+
+    .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: .3rem;
+        padding: .3rem .75rem;
+        border-radius: 999px;
+        font-size: .78rem;
+        font-weight: 600;
+        border: 1.5px solid transparent;
+        cursor: pointer;
+        transition: all .15s;
+        background: #f1f5f9;
+        color: #475569;
+        user-select: none;
+    }
+
+        .chip:hover {
+            background: #e2e8f0;
+        }
+
+        .chip.active {
+            background: #10B981;
+            color: #fff;
+            border-color: #10B981;
+        }
+
+    .chip-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: currentColor;
+        opacity: .7;
+    }
+
+    .divider-v {
+        width: 1px;
+        height: 24px;
+        background: #e2e8f0;
+        margin: 0 .25rem;
+    }
+
+    .sort-select {
+        font-size: .8rem;
+        font-weight: 600;
+        border: 1.5px solid #e2e8f0;
+        border-radius: 8px;
+        padding: .28rem .65rem;
+        color: #475569;
+        background: #f8fafc;
+        cursor: pointer;
+        outline: none;
+        transition: border-color .15s;
+    }
+
+        .sort-select:focus {
+            border-color: #10B981;
+        }
+
+    /* ── Results count ── */
+    .results-count {
+        font-size: .8rem;
+        color: var(--text-muted);
+        margin-bottom: .5rem;
+    }
+
+        .results-count strong {
+            color: #10B981;
+        }
+
+    /* Card hidden by filter */
+    .booking-card[hidden] {
+        display: none !important;
+    }
+
+    /* ── Avatar ── */
+    .stu-avatar {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        object-fit: cover;
+        flex-shrink: 0;
+    }
+
+    .stu-avatar-fallback {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #10B981, #059669);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        font-size: .95rem;
+        color: #fff;
+        flex-shrink: 0;
     }
 </style>
 
 <section class="section-sm">
     <div class="container">
+
+        <!-- ── Page Header ── -->
         <div class="mb-4">
-            <h4 style="font-weight:800;margin-bottom:0.25rem;">
-                Yêu cầu học
-            </h4>
-            <p style="color:var(--text-muted);font-size:0.875rem;margin:0;">
+            <h4 style="font-weight:800;margin-bottom:.25rem;">Yêu cầu học</h4>
+            <p id="pendingCount" style="color:var(--text-muted);font-size:.875rem;margin:0;">
                 @Model.Count(b => b.Status == "Pending") yêu cầu đang chờ xác nhận
             </p>
         </div>
@@ -64,36 +189,92 @@
                     </svg>
                 </div>
                 <h6 style="font-weight:700;">Chưa có yêu cầu nào</h6>
-                <p style="color:var(--text-muted);font-size:0.875rem;">
+                <p style="color:var(--text-muted);font-size:.875rem;">
                     Hoàn thiện hồ sơ để học viên tìm thấy bạn!
                 </p>
             </div>
         }
         else
         {
-            <div class="row g-3">
+            <!-- ── Filter & Sort Bar ── -->
+            <div class="filter-bar">
+                <span class="filter-label">Trạng thái</span>
+                <div class="filter-chips" id="statusChips">
+                    <span class="chip active" data-status="all">
+                        <span class="chip-dot"></span>Tất cả
+                        <span class="badge bg-secondary ms-1" style="font-size:.7rem;border-radius:99px;padding:.1rem .45rem;">@Model.Count()</span>
+                    </span>
+                    @{
+                        var chipDefs = new[] {
+                            ("Pending",   "#D97706", "Chờ xác nhận"),
+                            ("Confirmed", "#059669", "Đã xác nhận"),
+                            ("Completed", "var(--primary)", "Đã hoàn thành"),
+                            ("Rejected",  "#DC2626", "Đã từ chối"),
+                            ("Cancelled", "#DC2626", "Đã huỷ"),
+                        };
+                        foreach (var (st, clr, lbl) in chipDefs)
+                        {
+                            var cnt = Model.Count(b => b.Status == st);
+                            if (cnt > 0)
+                            {
+                                <span class="chip" data-status="@st" style="--dot-color:@clr;">
+                                    <span class="chip-dot" style="background:@clr;opacity:1;"></span>
+                                    @lbl
+                                    <span class="badge ms-1" style="font-size:.7rem;border-radius:99px;padding:.1rem .45rem;background:@clr;color:#fff;">@cnt</span>
+                                </span>
+                            }
+                        }
+                    }
+                </div>
+
+                <div class="divider-v d-none d-sm-block"></div>
+
+                <select class="sort-select ms-auto" id="sortSelect" title="Sắp xếp">
+                    <option value="date-desc">Mới nhất trước</option>
+                    <option value="date-asc">Cũ nhất trước</option>
+                    <option value="name-asc">Tên A → Z</option>
+                    <option value="name-desc">Tên Z → A</option>
+                </select>
+            </div>
+
+            <!-- Results count -->
+            <p class="results-count" id="resultsCount"></p>
+
+            <!-- ── Card Grid ── -->
+            <div class="row g-3" id="cardGrid">
                 @foreach (var b in Model)
                 {
-                    var (bg, color, label) = statusMap.GetValueOrDefault(
-                        b.Status, ("#F1F5F9", "#64748B", b.Status));
-                    var stuInitial = b.Student.FullName
-                                      .FirstOrDefault().ToString().ToUpper();
-                    <div class="col-md-6 col-xl-4">
+                    var (bg, color, label) = statusMap.GetValueOrDefault(b.Status, ("#F1F5F9", "#64748B", b.Status));
+                    var stuInitial = b.Student.FullName.FirstOrDefault().ToString().ToUpper();
+                    var hasAvatar = !string.IsNullOrEmpty(b.Student.AvatarUrl);
+
+                    <div class="col-md-6 col-xl-4 booking-card"
+                         data-status="@b.Status"
+                         data-name="@b.Student.FullName"
+                         data-date="@b.CreatedAt.ToString("yyyyMMddHHmmss")">
                         <div class="card h-100" style="border-radius:16px;">
                             <div class="card-body p-4">
 
                                 <!-- Header -->
                                 <div class="d-flex align-items-center justify-content-between mb-3">
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="avatar avatar-sm"
-                                             style="background:linear-gradient(135deg,#10B981,#059669);">
-                                            @stuInitial
-                                        </div>
+                                        @if (hasAvatar)
+                                        {
+                                            <img src="@b.Student.AvatarUrl"
+                                                 alt="@b.Student.FullName"
+                                                 class="stu-avatar"
+                                                 onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />
+                                            <div class="stu-avatar-fallback" style="display:none;">@stuInitial</div>
+                                        }
+                                        else
+                                        {
+                                            <div class="stu-avatar-fallback">@stuInitial</div>
+                                        }
                                         <div>
-                                            <div style="font-weight:700; font-size:0.875rem;">
+                                            <div style="font-weight:700;font-size:.875rem;">
                                                 @b.Student.FullName
                                             </div>
-                                            <div style="font-size:0.75rem; color:var(--text-muted);">
+                                            <div style="font-size:.75rem;color:var(--text-muted);">
                                                 @b.Subject.Name
                                             </div>
                                         </div>
@@ -105,8 +286,7 @@
 
                                 <!-- Info -->
                                 <div style="background:var(--bg);border-radius:10px;
-                                    padding:0.75rem;margin-bottom:1rem;
-                                    font-size:0.82rem;">
+                                    padding:.75rem;margin-bottom:1rem;font-size:.82rem;">
                                     <div class="d-flex gap-2 mb-1">
                                         <svg width="14" height="14" fill="none"
                                              stroke="var(--text-muted)" stroke-width="2"
@@ -128,18 +308,15 @@
                                                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5
                                                 a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                                             </svg>
-                                            <span style="color:var(--text-secondary);">
-                                                @b.Note
-                                            </span>
+                                            <span style="color:var(--text-secondary);">@b.Note</span>
                                         </div>
                                     }
                                 </div>
 
-                                <!-- Lớp học Jitsi Meeting -->
+                                <!-- Jitsi Meeting -->
                                 @{
                                     var now = DateTime.Now;
-                                    var canJoin = b.Status == "Confirmed" &&
-                                                  b.MeetingRoomId != null; // DEMO: bỏ giới hạn thời gian
+                                    var canJoin = b.Status == "Confirmed" && b.MeetingRoomId != null;
                                     var joinUrl = $"https://meet.jit.si/{b.MeetingRoomId}";
                                 }
 
@@ -148,22 +325,19 @@
                                     <div class="mb-3 text-center">
                                         @if (canJoin)
                                         {
-                                            @* Đang trong giờ học → Hiện nút nổi bật *@
                                             <a href="@joinUrl" target="_blank"
                                                class="btn btn-success btn-sm w-100 fw-bold"
-                                               style="animation:pulse 1.5s infinite; border-radius:8px; padding:0.6rem;">
+                                               style="animation:pulse 1.5s infinite;border-radius:8px;padding:.6rem;">
                                                 🎥 Tham gia lớp học ngay!
                                             </a>
                                         }
                                         else if (now < b.StartTime.AddMinutes(-15))
                                         {
-                                            @* Chưa đến giờ → Hiện đếm ngược *@
-                                            <div class="text-muted small py-2 px-3" style="background:#f8f9fa; border-radius:8px; border:1px dashed #dee2e6;">
-                                                🕒 Lớp mở lúc <strong>@b.StartTime.AddMinutes(-15).ToString("HH:mm")</strong>
-                                                <br />
+                                            <div class="text-muted small py-2 px-3"
+                                                 style="background:#f8f9fa;border-radius:8px;border:1px dashed #dee2e6;">
+                                                🕒 Lớp mở lúc <strong>@b.StartTime.AddMinutes(-15).ToString("HH:mm")</strong><br />
                                                 <span class="countdown fw-semibold text-primary"
-                                                      data-time="@b.StartTime.AddMinutes(-15).ToString("O")">
-                                                </span>
+                                                      data-time="@b.StartTime.AddMinutes(-15).ToString("O")"></span>
                                             </div>
                                         }
                                     </div>
@@ -174,30 +348,118 @@
                                 {
                                     <form asp-action="UpdateStatus" method="post" class="d-flex gap-2">
                                         <input type="hidden" name="id" value="@b.Id" />
-                                        <button name="status" value="Confirmed" class="btn btn-sm btn-success w-50" style="border-radius:8px; font-weight:600;"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Xác nhận</button>
-                                        <button name="status" value="Rejected" class="btn btn-sm btn-outline-danger w-50" style="border-radius:8px; font-weight:600;"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> Từ chối</button>
+                                        <button name="status" value="Confirmed"
+                                                class="btn btn-sm btn-success w-50"
+                                                style="border-radius:8px;font-weight:600;">
+                                            <svg width="16" height="16" fill="none" stroke="currentColor"
+                                                 stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                                                <polyline points="20 6 9 17 4 12" />
+                                            </svg> Xác nhận
+                                        </button>
+                                        <button name="status" value="Rejected"
+                                                class="btn btn-sm btn-outline-danger w-50"
+                                                style="border-radius:8px;font-weight:600;">
+                                            <svg width="16" height="16" fill="none" stroke="currentColor"
+                                                 stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <line x1="15" y1="9" x2="9" y2="15" />
+                                                <line x1="9" y1="9" x2="15" y2="15" />
+                                            </svg> Từ chối
+                                        </button>
                                     </form>
                                 }
                                 @if (b.Status == "Confirmed")
                                 {
                                     <form asp-action="Complete" method="post" class="mb-2">
                                         <input type="hidden" name="id" value="@b.Id" />
-                                        <button class="btn btn-sm w-100 text-white" style="border-radius:8px; background:var(--primary); font-weight:600; border:none;">🏁 Hoàn thành buổi học</button>
+                                        <button class="btn btn-sm w-100 text-white"
+                                                style="border-radius:8px;background:var(--primary);font-weight:600;border:none;">
+                                            🏁 Hoàn thành buổi học
+                                        </button>
                                     </form>
-
-                                    <!-- Nút Bảng Trắng mới thêm -->
-                                    <a href="/Whiteboard/Index?bookingId=@b.Id"
-                                       target="_blank"
+                                    <a href="/Whiteboard/Index?bookingId=@b.Id" target="_blank"
                                        class="btn btn-sm w-100"
-                                       style="background:#1e3a5f; color:white; border-radius:8px;">
+                                       style="background:#1e3a5f;color:white;border-radius:8px;">
                                         🎨 Bảng Trắng
                                     </a>
                                 }
+
                             </div>
                         </div>
                     </div>
                 }
             </div>
+
+            <!-- Empty state when all filtered out -->
+            <div id="emptyFilter" style="display:none;" class="text-center py-5">
+                <div style="font-size:2.5rem;">🔍</div>
+                <h6 style="font-weight:700;margin-top:.75rem;">Không có yêu cầu nào</h6>
+                <p style="color:var(--text-muted);font-size:.875rem;">Thử chọn bộ lọc khác.</p>
+            </div>
         }
     </div>
 </section>
+
+<script>
+    (function () {
+        const chips = document.querySelectorAll('#statusChips .chip');
+        const sortSel = document.getElementById('sortSelect');
+        const grid = document.getElementById('cardGrid');
+        const emptyEl = document.getElementById('emptyFilter');
+        const countEl = document.getElementById('resultsCount');
+        if (!grid) return;
+
+        let activeStatus = 'all';
+
+        function applyFilter() {
+            const cards = [...grid.querySelectorAll('.booking-card')];
+
+            // 1. filter
+            const visible = cards.filter(c => {
+                if (activeStatus === 'all') return true;
+                return c.dataset.status === activeStatus;
+            });
+            const hidden = cards.filter(c => !visible.includes(c));
+
+            visible.forEach(c => c.removeAttribute('hidden'));
+            hidden.forEach(c => c.setAttribute('hidden', ''));
+
+            // 2. sort
+            const sortVal = sortSel ? sortSel.value : 'date-desc';
+            visible.sort((a, b) => {
+                if (sortVal === 'date-asc') return a.dataset.date.localeCompare(b.dataset.date);
+                if (sortVal === 'date-desc') return b.dataset.date.localeCompare(a.dataset.date);
+                if (sortVal === 'name-asc') return a.dataset.name.localeCompare(b.dataset.name, 'vi');
+                if (sortVal === 'name-desc') return b.dataset.name.localeCompare(a.dataset.name, 'vi');
+                return 0;
+            });
+            visible.forEach(c => grid.appendChild(c));
+
+            // 3. empty state
+            if (emptyEl) emptyEl.style.display = visible.length === 0 ? '' : 'none';
+
+            // 4. results count
+            if (countEl) {
+                countEl.innerHTML = visible.length === 0
+                    ? ''
+                    : `Hiển thị <strong>${visible.length}</strong> / ${cards.length} yêu cầu`;
+            }
+        }
+
+        // chip clicks
+        chips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                chips.forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                activeStatus = chip.dataset.status;
+                applyFilter();
+            });
+        });
+
+        // sort change
+        if (sortSel) sortSel.addEventListener('change', applyFilter);
+
+        // init
+        applyFilter();
+    })();
+</script>

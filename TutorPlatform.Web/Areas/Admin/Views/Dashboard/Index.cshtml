@@ -11,7 +11,7 @@
             <p style="color:var(--text-muted);font-size:0.85rem;margin:2px 0 0;">Tổng quan hệ thống Gia Sư Việt</p>
         </div>
         <div style="background:var(--success-light);color:#065F46;padding:6px 14px;border-radius:var(--radius-full);font-size:0.8rem;font-weight:600;border:1px solid #A7F3D0;">
-            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:5px;" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="margin-right:5px;" aria-hidden="true"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
             @DateTime.Now.ToString("dd/MM/yyyy HH:mm")
         </div>
     </div>
@@ -45,7 +45,7 @@
                         </div>
                         <div class="stat-icon" style="background:@bg;">
                             <svg width="20" height="20" fill="none" stroke="@color" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
-                                <path d="@path" stroke-linecap="round" stroke-linejoin="round"/>
+                                <path d="@path" stroke-linecap="round" stroke-linejoin="round" />
                             </svg>
                         </div>
                     </div>
@@ -89,47 +89,49 @@
             <div class="card">
                 <div class="card-body" style="padding-bottom:0;">
                     <h6 style="font-weight:700;margin-bottom:1rem;font-size:0.9rem;">
-                        <svg width="16" height="16" fill="none" stroke="var(--warning)" stroke-width="2" viewBox="0 0 24 24" style="margin-right:6px;" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+                        <svg width="16" height="16" fill="none" stroke="var(--warning)" stroke-width="2" viewBox="0 0 24 24" style="margin-right:6px;" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z" /></svg>
                         Top 5 Gia sư
                     </h6>
                 </div>
-                <table class="table table-hover mb-0">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Gia sư</th>
-                            <th class="text-center">Buổi</th>
-                            <th class="text-center">Rating</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @{
-                            var rankColors = new[] { "#F59E0B","#94A3B8","#CD7F32","var(--text-muted)","var(--text-muted)" };
-                            int idx = 0;
-                        }
-                        @foreach (var t in (ViewBag.TopTutors as List<TutorPlatform.Core.Models.TutorProfile> ?? new()))
-                        {
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead>
                             <tr>
-                                <td>
-                                    <span style="font-weight:800;color:@rankColors[idx];font-size:0.9rem;font-family:'Plus Jakarta Sans',sans-serif;">@(idx + 1)</span>
-                                </td>
-                                <td>
-                                    <div style="font-weight:600;font-size:0.875rem;color:var(--text-primary);">@t.User?.FullName</div>
-                                    <small style="color:var(--text-muted);">@t.TeachingArea</small>
-                                </td>
-                                <td class="text-center">
-                                    <span style="font-weight:700;color:var(--success);">@t.Bookings.Count(b => b.Status == "Completed")</span>
-                                </td>
-                                <td class="text-center">
-                                    <span style="color:var(--warning);font-weight:700;font-size:0.875rem;">
-                                        ★ @(t.ReceivedReviews.Any() ? t.ReceivedReviews.Average(r => r.Rating).ToString("0.#") : "—")
-                                    </span>
-                                </td>
+                                <th>#</th>
+                                <th>Gia sư</th>
+                                <th class="text-center">Buổi</th>
+                                <th class="text-center">Rating</th>
                             </tr>
-                            idx++;
-                        }
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @{
+                                var rankColors = new[] { "#F59E0B", "#94A3B8", "#CD7F32", "var(--text-muted)", "var(--text-muted)" };
+                                int idx = 0;
+                            }
+                            @foreach (var t in (ViewBag.TopTutors as List<TutorPlatform.Core.Models.TutorProfile> ?? new()))
+                            {
+                                <tr>
+                                    <td>
+                                        <span style="font-weight:800;color:@rankColors[idx];font-size:0.9rem;font-family:'Plus Jakarta Sans',sans-serif;">@(idx + 1)</span>
+                                    </td>
+                                    <td>
+                                        <div style="font-weight:600;font-size:0.875rem;color:var(--text-primary);">@t.User?.FullName</div>
+                                        <small style="color:var(--text-muted);">@t.TeachingArea</small>
+                                    </td>
+                                    <td class="text-center">
+                                        <span style="font-weight:700;color:var(--success);">@t.Bookings.Count(b => b.Status == "Completed")</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <span style="color:var(--warning);font-weight:700;font-size:0.875rem;">
+                                            ★ @(t.ReceivedReviews.Any() ? t.ReceivedReviews.Average(r => r.Rating).ToString("0.#") : "—")
+                                        </span>
+                                    </td>
+                                </tr>
+                                idx++;
+                            }
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
 
@@ -137,11 +139,11 @@
             <div class="card">
                 <div class="card-body" style="padding-bottom:0;">
                     <h6 style="font-weight:700;margin-bottom:1rem;font-size:0.9rem;">
-                        <svg width="16" height="16" fill="none" stroke="var(--primary)" stroke-width="2" viewBox="0 0 24 24" style="margin-right:6px;" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                        <svg width="16" height="16" fill="none" stroke="var(--primary)" stroke-width="2" viewBox="0 0 24 24" style="margin-right:6px;" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
                         Lịch đặt gần đây
                     </h6>
                 </div>
-                <div style="max-height:320px;overflow-y:auto;">
+                <div class="table-responsive" style="max-height:320px;overflow-y:auto;">
                     <table class="table table-sm table-hover mb-0">
                         <thead>
                             <tr>
@@ -155,21 +157,21 @@
                         <tbody>
                             @foreach (var b in (ViewBag.RecentBookings as List<TutorPlatform.Core.Models.Booking> ?? new()))
                             {
-                                var (bBg, bColor, bLabel) = b.Status switch {
-                                    "Pending"   => ("var(--warning-light)", "#D97706", "Chờ duyệt"),
-                                    "Confirmed" => ("var(--success-light)", "#059669", "Đã xác nhận"),
-                                    "Completed" => ("var(--primary-light)", "var(--primary)", "Hoàn thành"),
-                                    "Rejected"  => ("var(--danger-light)", "var(--danger)", "Từ chối"),
-                                    _           => ("var(--bg-subtle)", "var(--text-muted)", b.Status)
+                                var (bClass, bLabel) = b.Status switch
+                                {
+                                    "Pending" => ("status-pending", "Chờ duyệt"),
+                                    "Confirmed" => ("status-confirmed", "Đã xác nhận"),
+                                    "Completed" => ("status-completed", "Hoàn thành"),
+                                    "Rejected" => ("status-rejected", "Từ chối"),
+                                    "Cancelled" => ("status-cancelled", "Đã hủy"),
+                                    _ => ("status-cancelled", b.Status)
                                 };
                                 <tr>
                                     <td style="font-size:0.8rem;">@b.Student?.FullName</td>
                                     <td style="font-size:0.8rem;">@b.TutorProfile?.User?.FullName</td>
                                     <td style="font-size:0.8rem;">@b.Subject?.Name</td>
                                     <td>
-                                        <span style="background:@bBg;color:@bColor;border-radius:4px;padding:2px 8px;font-size:0.72rem;font-weight:600;">
-                                            @bLabel
-                                        </span>
+                                        <span class="status-badge @bClass">@bLabel</span>
                                     </td>
                                     <td style="font-size:0.78rem;color:var(--text-muted);">@b.CreatedAt.ToString("dd/MM")</td>
                                 </tr>
@@ -189,58 +191,58 @@
         const successColor = getComputedStyle(document.documentElement).getPropertyValue('--success').trim() || '#10B981';
 
         fetch("/Admin/Dashboard/GetRevenueChart").then(r => r.json()).then(data => {
-            new Chart(document.getElementById("revenueChart"), {
-                type: "line",
-                data: {
-                    labels: data.map(d => d.label),
-                    datasets: [{
-                        label: "Doanh thu (nghìn VNĐ)",
-                        data: data.map(d => d.revenue),
-                        borderColor: "#4F46E5",
-                        backgroundColor: "rgba(79,70,229,0.08)",
-                        fill: true, tension: 0.4, pointRadius: 4,
-                        pointBackgroundColor: "#4F46E5",
-                        borderWidth: 2
-                    }, {
-                        label: "Số buổi học",
-                        data: data.map(d => d.count),
-                        borderColor: "#10B981",
-                        backgroundColor: "transparent",
-                        tension: 0.4, yAxisID: "y2",
-                        borderWidth: 2, pointRadius: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { labels: { font: { family: 'Inter', size: 12 }, usePointStyle: true } } },
-                    scales: {
-                        x: { grid: { color: "rgba(0,0,0,0.04)" }, ticks: { font: { family: 'Inter', size: 11 } } },
-                        y: { grid: { color: "rgba(0,0,0,0.04)" }, ticks: { font: { family: 'Inter', size: 11 } }, title: { display: true, text: "Nghìn VNĐ", font: { size: 11 } } },
-                        y2: { position: "right", grid: { drawOnChartArea: false }, ticks: { font: { family: 'Inter', size: 11 } }, title: { display: true, text: "Số buổi", font: { size: 11 } } }
-                    }
-                }
-            });
+        new Chart(document.getElementById("revenueChart"), {
+        type: "line",
+        data: {
+        labels: data.map(d => d.label),
+        datasets: [{
+        label: "Doanh thu (nghìn VNĐ)",
+        data: data.map(d => d.revenue),
+        borderColor: "#4F46E5",
+        backgroundColor: "rgba(79,70,229,0.08)",
+        fill: true, tension: 0.4, pointRadius: 4,
+        pointBackgroundColor: "#4F46E5",
+        borderWidth: 2
+        }, {
+        label: "Số buổi học",
+        data: data.map(d => d.count),
+        borderColor: "#10B981",
+        backgroundColor: "transparent",
+        tension: 0.4, yAxisID: "y2",
+        borderWidth: 2, pointRadius: 3
+        }]
+        },
+        options: {
+        responsive: true,
+        plugins: { legend: { labels: { font: { family: 'Inter', size: 12 }, usePointStyle: true } } },
+        scales: {
+        x: { grid: { color: "rgba(0,0,0,0.04)" }, ticks: { font: { family: 'Inter', size: 11 } } },
+        y: { grid: { color: "rgba(0,0,0,0.04)" }, ticks: { font: { family: 'Inter', size: 11 } }, title: { display: true, text: "Nghìn VNĐ", font: { size: 11 } } },
+        y2: { position: "right", grid: { drawOnChartArea: false }, ticks: { font: { family: 'Inter', size: 11 } }, title: { display: true, text: "Số buổi", font: { size: 11 } } }
+        }
+        }
+        });
         });
 
         fetch("/Admin/Dashboard/GetGrowthChart").then(r => r.json()).then(data => {
-            new Chart(document.getElementById("growthChart"), {
-                type: "bar",
-                data: {
-                    labels: data.map(d => d.label),
-                    datasets: [
-                        { label: "Gia sư mới", data: data.map(d => d.tutors), backgroundColor: "rgba(79,70,229,0.75)", borderRadius: 4 },
-                        { label: "Học viên mới", data: data.map(d => d.students), backgroundColor: "rgba(16,185,129,0.75)", borderRadius: 4 }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { labels: { font: { family: 'Inter', size: 12 }, usePointStyle: true } } },
-                    scales: {
-                        x: { grid: { color: "rgba(0,0,0,0.04)" }, ticks: { font: { family: 'Inter', size: 11 } } },
-                        y: { beginAtZero: true, ticks: { stepSize: 1, font: { family: 'Inter', size: 11 } }, grid: { color: "rgba(0,0,0,0.04)" } }
-                    }
-                }
-            });
+        new Chart(document.getElementById("growthChart"), {
+        type: "bar",
+        data: {
+        labels: data.map(d => d.label),
+        datasets: [
+        { label: "Gia sư mới", data: data.map(d => d.tutors), backgroundColor: "rgba(79,70,229,0.75)", borderRadius: 4 },
+        { label: "Học viên mới", data: data.map(d => d.students), backgroundColor: "rgba(16,185,129,0.75)", borderRadius: 4 }
+        ]
+        },
+        options: {
+        responsive: true,
+        plugins: { legend: { labels: { font: { family: 'Inter', size: 12 }, usePointStyle: true } } },
+        scales: {
+        x: { grid: { color: "rgba(0,0,0,0.04)" }, ticks: { font: { family: 'Inter', size: 11 } } },
+        y: { beginAtZero: true, ticks: { stepSize: 1, font: { family: 'Inter', size: 11 } }, grid: { color: "rgba(0,0,0,0.04)" } }
+        }
+        }
+        });
         });
     </script>
 }

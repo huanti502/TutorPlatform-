@@ -9,6 +9,7 @@ using TutorPlatform.Web.Services;
 
 namespace TutorPlatform.Web.Controllers;
 
+[Authorize] // Yêu cầu đăng nhập để tránh người lạ đốt quota Groq API
 public class AIController : Controller
 {
     private readonly AIService _ai;

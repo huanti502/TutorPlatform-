@@ -66,6 +66,26 @@ public class ReviewController : Controller
         var booking = await _db.Bookings.FindAsync(bookingId);
         if (booking == null) return NotFound();
 
+        // ✅ Chỉ học viên sở hữu booking mới được đánh giá (chặn IDOR)
+        if (booking.StudentId != user!.Id) return Forbid();
+
+        // ✅ Chỉ đánh giá buổi đã hoàn thành (POST có thể bị gọi trực tiếp, không qua GET)
+        if (booking.Status != "Completed")
+        {
+            TempData["Error"] = "Chỉ có thể đánh giá buổi học đã hoàn thành.";
+            return RedirectToAction("MyBookings", "Booking");
+        }
+
+        // ✅ Chặn đánh giá trùng (1 booking chỉ 1 review)
+        if (await _db.Reviews.AnyAsync(r => r.BookingId == bookingId))
+        {
+            TempData["Error"] = "Bạn đã đánh giá buổi học này rồi.";
+            return RedirectToAction("MyBookings", "Booking");
+        }
+
+        // ✅ Giới hạn số sao hợp lệ trong khoảng 1–5
+        rating = Math.Clamp(rating, 1, 5);
+
         _db.Reviews.Add(new Review
         {
             StudentId = user!.Id,

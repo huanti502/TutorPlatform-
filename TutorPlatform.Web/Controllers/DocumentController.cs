@@ -20,18 +20,24 @@ public class DocumentController : Controller
     private readonly UserManager<AppUser> _userManager;
     private readonly IWebHostEnvironment _env;
     private readonly AIService _ai; // Bổ sung AIService
+    private readonly CloudinaryService _cloudinary;
+    private readonly IHttpClientFactory _httpClientFactory;
 
     // Cập nhật Constructor để nhận thêm AIService
     public DocumentController(
         AppDbContext db,
         UserManager<AppUser> userManager,
         IWebHostEnvironment env,
-        AIService ai)
+        AIService ai,
+        CloudinaryService cloudinary,
+        IHttpClientFactory httpClientFactory)
     {
         _db = db;
         _userManager = userManager;
         _env = env;
         _ai = ai;
+        _cloudinary = cloudinary;
+        _httpClientFactory = httpClientFactory;
     }
 
     // Danh sách tài liệu (public + của mình)
@@ -86,15 +92,13 @@ public class DocumentController : Controller
             return View();
         }
 
-        // Lưu file
-        var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "documents");
-        Directory.CreateDirectory(uploadsFolder);
-
-        var uniqueName = $"{Guid.NewGuid()}{ext}";
-        var filePath = Path.Combine(uploadsFolder, uniqueName);
-
-        using (var stream = new FileStream(filePath, FileMode.Create))
-            await file.CopyToAsync(stream);
+        // Lưu file lên Cloudinary (KHÔNG lưu local vì Render xóa đĩa mỗi lần deploy)
+        var fileUrl = await _cloudinary.UploadFileAsync(file, "documents");
+        if (string.IsNullOrEmpty(fileUrl))
+        {
+            TempData["Error"] = "Tải lên thất bại. Vui lòng thử lại.";
+            return View();
+        }
 
         var user = await _userManager.GetUserAsync(User);
 
@@ -113,7 +117,7 @@ public class DocumentController : Controller
         {
             Title = title,
             Description = description,
-            FilePath = $"/uploads/documents/{uniqueName}",
+            FilePath = fileUrl,
             FileName = file.FileName,
             FileType = fileType,
             FileSize = file.Length,
@@ -137,15 +141,54 @@ public class DocumentController : Controller
         if (doc == null) return NotFound();
         if (!doc.IsPublic && doc.UploaderId != user!.Id) return Forbid();
 
+        doc.DownloadCount++;
+        await _db.SaveChangesAsync();
+
+        // File lưu trên Cloudinary.
+        // KHÔNG redirect thẳng tới URL gốc vì file raw/PDF bị Cloudinary chặn
+        // ("Restricted media types") → trả về HTTP 401.
+        // Thay vào đó: tạo URL CÓ CHỮ KÝ rồi server tự tải về và stream cho người dùng.
+        if (doc.FilePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+        {
+            var signedUrl = _cloudinary.GetSignedDeliveryUrl(doc.FilePath);
+            try
+            {
+                var http = _httpClientFactory.CreateClient();
+                var resp = await http.GetAsync(signedUrl, HttpCompletionOption.ResponseHeadersRead);
+
+                // Nếu vẫn lỗi (vd: cấu hình Cloudinary đặc biệt) thì thử redirect URL đã ký.
+                if (!resp.IsSuccessStatusCode)
+                    return Redirect(signedUrl);
+
+                var stream = await resp.Content.ReadAsStreamAsync();
+                var contentType = doc.FileType switch
+                {
+                    "pdf" => "application/pdf",
+                    "word" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    "powerpoint" => "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                    "excel" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                    "image" => resp.Content.Headers.ContentType?.MediaType ?? "image/jpeg",
+                    _ => "application/octet-stream"
+                };
+
+                // Đặt tên file gốc khi tải về
+                var downloadName = string.IsNullOrWhiteSpace(doc.FileName) ? $"document-{doc.Id}" : doc.FileName;
+                return File(stream, contentType, downloadName);
+            }
+            catch
+            {
+                // Dự phòng: chuyển hướng tới URL đã ký để trình duyệt tự tải.
+                return Redirect(signedUrl);
+            }
+        }
+
+        // Tương thích ngược: file cũ lưu local (sẽ mất sau khi server restart)
         var fullPath = Path.Combine(_env.WebRootPath, doc.FilePath.TrimStart('/'));
-               if (!System.IO.File.Exists(fullPath))
+        if (!System.IO.File.Exists(fullPath))
         {
             TempData["Error"] = "File không còn tồn tại trên server (server đã restart). Vui lòng yêu cầu người upload tải lại.";
             return RedirectToAction("Index");
         }
-
-        doc.DownloadCount++;
-        await _db.SaveChangesAsync();
 
         var bytes = await System.IO.File.ReadAllBytesAsync(fullPath);
         return File(bytes, "application/octet-stream", doc.FileName);
@@ -161,10 +204,13 @@ public class DocumentController : Controller
         if (doc == null) return NotFound();
         if (doc.UploaderId != user!.Id) return Forbid();
 
-        // Xóa file vật lý
-        var fullPath = Path.Combine(_env.WebRootPath, doc.FilePath.TrimStart('/'));
-        if (System.IO.File.Exists(fullPath))
-            System.IO.File.Delete(fullPath);
+        // File cũ lưu local thì xóa file vật lý; file Cloudinary thì chỉ xóa bản ghi DB
+        if (!doc.FilePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+        {
+            var fullPath = Path.Combine(_env.WebRootPath, doc.FilePath.TrimStart('/'));
+            if (System.IO.File.Exists(fullPath))
+                System.IO.File.Delete(fullPath);
+        }
 
         _db.Documents.Remove(doc);
         await _db.SaveChangesAsync();
@@ -179,10 +225,31 @@ public class DocumentController : Controller
         var doc = await _db.Documents.FindAsync(id);
         if (doc == null) return NotFound();
 
-        var fullPath = Path.Combine(_env.WebRootPath, doc.FilePath.TrimStart('/'));
-        if (!System.IO.File.Exists(fullPath))
+        // Lấy nội dung file: ưu tiên tải từ Cloudinary URL, fallback đọc local cho file cũ
+        byte[] fileBytes;
+        try
         {
-            TempData["Error"] = "Không tìm thấy file!";
+            if (doc.FilePath.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+            {
+                var http = _httpClientFactory.CreateClient();
+                // Dùng URL có chữ ký để tránh bị Cloudinary trả 401 với file raw/PDF.
+                var signedUrl = _cloudinary.GetSignedDeliveryUrl(doc.FilePath);
+                fileBytes = await http.GetByteArrayAsync(signedUrl);
+            }
+            else
+            {
+                var fullPath = Path.Combine(_env.WebRootPath, doc.FilePath.TrimStart('/'));
+                if (!System.IO.File.Exists(fullPath))
+                {
+                    TempData["Error"] = "Không tìm thấy file!";
+                    return RedirectToAction("Index");
+                }
+                fileBytes = await System.IO.File.ReadAllBytesAsync(fullPath);
+            }
+        }
+        catch
+        {
+            TempData["Error"] = "Không tải được nội dung file để tóm tắt.";
             return RedirectToAction("Index");
         }
 
@@ -194,7 +261,7 @@ public class DocumentController : Controller
             try
             {
                 // Đọc text từ PDF (yêu cầu cài đặt gói NuGet: PdfPig)
-                using var pdfDoc = UglyToad.PdfPig.PdfDocument.Open(fullPath);
+                using var pdfDoc = UglyToad.PdfPig.PdfDocument.Open(fileBytes);
                 var pages = pdfDoc.GetPages().Take(10); // Giới hạn đọc tối đa 10 trang đầu
                 fileContent = string.Join("\n", pages.Select(p => p.Text));
             }
@@ -217,7 +284,7 @@ public class DocumentController : Controller
         }
         else
         {
-            fileContent = await System.IO.File.ReadAllTextAsync(fullPath);
+            fileContent = System.Text.Encoding.UTF8.GetString(fileBytes);
         }
 
         // Giới hạn 4000 ký tự để tránh vượt ngưỡng Token giới hạn của Model AI
