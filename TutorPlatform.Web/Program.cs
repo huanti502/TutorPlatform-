@@ -119,6 +119,9 @@ using (var scope = app.Services.CreateScope())
 
         await SeedData.SeedAllAsync(db, userManager, roleManager);
 
+        await db.Database.ExecuteSqlRawAsync(
+            "SELECT setval(pg_get_serial_sequence('\"Subjects\"', 'Id'), (SELECT COALESCE(MAX(\"Id\"), 1) FROM \"Subjects\"));");
+
         logger.LogInformation("SeedData hoàn tất.");
 
         foreach (var role in new[] { "Admin", "Student", "Tutor" })
