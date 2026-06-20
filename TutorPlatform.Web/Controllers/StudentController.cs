@@ -7,19 +7,19 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using TutorPlatform.Core.Models;
-using TutorPlatform.Infrastructure.Data; // Thêm để sử dụng AppDbContext
-using TutorPlatform.Web.Services;       // Thêm để sử dụng AIService
+using TutorPlatform.Infrastructure.Data; 
+using TutorPlatform.Web.Services;     
 using TutorPlatform.Web.ViewModels;
 
 namespace TutorPlatform.Web.Controllers;
 
-[Authorize(Roles = "Student")] // Chỉ cho phép Học viên truy cập
+[Authorize(Roles = "Student")] 
 public class StudentController : Controller
 {
     private readonly UserManager<AppUser> _userManager;
     private readonly IWebHostEnvironment _env;
-    private readonly AppDbContext _db; // Bổ sung AppDbContext để truy vấn lịch học & review
-    private readonly AIService _ai;    // Bổ sung AIService
+    private readonly AppDbContext _db; 
+    private readonly AIService _ai;   
     private readonly CloudinaryService _cloudinary; // Lưu ảnh lên Cloudinary (không mất khi redeploy)
 
     // Cập nhật Constructor để tiêm đầy đủ các dịch vụ
