@@ -40,6 +40,16 @@
                             </select>
                         </div>
                         <div class="mb-3">
+                            <label class="form-label fw-semibold">Cấp học</label>
+                            <select name="level" class="form-select">
+                                <option value="">-- Tất cả --</option>
+                                @foreach (var lv in (ViewBag.Levels as List<string> ?? new()))
+                                {
+                                    <option value="@lv" selected="@(ViewBag.Level?.ToString() == lv)">@lv</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label fw-semibold">Học phí (VNĐ/giờ)</label>
                             <div class="d-flex gap-2">
                                 <input type="number" name="minPrice" class="form-control form-control-sm"
@@ -173,7 +183,7 @@
                             {
                                 <li class="page-item @(i == (int)ViewBag.Page ? "active" : "")">
                                     <a class="page-link"
-                                       href="?page=@i&keyword=@ViewBag.Keyword&subjectId=@ViewBag.SubjectId&mode=@ViewBag.Mode&minPrice=@ViewBag.MinPrice&maxPrice=@ViewBag.MaxPrice&minRating=@ViewBag.MinRating&sortBy=@ViewBag.SortBy">@i</a>
+                                       href="?page=@i&keyword=@ViewBag.Keyword&subjectId=@ViewBag.SubjectId&mode=@ViewBag.Mode&level=@ViewBag.Level&minPrice=@ViewBag.MinPrice&maxPrice=@ViewBag.MaxPrice&minRating=@ViewBag.MinRating&sortBy=@ViewBag.SortBy">@i</a>
                                 </li>
                             }
                         </ul>

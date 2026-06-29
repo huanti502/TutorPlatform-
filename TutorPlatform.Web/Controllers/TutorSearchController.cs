@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TutorPlatform.Core.Models;
 using TutorPlatform.Infrastructure.Data;
@@ -20,7 +20,7 @@ public class TutorSearchController : Controller
 
     [HttpGet]
     public async Task<IActionResult> Search(
-        string? keyword, int? subjectId, string? mode,
+        string? keyword, int? subjectId, string? mode, string? level,   // ✅ thêm "level"
         decimal minPrice = 0, decimal maxPrice = 1_000_000,
         double minRating = 0, string sortBy = "rating", int page = 1)
     {
@@ -45,6 +45,11 @@ public class TutorSearchController : Controller
 
         if (subjectId.HasValue)
             query = query.Where(t => t.TutorSubjects.Any(ts => ts.SubjectId == subjectId.Value));
+
+        // ✅ LỌC THEO CẤP HỌC: chỉ lấy gia sư có ít nhất 1 môn thuộc cấp đã chọn
+        if (!string.IsNullOrWhiteSpace(level))
+            query = query.Where(t =>
+                t.TutorSubjects.Any(ts => ts.Subject != null && ts.Subject.Level == level));
 
         if (!string.IsNullOrWhiteSpace(mode))
             query = query.Where(t => t.TeachingMode == mode || t.TeachingMode == "Both");
@@ -75,9 +80,18 @@ public class TutorSearchController : Controller
         ViewBag.TotalPages = (int)Math.Ceiling((double)results.Count / pageSize);
         ViewBag.Page = page;
         ViewBag.Subjects = await _db.Subjects.Where(s => s.IsActive).ToListAsync();
+
+        // ✅ Danh sách cấp học (lấy động từ các môn đang hoạt động) để đổ vào dropdown
+        ViewBag.Levels = await _db.Subjects
+            .Where(s => s.IsActive && s.Level != null && s.Level != "")
+            .Select(s => s.Level)
+            .Distinct()
+            .ToListAsync();
+
         ViewBag.Keyword = keyword;
         ViewBag.SubjectId = subjectId;
         ViewBag.Mode = mode;
+        ViewBag.Level = level;          // ✅ giữ lại lựa chọn để hiển thị
         ViewBag.MinPrice = minPrice;
         ViewBag.MaxPrice = maxPrice;
         ViewBag.MinRating = minRating;
