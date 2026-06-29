@@ -77,6 +77,19 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 // ======================================================
+// ĐĂNG NHẬP BẰNG GOOGLE (OAuth)
+// AddIdentity đã đặt DefaultSignInScheme = ExternalScheme,
+// nên Google handler tự đăng nhập vào external cookie đúng chuẩn.
+// ClientId/ClientSecret lấy từ cấu hình (User Secrets / Env / appsettings).
+// ======================================================
+builder.Services.AddAuthentication()
+    .AddGoogle(options =>
+    {
+        options.ClientId = builder.Configuration["Authentication:Google:ClientId"] ?? "";
+        options.ClientSecret = builder.Configuration["Authentication:Google:ClientSecret"] ?? "";
+    });
+
+// ======================================================
 // MVC + WEB API + SIGNALR
 // ======================================================
 builder.Services.AddControllersWithViews();

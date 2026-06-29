@@ -4,8 +4,7 @@
 		<TargetFramework>net10.0</TargetFramework>
 		<Nullable>enable</Nullable>
 		<ImplicitUsings>enable</ImplicitUsings>
-	  <UserSecretsId>2e668238-bcd4-4318-bb09-b355e0e106e7</UserSecretsId>
-  </PropertyGroup>
+	</PropertyGroup>
 
 	<ItemGroup>
 		<PackageReference Include="ClosedXML" Version="0.104.2" />
@@ -15,6 +14,7 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="PdfPig" Version="0.1.14" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.Google" Version="10.0.8" />
 	</ItemGroup>
 
 	<ItemGroup>

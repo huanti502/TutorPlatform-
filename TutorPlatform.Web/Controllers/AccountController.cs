@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TutorPlatform.Core.Models;
 using TutorPlatform.Infrastructure.Data;
 using TutorPlatform.Web.ViewModels;
@@ -232,6 +233,111 @@ public class AccountController : Controller
 
         ModelState.AddModelError("", "Email hoặc mật khẩu không đúng.");
         return View(model);
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  ĐĂNG NHẬP BẰNG GOOGLE
+    // ══════════════════════════════════════════════════════
+
+    // Bấm nút "Đăng nhập với Google" → chuyển hướng sang Google
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public IActionResult ExternalLogin(string provider, string? returnUrl = null)
+    {
+        var redirectUrl = Url.Action("ExternalLoginCallback", "Account", new { returnUrl });
+        var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+        return Challenge(properties, provider);
+    }
+
+    // Google gọi lại sau khi người dùng đồng ý
+    [HttpGet]
+    public async Task<IActionResult> ExternalLoginCallback(string? returnUrl = null, string? remoteError = null)
+    {
+        if (remoteError != null)
+        {
+            TempData["Error"] = "Lỗi từ dịch vụ đăng nhập: " + remoteError;
+            return RedirectToAction("Login");
+        }
+
+        var info = await _signInManager.GetExternalLoginInfoAsync();
+        if (info == null)
+        {
+            TempData["Error"] = "Không lấy được thông tin đăng nhập từ Google.";
+            return RedirectToAction("Login");
+        }
+
+        var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+
+        // 1) Đã từng đăng nhập Google trước đó → đăng nhập luôn
+        var signInResult = await _signInManager.ExternalLoginSignInAsync(
+            info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
+
+        if (signInResult.Succeeded)
+        {
+            if (email != null)
+            {
+                var existing = await _userManager.FindByEmailAsync(email);
+                if (existing != null && existing.IsLocked)
+                {
+                    await _signInManager.SignOutAsync();
+                    TempData["Error"] = "Tài khoản của bạn đã bị khoá. Vui lòng liên hệ Admin.";
+                    return RedirectToAction("Login");
+                }
+            }
+            return RedirectToLocal(returnUrl);
+        }
+
+        // 2) Chưa liên kết → cần email để xử lý tiếp
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            TempData["Error"] = "Tài khoản Google không cung cấp email nên không thể đăng nhập.";
+            return RedirectToAction("Login");
+        }
+
+        // 3) Tìm theo email; nếu chưa có thì tạo mới (mặc định vai trò Học viên)
+        var user = await _userManager.FindByEmailAsync(email);
+
+        if (user == null)
+        {
+            var fullName = info.Principal.FindFirstValue(ClaimTypes.Name) ?? email;
+            user = new AppUser
+            {
+                UserName = email,
+                Email = email,
+                FullName = fullName,
+                Role = "Student",
+                EmailConfirmed = true
+            };
+
+            var createResult = await _userManager.CreateAsync(user);
+            if (!createResult.Succeeded)
+            {
+                TempData["Error"] = "Không tạo được tài khoản: " +
+                    string.Join(", ", createResult.Errors.Select(e => e.Description));
+                return RedirectToAction("Login");
+            }
+
+            await _userManager.AddToRoleAsync(user, "Student");
+        }
+
+        if (user.IsLocked)
+        {
+            TempData["Error"] = "Tài khoản của bạn đã bị khoá. Vui lòng liên hệ Admin.";
+            return RedirectToAction("Login");
+        }
+
+        // Liên kết đăng nhập Google với tài khoản rồi đăng nhập
+        await _userManager.AddLoginAsync(user, info);
+        await _signInManager.SignInAsync(user, isPersistent: false);
+        return RedirectToLocal(returnUrl);
+    }
+
+    // Helper: chỉ chuyển hướng tới URL nội bộ (chống open-redirect)
+    private IActionResult RedirectToLocal(string? returnUrl)
+    {
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            return Redirect(returnUrl);
+        return RedirectToAction("Index", "Home");
     }
 
     [HttpPost]
