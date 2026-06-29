@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using TutorPlatform.Core.Models;
@@ -109,6 +110,19 @@ builder.Services.AddHttpClient();
 builder.Services.AddSingleton<CloudinaryService>();
 
 var app = builder.Build();
+
+// ======================================================
+// PROXY HEADERS (Render/Heroku... đứng sau reverse proxy HTTPS)
+// Phải đặt SỚM NHẤT để app nhận đúng scheme https, nếu không
+// đăng nhập Google sẽ lỗi "Correlation failed" (cookie sai scheme).
+// ======================================================
+var forwardedOptions = new ForwardedHeadersOptions
+{
+    ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
+};
+forwardedOptions.KnownIPNetworks.Clear();
+forwardedOptions.KnownProxies.Clear();
+app.UseForwardedHeaders(forwardedOptions);
 
 // ======================================================
 // MIGRATION + SEED DATABASE
