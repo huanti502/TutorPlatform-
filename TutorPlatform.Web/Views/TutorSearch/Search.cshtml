@@ -102,10 +102,33 @@
                     {
                         var t = r.Profile;
                         <div class="col-md-6 col-xl-4">
-                            <div class="card h-100 " style="border-radius:12px;transition:transform .2s"
+                            <div class="card h-100 " style="border-radius:12px;transition:transform .2s;position:relative;"
                                  onmouseover="this.style.transform='translateY(-4px)'"
                                  onmouseout="this.style.transform=''">
                                 <div class="card-body p-4">
+                                    @{
+                                        var favIds = ViewBag.FavoriteIds as List<int> ?? new List<int>();
+                                        var isFav = favIds.Contains(t.Id);
+                                        var currentUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
+                                    }
+                                    @if (User.Identity?.IsAuthenticated == true)
+                                    {
+                                        <form asp-controller="Favorite" asp-action="Toggle" method="post"
+                                              class="position-absolute" style="top:12px;right:12px;z-index:2;">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="tutorProfileId" value="@t.Id" />
+                                            <input type="hidden" name="returnUrl" value="@currentUrl" />
+                                            <button type="submit" title="@(isFav ? "Bỏ lưu" : "Lưu gia sư")"
+                                                    style="background:none;border:none;cursor:pointer;padding:4px;line-height:0;">
+                                                <svg width="22" height="22" viewBox="0 0 24 24"
+                                                     fill="@(isFav ? "#EF4444" : "none")"
+                                                     stroke="@(isFav ? "#EF4444" : "#9CA3AF")" stroke-width="2"
+                                                     aria-hidden="true">
+                                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    }
                                     <div class="d-flex align-items-center gap-3 mb-3">
                                         @if (!string.IsNullOrEmpty(t.User?.AvatarUrl))
                                         {

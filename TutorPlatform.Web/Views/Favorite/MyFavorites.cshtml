@@ -1,0 +1,80 @@
+@model List<TutorPlatform.Core.Models.Favorite>
+@{
+    ViewData["Title"] = "Gia sư đã lưu";
+}
+
+<div class="container py-4" style="min-height:calc(100vh - 200px);">
+    <h4 class="fw-bold mb-4">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="#EF4444" stroke="#EF4444" stroke-width="2" aria-hidden="true" style="vertical-align:-3px;">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
+        </svg>
+        Gia sư đã lưu
+        <span class="text-muted fw-normal" style="font-size:1rem;">(@Model.Count)</span>
+    </h4>
+
+    @if (!Model.Any())
+    {
+        <div class="text-center py-5 text-muted">
+            <div style="font-size:4rem">💙</div>
+            <h5>Bạn chưa lưu gia sư nào</h5>
+            <p>Bấm vào biểu tượng trái tim ở trang tìm kiếm để lưu gia sư yêu thích.</p>
+            <a asp-controller="TutorSearch" asp-action="Search" class="btn btn-primary">Tìm gia sư ngay</a>
+        </div>
+    }
+    else
+    {
+        <div class="row g-3">
+            @foreach (var f in Model)
+            {
+                var t = f.TutorProfile;
+                if (t == null) { continue; }
+                var avg = t.ReceivedReviews.Any() ? t.ReceivedReviews.Average(r => r.Rating) : 0;
+                <div class="col-md-6 col-xl-4">
+                    <div class="card h-100" style="border-radius:12px;position:relative;">
+                        <div class="card-body p-4">
+                            <form asp-controller="Favorite" asp-action="Toggle" method="post"
+                                  class="position-absolute" style="top:12px;right:12px;z-index:2;">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="tutorProfileId" value="@t.Id" />
+                                <input type="hidden" name="returnUrl" value="/Favorite/MyFavorites" />
+                                <button type="submit" title="Bỏ lưu"
+                                        style="background:none;border:none;cursor:pointer;padding:4px;line-height:0;">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="#EF4444" stroke="#EF4444" stroke-width="2" aria-hidden="true">
+                                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
+                                    </svg>
+                                </button>
+                            </form>
+
+                            <div class="d-flex align-items-center gap-3 mb-3">
+                                @if (!string.IsNullOrEmpty(t.User?.AvatarUrl))
+                                {
+                                    <img src="@t.User.AvatarUrl" class="rounded-circle flex-shrink-0"
+                                         style="width:48px;height:48px;object-fit:cover" alt="@t.User?.FullName" />
+                                }
+                                else
+                                {
+                                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold"
+                                         style="width:48px;height:48px;font-size:20px;flex-shrink:0">
+                                        @t.User?.FullName?.FirstOrDefault()
+                                    </div>
+                                }
+                                <div>
+                                    <h6 class="fw-bold mb-0">@t.User?.FullName</h6>
+                                    <small class="text-muted">@t.TeachingArea</small>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="badge bg-warning text-dark">★ @avg.ToString("0.0")</span>
+                                <span class="fw-bold text-primary">@t.HourlyRate.ToString("#,##0") đ/giờ</span>
+                            </div>
+
+                            <a asp-controller="Tutor" asp-action="Detail" asp-route-id="@t.Id"
+                               class="btn btn-outline-primary w-100">Xem hồ sơ</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

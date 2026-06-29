@@ -62,6 +62,14 @@
                     @if (User.Identity!.IsAuthenticated && User.IsInRole("Student"))
                     {
                         <li class="nav-item">
+                            <a class="nav-link d-flex align-items-center gap-1" asp-controller="Favorite" asp-action="MyFavorites">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                                    <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 1 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z" />
+                                </svg>
+                                Đã lưu
+                            </a>
+                        </li>
+                        <li class="nav-item">
                             <a class="nav-link d-flex align-items-center gap-1" href="/AI/Chat">
                                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                                     <path d="M12 2a8 8 0 0 1 8 8c0 5.4-5.3 10.4-8 12C9.3 20.4 4 15.4 4 10a8 8 0 0 1 8-8z" />

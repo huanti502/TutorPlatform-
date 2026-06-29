@@ -31,6 +31,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
     // ── Bảng thêm sau ────────────────────────
     public DbSet<ReviewReply> ReviewReplies => Set<ReviewReply>();
     public DbSet<Document> Documents => Set<Document>();
+    public DbSet<Favorite> Favorites => Set<Favorite>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -220,6 +221,26 @@ public class AppDbContext : IdentityDbContext<AppUser>
         builder.Entity<BattleRoomEntity>()
             .Property(b => b.Status)
             .HasMaxLength(30);
+
+        // ─────────────────────────────────────
+        // Cấu hình Favorite (gia sư đã lưu)
+        // ─────────────────────────────────────
+        builder.Entity<Favorite>()
+            .HasOne(f => f.Student)
+            .WithMany()
+            .HasForeignKey(f => f.StudentId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Favorite>()
+            .HasOne(f => f.TutorProfile)
+            .WithMany()
+            .HasForeignKey(f => f.TutorProfileId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Mỗi học viên chỉ lưu 1 gia sư 1 lần
+        builder.Entity<Favorite>()
+            .HasIndex(f => new { f.StudentId, f.TutorProfileId })
+            .IsUnique();
 
         // ─────────────────────────────────────
         // Seed Subject

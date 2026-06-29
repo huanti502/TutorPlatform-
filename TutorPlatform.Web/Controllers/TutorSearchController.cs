@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TutorPlatform.Core.Models;
 using TutorPlatform.Infrastructure.Data;
 
@@ -96,6 +97,18 @@ public class TutorSearchController : Controller
         ViewBag.MaxPrice = maxPrice;
         ViewBag.MinRating = minRating;
         ViewBag.SortBy = sortBy;
+
+        // ✅ Danh sách gia sư mà học viên hiện tại đã lưu (để tô nút tim)
+        var favoriteIds = new List<int>();
+        if (User.Identity?.IsAuthenticated == true)
+        {
+            var uid = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            favoriteIds = await _db.Favorites
+                .Where(f => f.StudentId == uid)
+                .Select(f => f.TutorProfileId)
+                .ToListAsync();
+        }
+        ViewBag.FavoriteIds = favoriteIds;
 
         return View(results.Skip((page - 1) * pageSize).Take(pageSize).ToList());
     }
