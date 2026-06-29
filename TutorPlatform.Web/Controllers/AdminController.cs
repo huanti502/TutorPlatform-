@@ -122,6 +122,21 @@ public class AdminController : Controller
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null) return NotFound();
 
+        // ✅ Không cho admin tự khoá chính tài khoản đang đăng nhập
+        var currentUserId = _userManager.GetUserId(User);
+        if (user.Id == currentUserId)
+        {
+            TempData["Error"] = "Bạn không thể tự khoá tài khoản của chính mình.";
+            return RedirectToAction("Users");
+        }
+
+        // ✅ Không cho khoá một tài khoản Admin khác
+        if (await _userManager.IsInRoleAsync(user, "Admin"))
+        {
+            TempData["Error"] = "Không thể khoá một tài khoản Admin.";
+            return RedirectToAction("Users");
+        }
+
         user.IsLocked = !user.IsLocked;
         await _userManager.UpdateAsync(user);
 
@@ -193,6 +208,69 @@ public class AdminController : Controller
             await _userManager.DeleteAsync(user);
 
         return RedirectToAction("PendingTutors");
+    }
+
+    // ── DUYỆT / HUỶ DUYỆT GIA SƯ (dạng toggle, dùng cho nút trong Tutor/Detail) ──
+    [ValidateAntiForgeryToken]
+    [HttpPost]
+    public async Task<IActionResult> ToggleApprove(int id)
+    {
+        var tutor = await _db.TutorProfiles.FindAsync(id);
+        if (tutor == null) return NotFound();
+
+        tutor.IsApproved = !tutor.IsApproved;
+        await _db.SaveChangesAsync();
+
+        TempData["Success"] = tutor.IsApproved
+            ? "Đã duyệt gia sư."
+            : "Đã huỷ duyệt gia sư.";
+
+        // Quay lại trang trước đó (Tutor/Detail) nếu có
+        var referer = Request.Headers["Referer"].ToString();
+        return !string.IsNullOrEmpty(referer) ? Redirect(referer)
+                                              : RedirectToAction("PendingTutors");
+    }
+
+    // ── QUẢN LÝ MÔN HỌC (gộp từ Area Dashboard sang) ────────────────
+    public async Task<IActionResult> Subjects()
+    {
+        var subjects = await _db.Subjects.OrderBy(s => s.Name).ToListAsync();
+        return View(subjects);
+    }
+
+    [ValidateAntiForgeryToken]
+    [HttpPost]
+    public async Task<IActionResult> AddSubject(string name, string? description, string level)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            TempData["Error"] = "Tên môn học không được để trống.";
+            return RedirectToAction("Subjects");
+        }
+
+        _db.Subjects.Add(new Subject
+        {
+            Name = name.Trim(),
+            Description = string.IsNullOrWhiteSpace(description) ? null : description.Trim(),
+            Level = level,
+            IsActive = true
+        });
+        await _db.SaveChangesAsync();
+        TempData["Success"] = "Đã thêm môn học.";
+        return RedirectToAction("Subjects");
+    }
+
+    [ValidateAntiForgeryToken]
+    [HttpPost]
+    public async Task<IActionResult> ToggleSubject(int id)
+    {
+        var subject = await _db.Subjects.FindAsync(id);
+        if (subject != null)
+        {
+            subject.IsActive = !subject.IsActive;
+            await _db.SaveChangesAsync();
+        }
+        return RedirectToAction("Subjects");
     }
 
     // ── BÁO CÁO THỐNG KÊ ────────────────────────────────────────────

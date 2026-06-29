@@ -151,7 +151,7 @@
                         }
                         else if (User.IsInRole("Admin"))
                         {
-                            <form asp-area="Admin" asp-controller="Dashboard" asp-action="ToggleApprove" method="post" class="mb-2">
+                            <form asp-area="" asp-controller="Admin" asp-action="ToggleApprove" method="post" class="mb-2">
                                 @Html.AntiForgeryToken()
                                 <input type="hidden" name="id" value="@Model.Id" />
                                 <button type="submit" class="btn w-100 btn-lg fw-bold"
