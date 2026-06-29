@@ -1,0 +1,59 @@
+@{
+    ViewData["Title"] = "Chọn vai trò";
+    var email = ViewBag.Email as string;
+}
+
+<div class="container py-5" style="min-height:calc(100vh - 200px);">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+
+            <div class="text-center mb-4">
+                <h3 class="fw-bold">Chào mừng bạn! 👋</h3>
+                <p class="text-muted mb-0">
+                    Bạn đăng nhập bằng <strong>@email</strong>.<br />
+                    Hãy cho biết bạn muốn tham gia với vai trò nào:
+                </p>
+            </div>
+
+            @if (TempData["Error"] != null)
+            {
+                <div class="alert alert-danger">@TempData["Error"]</div>
+            }
+
+            <div class="row g-3">
+                <!-- Học viên -->
+                <div class="col-sm-6">
+                    <form asp-action="SelectRole" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="role" value="Student" />
+                        <button type="submit" class="card w-100 h-100 border-0 shadow-sm"
+                                style="cursor:pointer;background:#fff;padding:1.75rem 1rem;border-radius:14px;transition:transform .15s;">
+                            <div style="font-size:3rem;line-height:1;">🎓</div>
+                            <h5 class="fw-bold mt-3 mb-1">Tôi là Học viên</h5>
+                            <small class="text-muted">Tìm gia sư, đặt lịch học, làm quiz...</small>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Gia sư -->
+                <div class="col-sm-6">
+                    <form asp-action="SelectRole" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="role" value="Tutor" />
+                        <button type="submit" class="card w-100 h-100 border-0 shadow-sm"
+                                style="cursor:pointer;background:#fff;padding:1.75rem 1rem;border-radius:14px;transition:transform .15s;">
+                            <div style="font-size:3rem;line-height:1;">👨‍🏫</div>
+                            <h5 class="fw-bold mt-3 mb-1">Tôi là Gia sư</h5>
+                            <small class="text-muted">Tạo hồ sơ, nhận học viên, dạy học...</small>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <p class="text-muted text-center mt-4" style="font-size:0.85rem;">
+                Lưu ý: nếu chọn Gia sư, bạn sẽ được đưa tới trang hoàn tất hồ sơ và chờ Admin duyệt.
+            </p>
+
+        </div>
+    </div>
+</div>

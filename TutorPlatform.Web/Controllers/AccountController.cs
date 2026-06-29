@@ -294,42 +294,98 @@ public class AccountController : Controller
             return RedirectToAction("Login");
         }
 
-        // 3) Tìm theo email; nếu chưa có thì tạo mới (mặc định vai trò Học viên)
+        // 3) Tìm theo email
         var user = await _userManager.FindByEmailAsync(email);
 
-        if (user == null)
+        // 3a) Đã có tài khoản (đăng ký thường trước đó) → liên kết Google rồi đăng nhập
+        if (user != null)
         {
-            var fullName = info.Principal.FindFirstValue(ClaimTypes.Name) ?? email;
-            user = new AppUser
+            if (user.IsLocked)
             {
-                UserName = email,
-                Email = email,
-                FullName = fullName,
-                Role = "Student",
-                EmailConfirmed = true
-            };
-
-            var createResult = await _userManager.CreateAsync(user);
-            if (!createResult.Succeeded)
-            {
-                TempData["Error"] = "Không tạo được tài khoản: " +
-                    string.Join(", ", createResult.Errors.Select(e => e.Description));
+                TempData["Error"] = "Tài khoản của bạn đã bị khoá. Vui lòng liên hệ Admin.";
                 return RedirectToAction("Login");
             }
-
-            await _userManager.AddToRoleAsync(user, "Student");
+            await _userManager.AddLoginAsync(user, info);
+            await _signInManager.SignInAsync(user, isPersistent: false);
+            return RedirectToLocal(returnUrl);
         }
 
-        if (user.IsLocked)
+        // 3b) Người hoàn toàn mới → cho chọn vai trò (Học viên / Gia sư).
+        // Thông tin Google vẫn nằm trong cookie external nên trang SelectRole lấy lại được.
+        return RedirectToAction("SelectRole");
+    }
+
+    // ── Chọn vai trò khi đăng nhập Google lần đầu ──────────
+    [HttpGet]
+    public async Task<IActionResult> SelectRole()
+    {
+        var info = await _signInManager.GetExternalLoginInfoAsync();
+        if (info == null)
         {
-            TempData["Error"] = "Tài khoản của bạn đã bị khoá. Vui lòng liên hệ Admin.";
+            TempData["Error"] = "Phiên đăng nhập Google đã hết hạn. Vui lòng thử lại.";
+            return RedirectToAction("Login");
+        }
+        ViewBag.Email = info.Principal.FindFirstValue(ClaimTypes.Email);
+        return View();
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SelectRole(string role)
+    {
+        var info = await _signInManager.GetExternalLoginInfoAsync();
+        if (info == null)
+        {
+            TempData["Error"] = "Phiên đăng nhập Google đã hết hạn. Vui lòng thử lại.";
             return RedirectToAction("Login");
         }
 
-        // Liên kết đăng nhập Google với tài khoản rồi đăng nhập
+        // Chỉ chấp nhận Student hoặc Tutor (mặc định Student cho an toàn)
+        if (role != "Student" && role != "Tutor") role = "Student";
+
+        var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+        if (string.IsNullOrWhiteSpace(email))
+        {
+            TempData["Error"] = "Tài khoản Google không cung cấp email.";
+            return RedirectToAction("Login");
+        }
+
+        // Phòng trường hợp tài khoản đã tồn tại → liên kết và đăng nhập
+        var existing = await _userManager.FindByEmailAsync(email);
+        if (existing != null)
+        {
+            await _userManager.AddLoginAsync(existing, info);
+            await _signInManager.SignInAsync(existing, isPersistent: false);
+            return RedirectToLocal(null);
+        }
+
+        var fullName = info.Principal.FindFirstValue(ClaimTypes.Name) ?? email;
+        var user = new AppUser
+        {
+            UserName = email,
+            Email = email,
+            FullName = fullName,
+            Role = role,
+            EmailConfirmed = true
+        };
+
+        var createResult = await _userManager.CreateAsync(user);
+        if (!createResult.Succeeded)
+        {
+            TempData["Error"] = "Không tạo được tài khoản: " +
+                string.Join(", ", createResult.Errors.Select(e => e.Description));
+            return RedirectToAction("Login");
+        }
+
+        await _userManager.AddToRoleAsync(user, role);
         await _userManager.AddLoginAsync(user, info);
         await _signInManager.SignInAsync(user, isPersistent: false);
-        return RedirectToLocal(returnUrl);
+
+        // Gia sư mới → đưa tới trang hoàn tất hồ sơ
+        if (role == "Tutor")
+            return RedirectToAction("Profile", "Tutor");
+
+        return RedirectToLocal(null);
     }
 
     // Helper: chỉ chuyển hướng tới URL nội bộ (chống open-redirect)
