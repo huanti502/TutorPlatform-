@@ -340,6 +340,10 @@ public class AccountController : Controller
         return RedirectToAction("Index", "Home");
     }
 
+    // Trang báo không đủ quyền (tránh 404 khi bị từ chối truy cập)
+    [HttpGet]
+    public IActionResult AccessDenied() => View();
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()

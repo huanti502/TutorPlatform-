@@ -1,0 +1,10 @@
+@{
+    ViewData["Title"] = "Không đủ quyền";
+}
+
+<div class="container py-5 text-center" style="min-height:calc(100vh - 200px);">
+    <div style="font-size:4rem;">🔒</div>
+    <h3 class="fw-bold mt-3">Bạn không có quyền truy cập trang này</h3>
+    <p class="text-muted">Trang bạn vừa mở chỉ dành cho vai trò khác (ví dụ Quản trị viên).</p>
+    <a asp-controller="Home" asp-action="Index" class="btn btn-primary mt-2">← Về trang chủ</a>
+</div>
