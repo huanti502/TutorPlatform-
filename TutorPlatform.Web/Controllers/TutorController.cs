@@ -30,6 +30,7 @@ public class TutorController : Controller
         _cloudinary = cloudinary;
     }
 
+    [Authorize(Roles = "Admin")]
     public async Task<IActionResult> Index(string? keyword, int? subjectId, string? area, decimal? maxRate)
     {
         var query = _db.TutorProfiles
