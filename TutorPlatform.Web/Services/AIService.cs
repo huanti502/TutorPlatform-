@@ -12,7 +12,7 @@ public class AIService
     private readonly HttpClient _http;
     private readonly string _apiKey;
     private readonly ILogger<AIService> _logger;
-    private const string MODEL = "llama-3.3-70b-versatile";
+    private const string MODEL = "openai/gpt-oss-120b";   // Cập nhật: llama-3.3-70b-versatile đã bị Groq ngừng hỗ trợ (17/6/2026)
 
     public AIService(IConfiguration config, ILogger<AIService> logger)
     {

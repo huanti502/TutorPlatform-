@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -77,7 +77,7 @@ public class BattleController : Controller
         {
             var raw = await _ai.ChatAsync(systemPrompt, userPrompt, maxTokens: 2000);
 
-            // 🚀 FIX 1: Thuật toán quét lấy cục JSON chuẩn xác 100% (bỏ qua mọi chữ rác xung quanh)
+            // Quét lấy cục JSON chuẩn (bỏ qua mọi chữ rác xung quanh)
             int start = raw.IndexOf('{');
             int end = raw.LastIndexOf('}');
             if (start >= 0 && end >= start)
@@ -85,16 +85,15 @@ public class BattleController : Controller
                 raw = raw.Substring(start, end - start + 1);
             }
 
-            // 🚀 FIX 2: Ép dữ liệu vào Class C# thay vì dùng JsonElement ảo (để tránh lỗi Server 500)
             var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
             var data = JsonSerializer.Deserialize<AiQuizResponse>(raw, options);
 
             if (data == null || data.Questions == null || !data.Questions.Any())
             {
-                return Json(new { success = false, error = "AI tạo câu hỏi thất bại, hãy thử lại." });
+                // AI trả dữ liệu rỗng → dùng bộ dự phòng thay vì để trận bị kẹt.
+                return Json(new { success = true, data = new { questions = FallbackQuestions(subject.Name) } });
             }
 
-            // 🚀 FIX 3: Tạo mảng an toàn với chuẩn chữ thường (camelCase) để gửi xuống cho Javascript
             var safeQuestions = data.Questions.Select(q => new
             {
                 id = q.Id,
@@ -107,13 +106,44 @@ public class BattleController : Controller
         }
         catch (Exception ex)
         {
-            Console.WriteLine("AI Error: " + ex.Message);
-            return Json(new { success = false, error = "AI đang bận hoặc quá tải. Hãy tải lại trang (F5)." });
+            // ✅ AI lỗi/quá tải/đổi model → KHÔNG để trận chết.
+            // Trả về bộ câu hỏi dự phòng để cả 2 người chơi vẫn vào trận được.
+            Console.WriteLine("AI Error (dùng câu hỏi dự phòng): " + ex.Message);
+            return Json(new { success = true, data = new { questions = FallbackQuestions(subject.Name) } });
         }
     }
 
     // =========================================
-    // MODELS PHỤ TRỢ 
+    // BỘ CÂU HỎI DỰ PHÒNG (khi AI lỗi/quá tải)
+    // Định dạng khớp client: id, question, options[4], correctIndex
+    // =========================================
+    private static List<object> FallbackQuestions(string subjectName)
+    {
+        var bank = new (string q, string[] opts, int correct)[]
+        {
+            ("2 + 2 = ?", new[] { "3", "4", "5", "6" }, 1),
+            ("Thủ đô của Việt Nam là?", new[] { "TP. Hồ Chí Minh", "Hà Nội", "Đà Nẵng", "Huế" }, 1),
+            ("10 × 5 = ?", new[] { "40", "45", "50", "55" }, 2),
+            ("Số nguyên tố nhỏ nhất là?", new[] { "0", "1", "2", "3" }, 2),
+            ("Ở áp suất thường, nước sôi ở bao nhiêu °C?", new[] { "50", "90", "100", "120" }, 2),
+            ("1 giờ bằng bao nhiêu phút?", new[] { "30", "45", "60", "90" }, 2),
+            ("Hình vuông có mấy cạnh?", new[] { "3", "4", "5", "6" }, 1),
+            ("7 − 3 = ?", new[] { "2", "3", "4", "5" }, 2),
+            ("Mặt trời mọc ở hướng nào?", new[] { "Tây", "Đông", "Nam", "Bắc" }, 1),
+            ("100 ÷ 4 = ?", new[] { "20", "25", "30", "40" }, 1),
+        };
+
+        return bank.Select((item, idx) => (object)new
+        {
+            id = idx + 1,
+            question = item.q,
+            options = item.opts,
+            correctIndex = item.correct
+        }).ToList();
+    }
+
+    // =========================================
+    // MODELS PHỤ TRỢ
     // =========================================
     public class BattleQuizRequest
     {
