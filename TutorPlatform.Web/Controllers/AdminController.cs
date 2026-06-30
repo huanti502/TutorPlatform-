@@ -15,13 +15,15 @@ public class AdminController : Controller
     private readonly UserManager<AppUser> _userManager;
     private readonly ReportService _reportService;
     private readonly NotificationService _notif;
+    private readonly IConfiguration _config;
 
-    public AdminController(AppDbContext db, UserManager<AppUser> userManager, ReportService reportService, NotificationService notif)
+    public AdminController(AppDbContext db, UserManager<AppUser> userManager, ReportService reportService, NotificationService notif, IConfiguration config)
     {
         _db = db;
         _userManager = userManager;
         _reportService = reportService;
         _notif = notif;
+        _config = config;
     }
 
     public async Task<IActionResult> Index()
@@ -443,5 +445,61 @@ public class AdminController : Controller
 
         TempData["Success"] = c.Status == "Resolved" ? "Đã xử lý khiếu nại." : "Đã bỏ qua khiếu nại.";
         return RedirectToAction("Complaints");
+    }
+
+    // ==========================================
+    // DOANH THU & HOA HỒNG NỀN TẢNG
+    // ==========================================
+
+    [HttpGet]
+    public async Task<IActionResult> Revenue()
+    {
+        var rate = _config.GetValue<decimal?>("Platform:CommissionRate") ?? 0.15m;
+
+        var payments = await _db.Payments
+            .Include(p => p.Booking).ThenInclude(b => b!.TutorProfile).ThenInclude(t => t.User)
+            .Where(p => p.Status == "Paid")
+            .ToListAsync();
+
+        var gross = payments.Sum(p => p.Amount);
+        var commission = Math.Round(gross * rate);
+
+        // Theo từng gia sư
+        var perTutor = payments
+            .GroupBy(p => p.Booking!.TutorProfile.User!.FullName ?? "Gia sư")
+            .Select(g => new
+            {
+                Tutor = g.Key,
+                Count = g.Count(),
+                Gross = g.Sum(p => p.Amount),
+                Commission = Math.Round(g.Sum(p => p.Amount) * rate),
+                Net = g.Sum(p => p.Amount) - Math.Round(g.Sum(p => p.Amount) * rate)
+            })
+            .OrderByDescending(x => x.Gross)
+            .ToList();
+
+        // Hoa hồng nền tảng 6 tháng gần nhất
+        var now = DateTime.UtcNow;
+        var labels = new List<string>();
+        var data = new List<decimal>();
+        for (int i = 5; i >= 0; i--)
+        {
+            var month = new DateTime(now.Year, now.Month, 1).AddMonths(-i);
+            labels.Add(month.ToString("MM/yyyy"));
+            var mGross = payments
+                .Where(p => p.PaidAt.HasValue && p.PaidAt.Value.Year == month.Year && p.PaidAt.Value.Month == month.Month)
+                .Sum(p => p.Amount);
+            data.Add(Math.Round(mGross * rate));
+        }
+
+        ViewBag.Rate = rate;
+        ViewBag.Gross = gross;
+        ViewBag.Commission = commission;
+        ViewBag.PaidToTutors = gross - commission;
+        ViewBag.PaidCount = payments.Count;
+        ViewBag.PerTutor = perTutor;
+        ViewBag.ChartLabels = System.Text.Json.JsonSerializer.Serialize(labels);
+        ViewBag.ChartData = System.Text.Json.JsonSerializer.Serialize(data);
+        return View();
     }
 }

@@ -1,0 +1,92 @@
+@{
+    ViewData["Title"] = "Doanh thu";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    var rate = (decimal)ViewBag.Rate;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Doanh thu & Hoa hồng</h3>
+    <span class="text-muted">Hoa hồng nền tảng: <b>@((rate * 100).ToString("0.#"))%</b></span>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body">
+            <div class="text-muted small">Tổng giao dịch (GMV)</div>
+            <div class="fs-5 fw-bold">@(((decimal)ViewBag.Gross).ToString("N0"))đ</div>
+            <div class="small text-muted">@ViewBag.PaidCount lượt thanh toán</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100" style="background:#f5f3ff;"><div class="card-body">
+            <div class="text-muted small">Hoa hồng nền tảng thu</div>
+            <div class="fs-5 fw-bold" style="color:#7c3aed;">@(((decimal)ViewBag.Commission).ToString("N0"))đ</div>
+        </div></div>
+    </div>
+    <div class="col-md-3">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body">
+            <div class="text-muted small">Trả cho gia sư</div>
+            <div class="fs-5 fw-bold">@(((decimal)ViewBag.PaidToTutors).ToString("N0"))đ</div>
+        </div></div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <h6 class="fw-bold mb-3">Hoa hồng nền tảng 6 tháng gần nhất</h6>
+        <canvas id="revChart" height="80"></canvas>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <h6 class="fw-bold mb-3">Theo từng gia sư</h6>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Gia sư</th><th class="text-end">Số GD</th>
+                        <th class="text-end">Doanh thu</th><th class="text-end">Hoa hồng</th><th class="text-end">Thực trả GS</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @{ var per = ViewBag.PerTutor as IEnumerable<dynamic>; }
+                    @if (per == null || !per.Any())
+                    {
+                        <tr><td colspan="5" class="text-center text-muted py-4">Chưa có giao dịch nào.</td></tr>
+                    }
+                    else
+                    {
+                        foreach (var t in per)
+                        {
+                            <tr>
+                                <td>@t.Tutor</td>
+                                <td class="text-end">@t.Count</td>
+                                <td class="text-end">@(((decimal)t.Gross).ToString("N0"))đ</td>
+                                <td class="text-end text-danger">@(((decimal)t.Commission).ToString("N0"))đ</td>
+                                <td class="text-end fw-semibold">@(((decimal)t.Net).ToString("N0"))đ</td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        new Chart(document.getElementById('revChart'), {
+            type: 'bar',
+            data: {
+                labels: @Html.Raw(ViewBag.ChartLabels),
+                datasets: [{ label: 'Hoa hồng (đ)', data: @Html.Raw(ViewBag.ChartData), backgroundColor: '#7c3aed' }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('vi-VN') } } }
+            }
+        });
+    </script>
+}

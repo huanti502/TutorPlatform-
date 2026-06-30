@@ -1,0 +1,103 @@
+@model List<TutorPlatform.Core.Models.Payment>
+@{
+    ViewData["Title"] = "Thu nhập";
+    var rate = (decimal)ViewBag.Rate;
+}
+
+<div class="container py-4" style="max-width:900px;">
+    <h3 class="mb-1">Thu nhập của tôi</h3>
+    <p class="text-muted">Hoa hồng nền tảng: <b>@((rate * 100).ToString("0.#"))%</b> trên mỗi giao dịch.</p>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Tổng doanh thu</div>
+                    <div class="fs-4 fw-bold">@(((decimal)ViewBag.Gross).ToString("N0"))đ</div>
+                    <div class="small text-muted">@ViewBag.PaidCount giao dịch đã thanh toán</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="text-muted small">Hoa hồng nền tảng</div>
+                    <div class="fs-4 fw-bold text-danger">-@(((decimal)ViewBag.Commission).ToString("N0"))đ</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm h-100" style="background:#f5f3ff;">
+                <div class="card-body">
+                    <div class="text-muted small">Thực nhận</div>
+                    <div class="fs-4 fw-bold" style="color:#7c3aed;">@(((decimal)ViewBag.Net).ToString("N0"))đ</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <h6 class="fw-bold mb-3">Thu nhập ròng 6 tháng gần nhất</h6>
+            <canvas id="earningsChart" height="90"></canvas>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h6 class="fw-bold mb-3">Lịch sử giao dịch</h6>
+            @if (!Model.Any())
+            {
+                <p class="text-muted mb-0">Chưa có giao dịch nào.</p>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Thời gian</th><th>Học viên</th><th>Môn</th>
+                                <th class="text-end">Doanh thu</th><th class="text-end">Thực nhận</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var p in Model)
+                            {
+                                var net = p.Amount - Math.Round(p.Amount * rate);
+                                <tr>
+                                    <td class="small">@(p.PaidAt?.AddHours(7).ToString("HH:mm dd/MM/yyyy"))</td>
+                                    <td>@p.Booking?.Student?.FullName</td>
+                                    <td>@p.Booking?.Subject?.Name</td>
+                                    <td class="text-end">@p.Amount.ToString("N0")đ</td>
+                                    <td class="text-end fw-semibold" style="color:#7c3aed;">@net.ToString("N0")đ</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        const ctx = document.getElementById('earningsChart');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: @Html.Raw(ViewBag.ChartLabels),
+                datasets: [{
+                    label: 'Thực nhận (đ)',
+                    data: @Html.Raw(ViewBag.ChartData),
+                    backgroundColor: '#7c3aed'
+                }]
+            },
+            options: {
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString('vi-VN') } } }
+            }
+        });
+    </script>
+}
