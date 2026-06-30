@@ -18,4 +18,7 @@ public class AppUser : IdentityUser
     public ICollection<Notification> Notifications { get; set; } = new List<Notification>();
     public int XpPoints { get; set; } = 0;
     public string XpLevel { get; set; } = "Mới bắt đầu";  // tính tự động
+
+    public string? ReferralCode { get; set; }            // mã giới thiệu cá nhân
+    public bool HasBeenReferred { get; set; } = false;   // đã nhập mã của ai đó chưa
 }

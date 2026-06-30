@@ -39,6 +39,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<LessonNote> LessonNotes => Set<LessonNote>();
     public DbSet<LessonPackage> LessonPackages => Set<LessonPackage>();
     public DbSet<PackagePurchase> PackagePurchases => Set<PackagePurchase>();
+    public DbSet<Referral> Referrals => Set<Referral>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
