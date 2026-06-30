@@ -16,6 +16,8 @@ public class Booking
     public string? Note { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool IsPaid { get; set; } = false;
+
+    public bool ReminderSent { get; set; } = false; // Đã gửi email nhắc lịch chưa (BackgroundService)
     
     public string? MeetingRoomId { get; set; } // Jitsi room ID tự động tạo
 }

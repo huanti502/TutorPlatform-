@@ -105,6 +105,8 @@ builder.Services.AddScoped<AIService>();
 builder.Services.AddScoped<RecommendationService>();
 builder.Services.AddScoped<XpService>();
 builder.Services.AddScoped<ReportService>();
+builder.Services.AddScoped<TutorPlatform.Web.Services.NotificationService>();
+builder.Services.AddHostedService<TutorPlatform.Web.Services.BookingReminderService>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<CloudinaryService>();
@@ -287,6 +289,26 @@ using (var paymentScope = app.Services.CreateScope())
     catch (Exception ex)
     {
         pLogger.LogError(ex, "Lỗi khi tạo bảng Payments: {Message}", ex.GetBaseException().Message);
+    }
+}
+
+// ======================================================
+// Thêm cột ReminderSent cho Bookings (nhắc lịch tự động)
+// Dùng raw SQL ALTER vì dotnet-ef đang lỗi với Npgsql 10.
+// ======================================================
+using (var reminderScope = app.Services.CreateScope())
+{
+    var rLogger = reminderScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    try
+    {
+        var rDb = reminderScope.ServiceProvider.GetRequiredService<AppDbContext>();
+        await rDb.Database.ExecuteSqlRawAsync(
+            "ALTER TABLE \"Bookings\" ADD COLUMN IF NOT EXISTS \"ReminderSent\" boolean NOT NULL DEFAULT false;");
+        rLogger.LogInformation("Cột Bookings.ReminderSent đã sẵn sàng.");
+    }
+    catch (Exception ex)
+    {
+        rLogger.LogError(ex, "Lỗi khi thêm cột ReminderSent: {Message}", ex.GetBaseException().Message);
     }
 }
 

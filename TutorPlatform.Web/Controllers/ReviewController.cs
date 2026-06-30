@@ -17,15 +17,18 @@ public class ReviewController : Controller
     private readonly AppDbContext _db;
     private readonly UserManager<AppUser> _userManager;
     private readonly XpService _xpService; // ✅ Khai báo XpService
+    private readonly NotificationService _notif;
 
     public ReviewController(
         AppDbContext db,
         UserManager<AppUser> userManager,
-        XpService xpService) // ✅ Inject XpService
+        XpService xpService, // ✅ Inject XpService
+        NotificationService notif)
     {
         _db = db;
         _userManager = userManager;
         _xpService = xpService; // ✅ Gán XpService
+        _notif = notif;
     }
 
     // ==========================================
@@ -99,6 +102,13 @@ public class ReviewController : Controller
 
         // ✅ Thêm XP sau khi viết review thành công
         await _xpService.AwardXpAsync(user!.Id, "review_written");
+
+        // 🔔 Báo cho gia sư biết có đánh giá mới
+        var tp = await _db.TutorProfiles.FindAsync(booking.TutorProfileId);
+        if (tp != null)
+            await _notif.NotifyAsync(tp.UserId, "⭐ Đánh giá mới",
+                $"{user.FullName} đã đánh giá {rating}★ buổi học của bạn.",
+                "/Review/TutorReviews/" + tp.Id);
 
         TempData["Success"] = "Cảm ơn bạn đã đánh giá!";
         return RedirectToAction("MyBookings", "Booking");
