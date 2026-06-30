@@ -1,0 +1,103 @@
+@model List<TutorPlatform.Core.Models.Complaint>
+@{
+    ViewData["Title"] = "Khiếu nại";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    var current = ViewBag.CurrentStatus as string ?? "";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Khiếu nại / Tố cáo</h3>
+    <span class="badge bg-danger">@ViewBag.PendingCount đang chờ</span>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<ul class="nav nav-pills mb-3">
+    <li class="nav-item"><a class="nav-link @(current == "" ? "active" : "")" href="/Admin/Complaints">Tất cả</a></li>
+    <li class="nav-item"><a class="nav-link @(current == "Pending" ? "active" : "")" href="/Admin/Complaints?status=Pending">Đang chờ</a></li>
+    <li class="nav-item"><a class="nav-link @(current == "Resolved" ? "active" : "")" href="/Admin/Complaints?status=Resolved">Đã xử lý</a></li>
+    <li class="nav-item"><a class="nav-link @(current == "Dismissed" ? "active" : "")" href="/Admin/Complaints?status=Dismissed">Đã bỏ qua</a></li>
+</ul>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        @if (!Model.Any())
+        {
+            <p class="text-center text-muted py-4 mb-0">Không có khiếu nại nào.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Người gửi</th>
+                            <th>Đối tượng</th>
+                            <th>Lý do</th>
+                            <th>Thời gian</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end">Xử lý</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model)
+                        {
+                            <tr>
+                                <td>@(c.Reporter?.FullName ?? "Người dùng")</td>
+                                <td>
+                                    <span class="badge bg-light text-dark">@c.TargetType</span>
+                                    @c.TargetName
+                                </td>
+                                <td>
+                                    <b>@c.Reason</b>
+                                    @if (!string.IsNullOrEmpty(c.Description))
+                                    {
+                                        <div class="small text-muted">@c.Description</div>
+                                    }
+                                    @if (!string.IsNullOrEmpty(c.AdminNote))
+                                    {
+                                        <div class="small text-primary">Ghi chú admin: @c.AdminNote</div>
+                                    }
+                                </td>
+                                <td class="small">@c.CreatedAt.AddHours(7).ToString("HH:mm dd/MM/yyyy")</td>
+                                <td>
+                                    @switch (c.Status)
+                                    {
+                                        case "Pending":
+                                            <span class="badge bg-warning text-dark">Đang chờ</span>
+                                            break;
+                                        case "Resolved":
+                                            <span class="badge bg-success">Đã xử lý</span>
+                                            break;
+                                        default:
+                                            <span class="badge bg-secondary">Đã bỏ qua</span>
+                                            break;
+                                    }
+                                </td>
+                                <td class="text-end" style="min-width:230px;">
+                                    @if (c.Status == "Pending")
+                                    {
+                                        <form asp-action="HandleComplaint" method="post">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@c.Id" />
+                                            <input type="text" name="adminNote" class="form-control form-control-sm mb-2" placeholder="Ghi chú (tuỳ chọn)" />
+                                            <button name="action" value="resolve" class="btn btn-sm btn-success">Xử lý</button>
+                                            <button name="action" value="dismiss" class="btn btn-sm btn-outline-secondary">Bỏ qua</button>
+                                        </form>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">@(c.HandledAt?.AddHours(7).ToString("HH:mm dd/MM") ?? "")</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

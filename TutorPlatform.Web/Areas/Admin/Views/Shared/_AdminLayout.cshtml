@@ -201,6 +201,11 @@
                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 12V8H4v4" /><path d="M2 12h20v8a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2z" /><path d="M12 7v15" /><path d="M12 7a2.5 2.5 0 0 1 2.5-2.5C16 4.5 16 7 16 7" /><path d="M12 7a2.5 2.5 0 0 0-2.5-2.5C8 4.5 8 7 8 7" /></svg>
                 Mã giảm giá
             </a>
+            <a class="nav-link @(ViewContext.RouteData.Values["action"]?.ToString() == "Complaints" ? "active" : "")"
+               href="/Admin/Complaints">
+                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                Khiếu nại
+            </a>
 
             <div class="nav-section">Hệ thống</div>
             <a class="nav-link" href="/">

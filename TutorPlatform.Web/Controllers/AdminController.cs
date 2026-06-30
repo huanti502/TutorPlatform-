@@ -14,12 +14,14 @@ public class AdminController : Controller
     private readonly AppDbContext _db;
     private readonly UserManager<AppUser> _userManager;
     private readonly ReportService _reportService;
+    private readonly NotificationService _notif;
 
-    public AdminController(AppDbContext db, UserManager<AppUser> userManager, ReportService reportService)
+    public AdminController(AppDbContext db, UserManager<AppUser> userManager, ReportService reportService, NotificationService notif)
     {
         _db = db;
         _userManager = userManager;
         _reportService = reportService;
+        _notif = notif;
     }
 
     public async Task<IActionResult> Index()
@@ -400,5 +402,46 @@ public class AdminController : Controller
             await _db.SaveChangesAsync();
         }
         return RedirectToAction("Coupons");
+    }
+
+    // ==========================================
+    // KIỂM DUYỆT KHIẾU NẠI (COMPLAINT)
+    // ==========================================
+
+    [HttpGet]
+    public async Task<IActionResult> Complaints(string? status)
+    {
+        var query = _db.Complaints
+            .Include(c => c.Reporter)
+            .OrderByDescending(c => c.CreatedAt)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(status))
+            query = query.Where(c => c.Status == status);
+
+        ViewBag.CurrentStatus = status ?? "";
+        ViewBag.PendingCount = await _db.Complaints.CountAsync(c => c.Status == "Pending");
+        return View(await query.ToListAsync());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> HandleComplaint(int id, string action, string? adminNote)
+    {
+        var c = await _db.Complaints.FindAsync(id);
+        if (c == null) return RedirectToAction("Complaints");
+
+        c.Status = action == "resolve" ? "Resolved" : "Dismissed";
+        c.AdminNote = adminNote;
+        c.HandledAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        // Báo lại cho người gửi khiếu nại.
+        var statusText = c.Status == "Resolved" ? "đã được xử lý" : "đã được xem xét và bỏ qua";
+        await _notif.NotifyAsync(c.ReporterId, "Kết quả báo cáo",
+            $"Báo cáo của bạn về {c.TargetName ?? c.TargetType} {statusText}.", "/");
+
+        TempData["Success"] = c.Status == "Resolved" ? "Đã xử lý khiếu nại." : "Đã bỏ qua khiếu nại.";
+        return RedirectToAction("Complaints");
     }
 }

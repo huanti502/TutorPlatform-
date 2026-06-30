@@ -15,12 +15,59 @@
 <section class="section-sm">
     <div class="container">
 
-        <nav style="font-size:0.85rem;margin-bottom:1.5rem;">
+        <nav style="font-size:0.85rem;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;">
             <a asp-controller="TutorSearch" asp-action="Search"
                style="color:var(--text-muted);text-decoration:none;">
                 ← Quay lại danh sách
             </a>
+            @if (User.Identity?.IsAuthenticated == true && currentUserId != Model.UserId)
+            {
+                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#reportModal">
+                    🚩 Báo cáo
+                </button>
+            }
         </nav>
+
+        @if (User.Identity?.IsAuthenticated == true && currentUserId != Model.UserId)
+        {
+            <div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <form asp-controller="Complaint" asp-action="Create" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="targetType" value="Tutor" />
+                            <input type="hidden" name="targetId" value="@Model.Id" />
+                            <input type="hidden" name="targetName" value="@(Model.User?.FullName ?? "Gia sư")" />
+                            <div class="modal-header">
+                                <h5 class="modal-title">Báo cáo gia sư @Model.User?.FullName</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label class="form-label">Lý do</label>
+                                    <select name="reason" class="form-select" required>
+                                        <option value="">-- Chọn lý do --</option>
+                                        <option>Hồ sơ giả mạo / sai sự thật</option>
+                                        <option>Hành vi không phù hợp</option>
+                                        <option>Lừa đảo / vấn đề thanh toán</option>
+                                        <option>Nội dung phản cảm</option>
+                                        <option>Khác</option>
+                                    </select>
+                                </div>
+                                <div class="mb-2">
+                                    <label class="form-label">Mô tả chi tiết (tuỳ chọn)</label>
+                                    <textarea name="description" class="form-control" rows="3" placeholder="Nêu rõ tình huống bạn gặp phải..."></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Huỷ</button>
+                                <button type="submit" class="btn btn-danger">Gửi báo cáo</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        }
 
         <div class="row g-4">
 
