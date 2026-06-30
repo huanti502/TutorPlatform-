@@ -444,7 +444,7 @@
                                 <div class="d-flex flex-wrap gap-2">
                                     @foreach (var s in subjects)
                                     {
-                                        var isSelected = Model.SelectedSubjectIds
+                                        var isSelected = (Model.SelectedSubjectIds ?? new List<int>())
                                             .Contains(s.Id);
                                         <label class="subject-chip @(isSelected ? "selected" : "")"
                                                data-id="@s.Id">
