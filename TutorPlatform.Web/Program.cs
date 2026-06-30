@@ -147,6 +147,11 @@ using (var scope = app.Services.CreateScope())
 
         logger.LogInformation("Database migration hoàn tất.");
 
+        // Thêm cột ReminderSent cho Bookings TRƯỚC khi seed (seed có truy vấn Bookings).
+        // Dùng raw SQL vì dotnet-ef đang lỗi với Npgsql 10.
+        await db.Database.ExecuteSqlRawAsync(
+            "ALTER TABLE \"Bookings\" ADD COLUMN IF NOT EXISTS \"ReminderSent\" boolean NOT NULL DEFAULT false;");
+
         await SeedData.SeedAllAsync(db, userManager, roleManager);
 
         await db.Database.ExecuteSqlRawAsync(
@@ -289,26 +294,6 @@ using (var paymentScope = app.Services.CreateScope())
     catch (Exception ex)
     {
         pLogger.LogError(ex, "Lỗi khi tạo bảng Payments: {Message}", ex.GetBaseException().Message);
-    }
-}
-
-// ======================================================
-// Thêm cột ReminderSent cho Bookings (nhắc lịch tự động)
-// Dùng raw SQL ALTER vì dotnet-ef đang lỗi với Npgsql 10.
-// ======================================================
-using (var reminderScope = app.Services.CreateScope())
-{
-    var rLogger = reminderScope.ServiceProvider.GetRequiredService<ILogger<Program>>();
-    try
-    {
-        var rDb = reminderScope.ServiceProvider.GetRequiredService<AppDbContext>();
-        await rDb.Database.ExecuteSqlRawAsync(
-            "ALTER TABLE \"Bookings\" ADD COLUMN IF NOT EXISTS \"ReminderSent\" boolean NOT NULL DEFAULT false;");
-        rLogger.LogInformation("Cột Bookings.ReminderSent đã sẵn sàng.");
-    }
-    catch (Exception ex)
-    {
-        rLogger.LogError(ex, "Lỗi khi thêm cột ReminderSent: {Message}", ex.GetBaseException().Message);
     }
 }
 
