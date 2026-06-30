@@ -241,7 +241,7 @@
                                                 display:flex;align-items:center;justify-content:center;
                                                 font-size:2rem;font-weight:800;color:#fff;
                                                 border:3px solid var(--border);">
-                                                @((Model.Education ?? "G").First().ToString().ToUpper())
+                                                @((string.IsNullOrWhiteSpace(Model.Education) ? "G" : Model.Education).Substring(0, 1).ToUpper())
                                             </div>
                                         }
                                         <div style="position:absolute;inset:0;border-radius:50%;
