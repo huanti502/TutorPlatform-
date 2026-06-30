@@ -17,4 +17,7 @@ public class Payment
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? PaidAt { get; set; }
+
+    public string? CouponCode { get; set; }              // mã giảm giá đã áp (nếu có)
+    public decimal DiscountAmount { get; set; } = 0;     // số tiền đã giảm (VND)
 }

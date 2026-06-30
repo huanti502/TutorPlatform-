@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using TutorPlatform.Core.Models;
 using TutorPlatform.Infrastructure.Data;
 using TutorPlatform.Web.Services;
+using TutorPlatform.Web.ViewModels;
 
 namespace TutorPlatform.Web.Controllers;
 
@@ -26,25 +27,73 @@ public class PaymentController : Controller
     }
 
     // Bắt đầu thanh toán: tạo giao dịch + chuyển hướng sang VNPay.
+    // Trang xác nhận thanh toán (hiển thị tổng tiền + ô nhập mã giảm giá).
+    [HttpGet]
     public async Task<IActionResult> Checkout(int bookingId)
     {
-        var booking = await _db.Bookings
-            .Include(b => b.TutorProfile).ThenInclude(t => t.User)
-            .Include(b => b.Subject)
-            .FirstOrDefaultAsync(b => b.Id == bookingId);
+        var booking = await LoadOwnedBookingAsync(bookingId);
+        if (booking == null) return RedirectToAction("MyBookings", "Booking");
 
-        if (booking == null || booking.Status != "Confirmed" || booking.IsPaid)
-            return RedirectToAction("MyBookings", "Booking");
+        double hours = (booking.EndTime - booking.StartTime).TotalHours;
+        var vm = new CheckoutViewModel
+        {
+            BookingId = booking.Id,
+            TutorName = booking.TutorProfile.User?.FullName ?? "Gia sư",
+            SubjectName = booking.Subject?.Name ?? "Buổi học",
+            TimeText = booking.StartTime.AddHours(7).ToString("HH:mm dd/MM/yyyy"),
+            Hours = Math.Round(hours, 1),
+            HourlyRate = booking.TutorProfile.HourlyRate,
+            BaseAmount = BaseAmount(booking)
+        };
+        return View(vm);
+    }
 
-        // Chỉ học viên sở hữu booking mới được thanh toán (chặn IDOR).
-        var userId = _userManager.GetUserId(User);
-        if (booking.StudentId != userId)
-            return RedirectToAction("MyBookings", "Booking");
+    // AJAX: kiểm tra mã giảm giá, trả về số tiền sau giảm.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ApplyCoupon(int bookingId, string code)
+    {
+        var booking = await LoadOwnedBookingAsync(bookingId);
+        if (booking == null) return Json(new { ok = false, message = "Không tìm thấy buổi học." });
 
-        // Tính tiền = số giờ * học phí/giờ của gia sư.
-        double totalHours = (booking.EndTime - booking.StartTime).TotalHours;
-        decimal totalPrice = Math.Round((decimal)totalHours * booking.TutorProfile.HourlyRate);
-        if (totalPrice < 5000) totalPrice = 5000; // VNPay yêu cầu số tiền tối thiểu
+        var baseAmount = BaseAmount(booking);
+        var (coupon, discount, error) = await ValidateCouponAsync(code, baseAmount);
+        if (error != null) return Json(new { ok = false, message = error });
+        if (coupon == null) return Json(new { ok = false, message = "Vui lòng nhập mã." });
+
+        var final = Math.Max(baseAmount - discount, 5000);
+        var realDiscount = baseAmount - final;
+
+        return Json(new
+        {
+            ok = true,
+            code = coupon.Code,
+            discount = realDiscount,
+            finalAmount = final,
+            message = $"Áp dụng mã {coupon.Code} thành công!"
+        });
+    }
+
+    // Thực hiện thanh toán: tạo giao dịch + chuyển sang VNPay.
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Pay(int bookingId, string? couponCode)
+    {
+        var booking = await LoadOwnedBookingAsync(bookingId);
+        if (booking == null) return RedirectToAction("MyBookings", "Booking");
+
+        var baseAmount = BaseAmount(booking);
+
+        // Kiểm tra lại mã ở server (không tin client).
+        var (coupon, discount, error) = await ValidateCouponAsync(couponCode, baseAmount);
+        if (error != null)
+        {
+            TempData["Error"] = error;
+            return RedirectToAction("Checkout", new { bookingId });
+        }
+
+        var totalPrice = Math.Max(baseAmount - discount, 5000); // VNPay tối thiểu 5000
+        var realDiscount = baseAmount - totalPrice;
 
         // Tạo bản ghi giao dịch (Pending).
         long orderCode = DateTime.Now.Ticks;
@@ -54,7 +103,9 @@ public class PaymentController : Controller
             OrderCode = orderCode,
             Amount = totalPrice,
             Status = "Pending",
-            CreatedAt = DateTime.UtcNow
+            CreatedAt = DateTime.UtcNow,
+            CouponCode = coupon?.Code,
+            DiscountAmount = realDiscount
         };
         _db.Payments.Add(payment);
         await _db.SaveChangesAsync();
@@ -92,6 +143,56 @@ public class PaymentController : Controller
 
         var paymentUrl = vnp.CreateRequestUrl(baseUrl, hashSecret);
         return Redirect(paymentUrl);
+    }
+
+    // ===== Helpers =====
+
+    // Lấy booking thuộc về học viên hiện tại và còn ở trạng thái thanh toán được.
+    private async Task<Booking?> LoadOwnedBookingAsync(int bookingId)
+    {
+        var booking = await _db.Bookings
+            .Include(b => b.TutorProfile).ThenInclude(t => t.User)
+            .Include(b => b.Subject)
+            .FirstOrDefaultAsync(b => b.Id == bookingId);
+
+        if (booking == null || booking.Status != "Confirmed" || booking.IsPaid) return null;
+
+        var userId = _userManager.GetUserId(User);
+        if (booking.StudentId != userId) return null; // chặn IDOR
+
+        return booking;
+    }
+
+    private static decimal BaseAmount(Booking b)
+    {
+        double hours = (b.EndTime - b.StartTime).TotalHours;
+        decimal price = Math.Round((decimal)hours * b.TutorProfile.HourlyRate);
+        return price < 5000 ? 5000 : price;
+    }
+
+    // Trả về (coupon, số tiền giảm, lỗi). coupon == null & error == null nghĩa là không nhập mã.
+    private async Task<(Coupon? coupon, decimal discount, string? error)> ValidateCouponAsync(string? code, decimal baseAmount)
+    {
+        if (string.IsNullOrWhiteSpace(code)) return (null, 0, null);
+
+        var norm = code.Trim().ToUpperInvariant();
+        var c = await _db.Coupons.FirstOrDefaultAsync(x => x.Code == norm);
+
+        if (c == null) return (null, 0, "Mã giảm giá không tồn tại.");
+        if (!c.IsActive) return (null, 0, "Mã giảm giá đã bị vô hiệu hoá.");
+        if (c.ExpiresAt.HasValue && c.ExpiresAt.Value < DateTime.UtcNow) return (null, 0, "Mã giảm giá đã hết hạn.");
+        if (c.UsageLimit > 0 && c.UsedCount >= c.UsageLimit) return (null, 0, "Mã giảm giá đã hết lượt sử dụng.");
+        if (baseAmount < c.MinOrder) return (null, 0, $"Đơn tối thiểu {c.MinOrder:N0}đ mới dùng được mã này.");
+
+        decimal discount = c.DiscountType == "Percent"
+            ? Math.Round(baseAmount * c.DiscountValue / 100m)
+            : c.DiscountValue;
+
+        if (c.DiscountType == "Percent" && c.MaxDiscount.HasValue && discount > c.MaxDiscount.Value)
+            discount = c.MaxDiscount.Value;
+        if (discount > baseAmount) discount = baseAmount;
+
+        return (c, discount, null);
     }
 
     // VNPay chuyển hướng về sau khi thanh toán.
@@ -140,6 +241,13 @@ public class PaymentController : Controller
 
             var booking = await _db.Bookings.FindAsync(payment.BookingId);
             if (booking != null) booking.IsPaid = true;
+
+            // Tăng lượt dùng của mã giảm giá (nếu có).
+            if (!string.IsNullOrEmpty(payment.CouponCode))
+            {
+                var coupon = await _db.Coupons.FirstOrDefaultAsync(c => c.Code == payment.CouponCode);
+                if (coupon != null) coupon.UsedCount++;
+            }
 
             await _db.SaveChangesAsync();
             TempData["Success"] = "Thanh toán thành công! 🎉";

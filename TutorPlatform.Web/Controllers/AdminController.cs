@@ -324,4 +324,81 @@ public class AdminController : Controller
 
         return Json(new { bookingsByStatus, subjectPopularity });
     }
+
+    // ==========================================
+    // QUẢN LÝ MÃ GIẢM GIÁ (COUPON)
+    // ==========================================
+
+    [HttpGet]
+    public async Task<IActionResult> Coupons()
+    {
+        var coupons = await _db.Coupons
+            .OrderByDescending(c => c.CreatedAt)
+            .ToListAsync();
+        return View(coupons);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateCoupon(string code, string discountType, decimal discountValue,
+        decimal? maxDiscount, decimal minOrder, DateTime? expiresAt, int usageLimit)
+    {
+        if (string.IsNullOrWhiteSpace(code))
+        {
+            TempData["Error"] = "Vui lòng nhập mã.";
+            return RedirectToAction("Coupons");
+        }
+
+        var norm = code.Trim().ToUpperInvariant();
+        if (await _db.Coupons.AnyAsync(c => c.Code == norm))
+        {
+            TempData["Error"] = $"Mã {norm} đã tồn tại.";
+            return RedirectToAction("Coupons");
+        }
+
+        _db.Coupons.Add(new Coupon
+        {
+            Code = norm,
+            DiscountType = discountType == "Percent" ? "Percent" : "Amount",
+            DiscountValue = discountValue,
+            MaxDiscount = maxDiscount,
+            MinOrder = minOrder,
+            // DB lưu UTC; input datetime-local là giờ VN -> trừ 7h
+            ExpiresAt = expiresAt.HasValue
+                ? DateTime.SpecifyKind(expiresAt.Value.AddHours(-7), DateTimeKind.Utc)
+                : null,
+            UsageLimit = usageLimit,
+            IsActive = true
+        });
+        await _db.SaveChangesAsync();
+
+        TempData["Success"] = $"Đã tạo mã {norm}.";
+        return RedirectToAction("Coupons");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleCoupon(int id)
+    {
+        var c = await _db.Coupons.FindAsync(id);
+        if (c != null)
+        {
+            c.IsActive = !c.IsActive;
+            await _db.SaveChangesAsync();
+        }
+        return RedirectToAction("Coupons");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteCoupon(int id)
+    {
+        var c = await _db.Coupons.FindAsync(id);
+        if (c != null)
+        {
+            _db.Coupons.Remove(c);
+            await _db.SaveChangesAsync();
+        }
+        return RedirectToAction("Coupons");
+    }
 }

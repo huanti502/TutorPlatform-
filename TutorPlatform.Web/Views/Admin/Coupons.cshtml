@@ -1,0 +1,134 @@
+@model List<TutorPlatform.Core.Models.Coupon>
+@{
+    ViewData["Title"] = "Mã giảm giá";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Mã giảm giá</h3>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">@TempData["Error"]</div>
+}
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <h6 class="fw-bold mb-3">Tạo mã mới</h6>
+        <form asp-action="CreateCoupon" method="post" class="row g-3">
+            @Html.AntiForgeryToken()
+            <div class="col-md-3">
+                <label class="form-label">Mã code</label>
+                <input name="code" class="form-control text-uppercase" placeholder="WELCOME" required />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Loại giảm</label>
+                <select name="discountType" id="discountType" class="form-select">
+                    <option value="Amount">Số tiền (VND)</option>
+                    <option value="Percent">Phần trăm (%)</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Giá trị giảm</label>
+                <input name="discountValue" type="number" step="0.01" min="0" class="form-control" required />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Trần giảm tối đa (% mới cần)</label>
+                <input name="maxDiscount" type="number" step="0.01" min="0" class="form-control" placeholder="vd 50000" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Đơn tối thiểu</label>
+                <input name="minOrder" type="number" step="0.01" min="0" value="0" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Hết hạn (để trống = vô hạn)</label>
+                <input name="expiresAt" type="datetime-local" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Giới hạn lượt (0 = vô hạn)</label>
+                <input name="usageLimit" type="number" min="0" value="0" class="form-control" />
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100" style="background:#7c3aed;border:none;">Tạo mã</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <h6 class="fw-bold mb-3">Danh sách mã (@Model.Count)</h6>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th>Mã</th>
+                        <th>Giảm</th>
+                        <th>Đơn tối thiểu</th>
+                        <th>Hết hạn</th>
+                        <th>Lượt dùng</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="7" class="text-center text-muted py-4">Chưa có mã nào.</td></tr>
+                    }
+                    @foreach (var c in Model)
+                    {
+                        <tr>
+                            <td><b>@c.Code</b></td>
+                            <td>
+                                @if (c.DiscountType == "Percent")
+                                {
+                                    <text>@c.DiscountValue.ToString("0.##")%</text>
+                                    @if (c.MaxDiscount.HasValue)
+                                    {
+                                        <span class="text-muted small"> (tối đa @c.MaxDiscount.Value.ToString("N0")đ)</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <text>@c.DiscountValue.ToString("N0")đ</text>
+                                }
+                            </td>
+                            <td>@c.MinOrder.ToString("N0")đ</td>
+                            <td>@(c.ExpiresAt.HasValue ? c.ExpiresAt.Value.AddHours(7).ToString("HH:mm dd/MM/yyyy") : "—")</td>
+                            <td>@c.UsedCount@(c.UsageLimit > 0 ? $"/{c.UsageLimit}" : "")</td>
+                            <td>
+                                @if (c.IsActive)
+                                {
+                                    <span class="badge bg-success">Đang bật</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Đã tắt</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                <form asp-action="ToggleCoupon" method="post" class="d-inline">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@c.Id" />
+                                    <button class="btn btn-sm btn-outline-secondary">@(c.IsActive ? "Tắt" : "Bật")</button>
+                                </form>
+                                <form asp-action="DeleteCoupon" method="post" class="d-inline"
+                                      onsubmit="return confirm('Xoá mã @c.Code?');">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="id" value="@c.Id" />
+                                    <button class="btn btn-sm btn-outline-danger">Xoá</button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
