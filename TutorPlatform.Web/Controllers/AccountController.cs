@@ -18,17 +18,20 @@ public class AccountController : Controller
     private readonly AppDbContext _db;
     private readonly IWebHostEnvironment _env;
     private readonly Cloudinary _cloudinary;
+    private readonly TutorPlatform.Web.Services.EmailSender _emailSender;
 
     public AccountController(UserManager<AppUser> userManager,
         SignInManager<AppUser> signInManager,
         AppDbContext db,
         IWebHostEnvironment env,
-        IConfiguration config)
+        IConfiguration config,
+        TutorPlatform.Web.Services.EmailSender emailSender)
     {
         _userManager = userManager;
         _signInManager = signInManager;
         _db = db;
         _env = env;
+        _emailSender = emailSender;
 
         var account = new Account(
             config["Cloudinary:CloudName"],
@@ -119,7 +122,7 @@ public class AccountController : Controller
             FullName = model.FullName,
             PhoneNumber = model.PhoneNumber,
             Role = model.Role,
-            EmailConfirmed = true
+            EmailConfirmed = false
         };
 
         var result = await _userManager.CreateAsync(user, model.Password);
@@ -131,6 +134,20 @@ public class AccountController : Controller
         }
 
         await _userManager.AddToRoleAsync(user, model.Role);
+
+        // Gửi email xác nhận (không chặn đăng nhập — chỉ để xác thực email).
+        try
+        {
+            var confirmToken = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var confirmLink = Url.Action("ConfirmEmail", "Account",
+                new { userId = user.Id, token = confirmToken }, Request.Scheme);
+            await _emailSender.SendAsync(model.Email, "Xác nhận email - Gia Sư Việt",
+                $@"<p>Chào {model.FullName},</p>
+                   <p>Cảm ơn bạn đã đăng ký Gia Sư Việt. Nhấn nút bên dưới để xác nhận email:</p>
+                   <p><a href=""{confirmLink}"" style=""display:inline-block;padding:10px 18px;background:#16A34A;color:#fff;text-decoration:none;border-radius:8px;"">Xác nhận email</a></p>
+                   <p>Hoặc mở liên kết:<br>{confirmLink}</p>");
+        }
+        catch { /* gửi mail lỗi cũng không chặn việc đăng ký */ }
 
         // Upload avatar lên Cloudinary (cả Student và Tutor)
         if (avatarFile != null && avatarFile.Length > 0)
@@ -400,6 +417,29 @@ public class AccountController : Controller
     [HttpGet]
     public IActionResult AccessDenied() => View();
 
+    // Xác nhận email từ link trong mail
+    [HttpGet]
+    public async Task<IActionResult> ConfirmEmail(string userId, string token)
+    {
+        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(token))
+            return RedirectToAction("Login");
+
+        var user = await _userManager.FindByIdAsync(userId);
+        if (user == null)
+        {
+            TempData["Error"] = "Không tìm thấy tài khoản.";
+            return RedirectToAction("Login");
+        }
+
+        var result = await _userManager.ConfirmEmailAsync(user, token);
+        if (result.Succeeded)
+            TempData["Success"] = "Xác nhận email thành công! Bạn có thể đăng nhập.";
+        else
+            TempData["Error"] = "Liên kết xác nhận không hợp lệ hoặc đã hết hạn.";
+
+        return RedirectToAction("Login");
+    }
+
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Logout()
@@ -422,8 +462,22 @@ public class AccountController : Controller
         }
         var token = await _userManager.GeneratePasswordResetTokenAsync(user);
         var resetLink = Url.Action("ResetPassword", "Account", new { token, email }, Request.Scheme);
-        TempData["ResetLink"] = resetLink;
-        TempData["Success"] = "Đã tạo link đặt lại mật khẩu!";
+
+        try
+        {
+            await _emailSender.SendAsync(email, "Đặt lại mật khẩu - Gia Sư Việt",
+                $@"<p>Xin chào,</p>
+                   <p>Bạn vừa yêu cầu đặt lại mật khẩu cho tài khoản Gia Sư Việt.</p>
+                   <p><a href=""{resetLink}"" style=""display:inline-block;padding:10px 18px;background:#4F46E5;color:#fff;text-decoration:none;border-radius:8px;"">Đặt lại mật khẩu</a></p>
+                   <p>Hoặc mở liên kết sau:<br>{resetLink}</p>
+                   <p style=""color:#888"">Nếu không phải bạn yêu cầu, hãy bỏ qua email này.</p>");
+
+            TempData["Success"] = "Đã gửi email đặt lại mật khẩu. Vui lòng kiểm tra hộp thư (cả mục Spam).";
+        }
+        catch
+        {
+            TempData["Error"] = "Không gửi được email lúc này. Vui lòng thử lại sau.";
+        }
         return View();
     }
 

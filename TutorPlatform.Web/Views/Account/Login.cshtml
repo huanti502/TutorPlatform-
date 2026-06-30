@@ -30,6 +30,11 @@
                             <div class="alert alert-danger mb-4">@TempData["Error"]</div>
                         }
 
+                        @if (TempData["Success"] != null)
+                        {
+                            <div class="alert alert-success mb-4">@TempData["Success"]</div>
+                        }
+
                         @if (!ViewData.ModelState.IsValid)
                         {
                             <div class="alert alert-danger mb-4">

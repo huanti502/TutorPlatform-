@@ -108,6 +108,7 @@ builder.Services.AddScoped<ReportService>();
 
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<CloudinaryService>();
+builder.Services.AddScoped<TutorPlatform.Web.Services.EmailSender>();
 
 var app = builder.Build();
 
