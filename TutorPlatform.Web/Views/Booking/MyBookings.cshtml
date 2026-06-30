@@ -232,6 +232,15 @@
                                     }
                                 }
 
+                                @if (b.Status == "Confirmed" || b.Status == "Completed")
+                                {
+                                    <a asp-controller="LessonNote" asp-action="View" asp-route-bookingId="@b.Id"
+                                       class="btn btn-sm w-100 mt-2"
+                                       style="background:#0d9488;color:white;border-radius:8px;">
+                                        📝 Ghi chú buổi học
+                                    </a>
+                                }
+
                             </div>
                         </div>
                     </div>

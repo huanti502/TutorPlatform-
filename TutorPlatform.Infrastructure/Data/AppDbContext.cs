@@ -36,6 +36,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<Coupon> Coupons => Set<Coupon>();
     public DbSet<Complaint> Complaints => Set<Complaint>();
     public DbSet<Assignment> Assignments => Set<Assignment>();
+    public DbSet<LessonNote> LessonNotes => Set<LessonNote>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

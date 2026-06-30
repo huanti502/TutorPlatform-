@@ -1,0 +1,40 @@
+@model TutorPlatform.Core.Models.LessonNote
+@{
+    ViewData["Title"] = "Ghi chú buổi học";
+    var booking = ViewBag.Booking as TutorPlatform.Core.Models.Booking;
+}
+
+<div class="container py-4" style="max-width:720px;">
+    <a asp-controller="Booking" asp-action="MyBookings" class="small text-muted text-decoration-none">← Quay lại lịch học</a>
+    <h3 class="mt-2 mb-1">Ghi chú buổi học</h3>
+    <p class="text-muted">
+        Gia sư: <b>@booking?.TutorProfile?.User?.FullName</b> · @booking?.Subject?.Name ·
+        @booking?.StartTime.AddHours(7).ToString("HH:mm dd/MM/yyyy")
+    </p>
+
+    @if (Model == null || (string.IsNullOrWhiteSpace(Model.Content) && string.IsNullOrWhiteSpace(Model.AiSummary)))
+    {
+        <div class="alert alert-light border">Gia sư chưa thêm ghi chú cho buổi học này.</div>
+    }
+    else
+    {
+        @if (!string.IsNullOrWhiteSpace(Model.AiSummary))
+        {
+            <div class="card border-0 shadow-sm mb-3" style="background:#f5f3ff;">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-2">✨ Tóm tắt nhanh (AI)</h6>
+                    <div style="white-space:pre-wrap;">@Model.AiSummary</div>
+                </div>
+            </div>
+        }
+        @if (!string.IsNullOrWhiteSpace(Model.Content))
+        {
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="fw-bold mb-2">Ghi chú của gia sư</h6>
+                    <div style="white-space:pre-wrap;">@Model.Content</div>
+                </div>
+            </div>
+        }
+    }
+</div>
