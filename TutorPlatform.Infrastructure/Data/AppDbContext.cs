@@ -32,6 +32,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<ReviewReply> ReviewReplies => Set<ReviewReply>();
     public DbSet<Document> Documents => Set<Document>();
     public DbSet<Favorite> Favorites => Set<Favorite>();
+    public DbSet<Payment> Payments => Set<Payment>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -241,6 +242,22 @@ public class AppDbContext : IdentityDbContext<AppUser>
         builder.Entity<Favorite>()
             .HasIndex(f => new { f.StudentId, f.TutorProfileId })
             .IsUnique();
+
+        // ─────────────────────────────────────
+        // Cấu hình Payment (giao dịch thanh toán)
+        // ─────────────────────────────────────
+        builder.Entity<Payment>()
+            .Property(p => p.Amount)
+            .HasPrecision(18, 2);
+
+        builder.Entity<Payment>()
+            .HasOne(p => p.Booking)
+            .WithMany()
+            .HasForeignKey(p => p.BookingId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<Payment>()
+            .HasIndex(p => p.OrderCode);
 
         // ─────────────────────────────────────
         // Seed Subject
