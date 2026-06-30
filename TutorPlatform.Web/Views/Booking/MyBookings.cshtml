@@ -191,6 +191,13 @@
                                            style="border-radius:8px; background:var(--primary); color:white; font-weight:600; border:none;">
                                             💳 Thanh toán ngay
                                         </a>
+                                        <form asp-controller="Package" asp-action="UseForBooking" method="post" class="mb-2">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="bookingId" value="@b.Id" />
+                                            <button class="btn btn-sm w-100" style="border-radius:8px;background:#ede9fe;color:#6d28d9;font-weight:600;border:1px solid #ddd6fe;">
+                                                📦 Dùng gói học
+                                            </button>
+                                        </form>
                                     }
                                     else
                                     {

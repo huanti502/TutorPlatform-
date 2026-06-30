@@ -69,6 +69,41 @@
             </div>
         }
 
+        @{
+            var packages = ViewBag.Packages as List<TutorPlatform.Core.Models.LessonPackage>
+                           ?? new List<TutorPlatform.Core.Models.LessonPackage>();
+        }
+        @if (packages.Any())
+        {
+            <div class="card mb-4" style="border-radius:var(--radius-xl);">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">📦 Gói học ưu đãi</h5>
+                    <div class="row g-3">
+                        @foreach (var pkg in packages)
+                        {
+                            var perSession = pkg.SessionCount > 0 ? pkg.Price / pkg.SessionCount : 0;
+                            <div class="col-md-4">
+                                <div class="border rounded p-3 h-100 d-flex flex-column">
+                                    <b>@pkg.Name</b>
+                                    <div class="small text-muted mb-1">@pkg.SessionCount buổi</div>
+                                    <div class="fw-bold fs-5" style="color:#7c3aed;">@pkg.Price.ToString("N0")đ</div>
+                                    <div class="small text-muted mb-2">~@perSession.ToString("N0")đ/buổi</div>
+                                    @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Student"))
+                                    {
+                                        <form asp-controller="Package" asp-action="Buy" method="post" class="mt-auto">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="packageId" value="@pkg.Id" />
+                                            <button class="btn btn-sm w-100 text-white" style="background:#7c3aed;border:none;">Mua gói</button>
+                                        </form>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
         <div class="row g-4">
 
             <div class="col-lg-4">

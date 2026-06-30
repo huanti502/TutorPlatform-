@@ -1,0 +1,69 @@
+@model List<TutorPlatform.Core.Models.LessonPackage>
+@{
+    ViewData["Title"] = "Gói học";
+    var hourly = (decimal)(ViewBag.HourlyRate ?? 0m);
+}
+
+<div class="container py-4" style="max-width:760px;">
+    <h3 class="mb-1">Gói học của tôi</h3>
+    <p class="text-muted">Học phí lẻ hiện tại: <b>@hourly.ToString("N0")đ/giờ</b>. Tạo gói nhiều buổi giá ưu đãi để hút học viên.</p>
+
+    @if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+    @if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <h6 class="fw-bold mb-3">Tạo gói mới</h6>
+            <form asp-action="Create" method="post" class="row g-3">
+                @Html.AntiForgeryToken()
+                <div class="col-md-5">
+                    <label class="form-label">Tên gói</label>
+                    <input name="name" class="form-control" placeholder="VD: Gói 10 buổi Toán" required />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Số buổi</label>
+                    <input name="sessionCount" type="number" min="2" class="form-control" required />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Giá trọn gói (đ)</label>
+                    <input name="price" type="number" min="1000" step="1000" class="form-control" required />
+                </div>
+                <div class="col-12">
+                    <button class="btn btn-primary" style="background:#7c3aed;border:none;">Tạo gói</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (!Model.Any())
+    {
+        <p class="text-muted">Chưa có gói nào.</p>
+    }
+    @foreach (var p in Model)
+    {
+        var perSession = p.SessionCount > 0 ? p.Price / p.SessionCount : 0;
+        <div class="card border-0 shadow-sm mb-2">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <b>@p.Name</b>
+                    <div class="small text-muted">@p.SessionCount buổi · @p.Price.ToString("N0")đ (~@perSession.ToString("N0")đ/buổi)</div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    @if (p.IsActive)
+                    {
+                        <span class="badge bg-success">Đang bán</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Đã ẩn</span>
+                    }
+                    <form asp-action="Toggle" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@p.Id" />
+                        <button class="btn btn-sm btn-outline-secondary">@(p.IsActive ? "Ẩn" : "Bán")</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+</div>

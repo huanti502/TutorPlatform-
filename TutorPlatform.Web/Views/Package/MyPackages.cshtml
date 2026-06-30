@@ -1,0 +1,50 @@
+@model List<TutorPlatform.Core.Models.PackagePurchase>
+@{
+    ViewData["Title"] = "Gói của tôi";
+}
+
+<div class="container py-4" style="max-width:760px;">
+    <h3 class="mb-3">Gói học của tôi</h3>
+
+    @if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+    @if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+
+    @if (!Model.Any())
+    {
+        <div class="alert alert-light border">
+            Bạn chưa mua gói nào. Vào trang chi tiết một gia sư để xem và mua gói nhiều buổi.
+        </div>
+    }
+
+    @foreach (var p in Model)
+    {
+        <div class="card border-0 shadow-sm mb-2">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <b>@p.LessonPackage?.Name</b>
+                        <div class="small text-muted">
+                            Gia sư: @p.LessonPackage?.TutorProfile?.User?.FullName ·
+                            Đã trả @p.PricePaid.ToString("N0")đ
+                        </div>
+                    </div>
+                    @if (p.Status == "Used")
+                    {
+                        <span class="badge bg-secondary">Đã dùng hết</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success">Còn @p.RemainingSessions/@p.TotalSessions buổi</span>
+                    }
+                </div>
+                @if (p.Status == "Active")
+                {
+                    <div class="small text-muted mt-2">
+                        Khi đặt lịch với gia sư này, vào <a asp-controller="Booking" asp-action="MyBookings">Lịch học của tôi</a>
+                        và bấm "Dùng gói" ở buổi đã xác nhận để trừ 1 buổi.
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>

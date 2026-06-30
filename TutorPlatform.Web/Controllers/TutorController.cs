@@ -94,6 +94,11 @@ public class TutorController : Controller
         ViewBag.HasConfirmedBooking = hasBooking;
         ViewBag.CurrentUserId = currentUserId;
 
+        ViewBag.Packages = await _db.LessonPackages
+            .Where(p => p.TutorProfileId == id && p.IsActive)
+            .OrderBy(p => p.Price)
+            .ToListAsync();
+
         return View(tutor);
     }
 
