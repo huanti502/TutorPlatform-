@@ -1,0 +1,77 @@
+@model List<TutorPlatform.Core.Models.Assignment>
+@{
+    ViewData["Title"] = "Bài tập của tôi";
+}
+
+<div class="container py-4" style="max-width:820px;">
+    <h3 class="mb-3">Bài tập của tôi</h3>
+
+    @if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+    @if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+
+    @if (!Model.Any())
+    {
+        <p class="text-muted">Bạn chưa được giao bài tập nào.</p>
+    }
+
+    @foreach (var a in Model)
+    {
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <h6 class="fw-bold mb-1">@a.Title</h6>
+                        <div class="small text-muted">
+                            Gia sư: @a.Booking?.TutorProfile?.User?.FullName · @a.Booking?.Subject?.Name
+                            @if (a.DueDate.HasValue) { <text> · Hạn: @a.DueDate.Value.AddHours(7).ToString("HH:mm dd/MM")</text> }
+                        </div>
+                    </div>
+                    @switch (a.Status)
+                    {
+                        case "Assigned": <span class="badge bg-danger">Cần làm</span> break;
+                        case "Submitted": <span class="badge bg-warning text-dark">Đã nộp</span> break;
+                        default: <span class="badge bg-success">Điểm: @a.Grade</span> break;
+                    }
+                </div>
+
+                @if (!string.IsNullOrEmpty(a.Description))
+                {
+                    <p class="mt-2 mb-2 small">@a.Description</p>
+                }
+
+                @if (a.Status == "Graded")
+                {
+                    <div class="border rounded p-2 my-2 bg-light">
+                        <div><b>Điểm:</b> @a.Grade</div>
+                        @if (!string.IsNullOrEmpty(a.Feedback)) { <div class="small">Nhận xét: @a.Feedback</div> }
+                    </div>
+                }
+
+                @if (a.Status == "Submitted" || a.Status == "Graded")
+                {
+                    <div class="small text-muted mt-1">
+                        Đã nộp lúc @a.SubmittedAt?.AddHours(7).ToString("HH:mm dd/MM")
+                        @if (!string.IsNullOrEmpty(a.SubmissionFileUrl))
+                        {
+                            <text> · </text><a asp-action="Download" asp-route-id="@a.Id" target="_blank">Tải file đã nộp</a>
+                        }
+                    </div>
+                }
+
+                @if (a.Status == "Assigned" || a.Status == "Submitted")
+                {
+                    <form asp-action="Submit" method="post" enctype="multipart/form-data" class="mt-2 border-top pt-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@a.Id" />
+                        <label class="form-label small mb-1">@(a.Status == "Submitted" ? "Nộp lại (ghi đè)" : "Nộp bài")</label>
+                        <textarea name="submissionText" class="form-control form-control-sm mb-2" rows="2" placeholder="Nội dung trả lời (nếu có)">@a.SubmissionText</textarea>
+                        <div class="d-flex gap-2">
+                            <input type="file" name="file" class="form-control form-control-sm" />
+                            <button class="btn btn-sm btn-primary" style="background:#7c3aed;border:none;white-space:nowrap;">Nộp</button>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    }
+</div>
