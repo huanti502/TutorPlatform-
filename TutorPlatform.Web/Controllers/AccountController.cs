@@ -274,10 +274,8 @@ public class AccountController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> LoginWith2fa(TwoFactorLoginViewModel model, bool rememberMe)
+    public async Task<IActionResult> LoginWith2fa(string? code, bool? rememberMe, bool? rememberMachine)
     {
-        if (!ModelState.IsValid) { ViewBag.RememberMe = rememberMe; return View(model); }
-
         var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
         if (user == null)
         {
@@ -285,15 +283,29 @@ public class AccountController : Controller
             return RedirectToAction("Login");
         }
 
-        var code = model.Code.Replace(" ", string.Empty).Replace("-", string.Empty);
-        var result = await _signInManager.TwoFactorAuthenticatorSignInAsync(code, rememberMe, model.RememberMachine);
+        ViewBag.RememberMe = rememberMe ?? false;
+
+        var cleaned = (code ?? string.Empty).Replace(" ", string.Empty).Replace("-", string.Empty);
+        if (string.IsNullOrEmpty(cleaned))
+        {
+            ModelState.AddModelError(string.Empty, "Vui lòng nhập mã xác thực.");
+            return View(new TwoFactorLoginViewModel());
+        }
+
+        var result = await _signInManager.TwoFactorAuthenticatorSignInAsync(
+            cleaned, rememberMe ?? false, rememberMachine ?? false);
 
         if (result.Succeeded)
             return RedirectToAction("Index", "Home");
 
-        ViewBag.RememberMe = rememberMe;
-        ModelState.AddModelError(string.Empty, "Mã xác thực không đúng.");
-        return View(model);
+        if (result.IsLockedOut)
+        {
+            ModelState.AddModelError(string.Empty, "Tài khoản tạm khoá do nhập sai quá nhiều lần.");
+            return View(new TwoFactorLoginViewModel());
+        }
+
+        ModelState.AddModelError(string.Empty, "Mã xác thực không đúng hoặc đã hết hạn. Kiểm tra lại giờ trên điện thoại.");
+        return View(new TwoFactorLoginViewModel());
     }
 
     // ══════════════════════════════════════════════════════
