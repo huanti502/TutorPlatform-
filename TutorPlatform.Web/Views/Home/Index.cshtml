@@ -171,7 +171,74 @@
     </div>
 </section>
 
-<!-- ===== AI RECOMMENDATION (Chỉ hiện với Student đã đăng nhập) ===== -->
+<!-- ===== GIA SƯ NỔI BẬT / GIA SƯ CỦA THÁNG ===== -->
+@{
+    var featured = ViewBag.FeaturedTutors as List<TutorPlatform.Web.ViewModels.FeaturedTutorVM>
+                   ?? new List<TutorPlatform.Web.ViewModels.FeaturedTutorVM>();
+}
+@if (featured.Any())
+{
+    <section class="section">
+        <div class="container">
+            <div class="text-center mb-4">
+                <h2 class="fw-bold mb-1">🌟 Gia sư nổi bật</h2>
+                <p class="text-muted">Những gia sư được đánh giá cao và dạy nhiều buổi nhất trên nền tảng</p>
+            </div>
+            <div class="row g-4">
+                @foreach (var f in featured)
+                {
+                    <div class="col-sm-6 col-lg-3">
+                        <div class="card h-100 border-0 shadow-sm position-relative" style="border-radius:16px;overflow:hidden;">
+                            @if (f.IsTutorOfMonth)
+                            {
+                                <div style="position:absolute;top:10px;right:10px;background:#7c3aed;color:#fff;font-size:.72rem;font-weight:700;padding:3px 10px;border-radius:20px;z-index:2;">🏆 Gia sư của tháng</div>
+                            }
+                            <div class="card-body text-center p-4">
+                                @if (!string.IsNullOrEmpty(f.AvatarUrl))
+                                {
+                                    <img src="@f.AvatarUrl" alt="@f.FullName" class="rounded-circle mb-2" style="width:76px;height:76px;object-fit:cover;" />
+                                }
+                                else
+                                {
+                                    <div class="rounded-circle mb-2 d-inline-flex align-items-center justify-content-center"
+                                         style="width:76px;height:76px;background:#ede9fe;color:#7c3aed;font-size:1.6rem;font-weight:700;">
+                                        @(string.IsNullOrEmpty(f.FullName) ? "?" : f.FullName.Trim()[0].ToString().ToUpper())
+                                    </div>
+                                }
+                                <h6 class="fw-bold mb-1">@f.FullName</h6>
+                                <div class="small text-muted mb-2">@f.Education</div>
+                                <div class="mb-2">
+                                    @if (f.ReviewCount > 0)
+                                    {
+                                        <span class="text-warning">★</span> <b>@f.AvgRating</b>
+                                        <span class="text-muted small">(@f.ReviewCount đánh giá)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">Chưa có đánh giá</span>
+                                    }
+                                </div>
+                                <div class="small text-muted mb-2">@f.CompletedSessions buổi đã dạy</div>
+                                @if (f.Subjects.Any())
+                                {
+                                    <div class="mb-3">
+                                        @foreach (var s in f.Subjects)
+                                        {
+                                            <span class="badge bg-light text-dark border me-1">@s</span>
+                                        }
+                                    </div>
+                                }
+                                <div class="fw-bold mb-2" style="color:#7c3aed;">@f.HourlyRate.ToString("N0")đ/giờ</div>
+                                <a href="/Tutor/Detail/@f.TutorProfileId" class="btn btn-sm w-100 text-white" style="background:#7c3aed;border:none;">Xem hồ sơ</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    </section>
+}
+
 @if (User.IsInRole("Student") && ViewBag.HasRecommendations == true)
 {
     var recs = ViewBag.Recommendations as
