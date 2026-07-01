@@ -578,6 +578,64 @@ public class AdminController : Controller
     }
 
     // ==========================================
+    // THỐNG KÊ NÂNG CAO
+    // ==========================================
+
+    [HttpGet]
+    public async Task<IActionResult> Statistics()
+    {
+        var now = DateTime.UtcNow;
+
+        // Đăng ký người dùng theo 6 tháng gần nhất
+        var createdDates = await _db.Users.Select(u => u.CreatedAt).ToListAsync();
+        var regLabels = new List<string>();
+        var regData = new List<int>();
+        for (int i = 5; i >= 0; i--)
+        {
+            var m = new DateTime(now.Year, now.Month, 1).AddMonths(-i);
+            regLabels.Add(m.ToString("MM/yyyy"));
+            regData.Add(createdDates.Count(c => c.Year == m.Year && c.Month == m.Month));
+        }
+
+        // Trạng thái buổi học
+        var statuses = await _db.Bookings.Select(b => b.Status).ToListAsync();
+        int completed = statuses.Count(s => s == "Completed");
+        int cancelled = statuses.Count(s => s == "Cancelled");
+        int confirmed = statuses.Count(s => s == "Confirmed");
+        int pending = statuses.Count(s => s == "Pending");
+        int rejected = statuses.Count(s => s == "Rejected");
+        int totalBk = statuses.Count;
+
+        ViewBag.Completed = completed;
+        ViewBag.Cancelled = cancelled;
+        ViewBag.Confirmed = confirmed;
+        ViewBag.Pending = pending;
+        ViewBag.Rejected = rejected;
+        ViewBag.TotalBookings = totalBk;
+        ViewBag.CompletionRate = totalBk > 0 ? Math.Round(completed * 100.0 / totalBk, 1) : 0;
+        ViewBag.CancelRate = totalBk > 0 ? Math.Round((cancelled + rejected) * 100.0 / totalBk, 1) : 0;
+
+        // Top môn học theo số buổi
+        var subjectNames = await _db.Bookings
+            .Where(b => b.Subject != null)
+            .Select(b => b.Subject!.Name)
+            .ToListAsync();
+        var topSubjects = subjectNames
+            .GroupBy(n => n)
+            .Select(g => new { Name = g.Key, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .Take(6)
+            .ToList();
+
+        ViewBag.RegLabels = System.Text.Json.JsonSerializer.Serialize(regLabels);
+        ViewBag.RegData = System.Text.Json.JsonSerializer.Serialize(regData);
+        ViewBag.SubjectLabels = System.Text.Json.JsonSerializer.Serialize(topSubjects.Select(s => s.Name).ToList());
+        ViewBag.SubjectData = System.Text.Json.JsonSerializer.Serialize(topSubjects.Select(s => s.Count).ToList());
+        ViewBag.StatusData = System.Text.Json.JsonSerializer.Serialize(new[] { completed, confirmed, pending, cancelled, rejected });
+        return View();
+    }
+
+    // ==========================================
     // NHẬT KÝ HOẠT ĐỘNG (AUDIT LOG)
     // ==========================================
 

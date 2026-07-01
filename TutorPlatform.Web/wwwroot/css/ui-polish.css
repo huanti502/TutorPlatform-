@@ -304,3 +304,14 @@ textarea:focus-visible,
     background: var(--danger-light);
     color: var(--danger) !important;
 }
+
+/* =======================  THANH LOADING KHI CHUYỂN TRANG  ======================= */
+#page-loader {
+    position: fixed; top: 0; left: 0; height: 3px; width: 0;
+    background: var(--primary); z-index: 3000;
+    box-shadow: 0 0 10px var(--primary); opacity: 0;
+}
+#page-loader.active {
+    width: 92%; opacity: 1;
+    transition: width 8s cubic-bezier(.15,.75,.1,1), opacity .2s;
+}

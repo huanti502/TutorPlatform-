@@ -595,5 +595,17 @@
 
     @await RenderSectionAsync("Scripts", required: false)
 
+    <div id="page-loader"></div>
+    <script>
+        (function () {
+            var loader = document.getElementById('page-loader');
+            function show() { if (loader) loader.classList.add('active'); }
+            // Hiện thanh loading khi rời trang (bấm link nội bộ, submit form)
+            window.addEventListener('beforeunload', show);
+            document.addEventListener('submit', function (e) {
+                if (e.target && e.target.method && e.target.method.toLowerCase() === 'post') show();
+            }, true);
+        })();
+    </script>
 </body>
 </html>

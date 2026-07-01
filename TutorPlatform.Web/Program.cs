@@ -488,6 +488,9 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
+// Trang lỗi thân thiện cho các mã trạng thái (404, 403, 500...)
+app.UseStatusCodePagesWithReExecute("/Home/Error", "?code={0}");
+
 app.UseStaticFiles();
 
 app.UseRouting();

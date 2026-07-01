@@ -103,6 +103,13 @@ public class BookingController : Controller
             return RedirectToAction("Create", new { tutorId = tutorProfileId });
         }
 
+        // ✅ Kiểm tra buổi học nằm trong "Lịch rảnh" gia sư đã đăng ký
+        if (!await IsWithinAvailabilityAsync(tutorProfileId, startUtc, endUtc))
+        {
+            TempData["Error"] = "⚠️ Gia sư không rảnh trong khung giờ này. Vui lòng chọn giờ nằm trong lịch rảnh của gia sư.";
+            return RedirectToAction("Create", new { tutorId = tutorProfileId });
+        }
+
         var booking = new Booking
         {
             StudentId = user!.Id,
@@ -283,9 +290,9 @@ public class BookingController : Controller
         _db.Notifications.Add(new Notification
         {
             UserId = booking.StudentId,
-            Title = "Buổi học đã hoàn thành",
+            Title = "⭐ Mời đánh giá buổi học",
             Content = "Buổi học đã kết thúc. Hãy để lại đánh giá cho gia sư nhé!",
-            Link = "/Booking/MyBookings"
+            Link = $"/Review/Create?bookingId={booking.Id}"
         });
         await _db.SaveChangesAsync();
 
@@ -560,5 +567,135 @@ public class BookingController : Controller
             startTime = upcoming.StartTime.ToLocalTime().ToString("HH:mm"),
             joinUrl = $"https://meet.jit.si/{upcoming.MeetingRoomId}"
         });
+    }
+
+    // ✅ Kiểm tra buổi học có nằm trong lịch rảnh của gia sư không (giờ VN = UTC+7).
+    private async Task<bool> IsWithinAvailabilityAsync(int tutorProfileId, DateTime startUtc, DateTime endUtc)
+    {
+        var avails = await _db.TutorAvailabilities
+            .Where(a => a.TutorProfileId == tutorProfileId)
+            .ToListAsync();
+
+        // Gia sư chưa đăng ký lịch rảnh -> cho đặt (tương thích dữ liệu cũ).
+        if (avails.Count == 0) return true;
+
+        var startLocal = startUtc.AddHours(7);
+        var endLocal = endUtc.AddHours(7);
+        if (startLocal.Date != endLocal.Date) return false; // không cho vắt qua nửa đêm
+
+        var dow = startLocal.DayOfWeek;
+        var s = startLocal.TimeOfDay;
+        var e = endLocal.TimeOfDay;
+        return avails.Any(a => a.DayOfWeek == dow && a.StartTime <= s && a.EndTime >= e);
+    }
+
+    // ===== ĐỔI GIỜ BUỔI HỌC (RESCHEDULE) =====
+
+    [Authorize(Roles = "Student")]
+    [HttpGet]
+    public async Task<IActionResult> Reschedule(int id)
+    {
+        var uid = _userManager.GetUserId(User);
+        var booking = await _db.Bookings
+            .Include(b => b.Subject)
+            .Include(b => b.TutorProfile).ThenInclude(t => t.User)
+            .FirstOrDefaultAsync(b => b.Id == id);
+
+        if (booking == null) return NotFound();
+        if (booking.StudentId != uid) return Forbid();
+        if (booking.Status != "Pending" && booking.Status != "Confirmed")
+        {
+            TempData["Error"] = "Chỉ đổi được giờ của buổi đang chờ hoặc đã xác nhận.";
+            return RedirectToAction("MyBookings");
+        }
+        if (booking.StartTime <= DateTime.UtcNow)
+        {
+            TempData["Error"] = "Không thể đổi giờ buổi học đã bắt đầu.";
+            return RedirectToAction("MyBookings");
+        }
+
+        return View(booking);
+    }
+
+    [Authorize(Roles = "Student")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Reschedule(int id, DateTime startTime, DateTime endTime)
+    {
+        var uid = _userManager.GetUserId(User);
+        var booking = await _db.Bookings
+            .Include(b => b.TutorProfile)
+            .FirstOrDefaultAsync(b => b.Id == id);
+
+        if (booking == null) return NotFound();
+        if (booking.StudentId != uid) return Forbid();
+        if (booking.Status != "Pending" && booking.Status != "Confirmed")
+        {
+            TempData["Error"] = "Chỉ đổi được giờ của buổi đang chờ hoặc đã xác nhận.";
+            return RedirectToAction("MyBookings");
+        }
+        if (booking.StartTime <= DateTime.UtcNow)
+        {
+            TempData["Error"] = "Không thể đổi giờ buổi học đã bắt đầu.";
+            return RedirectToAction("MyBookings");
+        }
+
+        var startUtc = startTime.ToUniversalTime();
+        var endUtc = endTime.ToUniversalTime();
+
+        if (startUtc >= endUtc)
+        {
+            TempData["Error"] = "Thời gian kết thúc phải sau thời gian bắt đầu.";
+            return RedirectToAction("Reschedule", new { id });
+        }
+        if (startUtc < DateTime.UtcNow.AddHours(1))
+        {
+            TempData["Error"] = "Vui lòng đặt lịch trước ít nhất 1 tiếng.";
+            return RedirectToAction("Reschedule", new { id });
+        }
+
+        // Trùng lịch gia sư (bỏ qua chính booking này)
+        var conflict = await _db.Bookings.AnyAsync(b =>
+            b.Id != booking.Id &&
+            b.TutorProfileId == booking.TutorProfileId &&
+            (b.Status == "Confirmed" || b.Status == "Pending") &&
+            b.StartTime < endUtc && b.EndTime > startUtc);
+        if (conflict)
+        {
+            TempData["Error"] = "⚠️ Gia sư đã có lịch trong khung giờ này.";
+            return RedirectToAction("Reschedule", new { id });
+        }
+
+        // Trùng lịch của chính học viên (bỏ qua chính booking này)
+        var selfConflict = await _db.Bookings.AnyAsync(b =>
+            b.Id != booking.Id &&
+            b.StudentId == uid &&
+            (b.Status == "Confirmed" || b.Status == "Pending") &&
+            b.StartTime < endUtc && b.EndTime > startUtc);
+        if (selfConflict)
+        {
+            TempData["Error"] = "⚠️ Bạn đã có lịch học khác trong khung giờ này!";
+            return RedirectToAction("Reschedule", new { id });
+        }
+
+        if (!await IsWithinAvailabilityAsync(booking.TutorProfileId, startUtc, endUtc))
+        {
+            TempData["Error"] = "⚠️ Gia sư không rảnh trong khung giờ này.";
+            return RedirectToAction("Reschedule", new { id });
+        }
+
+        booking.StartTime = startUtc;
+        booking.EndTime = endUtc;
+        // Đổi giờ -> cần gia sư xác nhận lại
+        booking.Status = "Pending";
+        booking.MeetingRoomId = null;
+        await _db.SaveChangesAsync();
+
+        var user = await _userManager.GetUserAsync(User);
+        await _notif.NotifyAsync(booking.TutorProfile.UserId, "🔄 Yêu cầu đổi giờ",
+            $"{user?.FullName} đã đổi giờ một buổi học, cần bạn xác nhận lại.", "/Booking/TutorRequests");
+
+        TempData["Success"] = "Đã đổi giờ. Vui lòng chờ gia sư xác nhận lại.";
+        return RedirectToAction("MyBookings");
     }
 }
