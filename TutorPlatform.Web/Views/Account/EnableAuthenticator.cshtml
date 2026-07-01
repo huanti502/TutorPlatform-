@@ -1,0 +1,45 @@
+@model TutorPlatform.Web.ViewModels.EnableAuthenticatorViewModel
+@{
+    ViewData["Title"] = "Bật Authenticator";
+}
+
+<div class="container py-4" style="max-width:560px;">
+    <a asp-action="TwoFactorAuthentication" class="small text-muted text-decoration-none">← Quay lại</a>
+    <h3 class="mt-2 mb-3">Thiết lập ứng dụng Authenticator</h3>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <ol class="ps-3">
+                <li class="mb-2">Cài app <b>Google Authenticator</b> hoặc <b>Microsoft Authenticator</b> trên điện thoại.</li>
+                <li class="mb-2">
+                    Quét mã QR bên dưới, hoặc nhập thủ công khoá:
+                    <div class="bg-light border rounded p-2 my-2 text-center">
+                        <code style="font-size:1rem;">@Model.SharedKey</code>
+                    </div>
+                    <div id="qrcode" class="text-center my-3"></div>
+                </li>
+                <li>
+                    Nhập mã 6 số mà app hiển thị để xác nhận:
+                    <form asp-action="EnableAuthenticator" method="post" class="mt-2">
+                        @Html.AntiForgeryToken()
+                        <div asp-validation-summary="All" class="text-danger small mb-2"></div>
+                        <div class="input-group" style="max-width:260px;">
+                            <input asp-for="Code" class="form-control text-center" inputmode="numeric" autocomplete="off" placeholder="123456" />
+                            <button type="submit" class="btn text-white" style="background:#7c3aed;border:none;">Xác nhận</button>
+                        </div>
+                    </form>
+                </li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script>
+        new QRCode(document.getElementById("qrcode"), {
+            text: "@Html.Raw(Model.AuthenticatorUri)",
+            width: 180, height: 180
+        });
+    </script>
+}

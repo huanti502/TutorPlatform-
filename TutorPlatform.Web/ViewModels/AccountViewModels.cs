@@ -71,3 +71,21 @@ public class TutorProfileFormViewModel
     public string? AvatarUrl { get; set; }
     public IFormFile? AvatarFile { get; set; }
 }
+public class TwoFactorLoginViewModel
+{
+    [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Vui lòng nhập mã")]
+    [System.ComponentModel.DataAnnotations.Display(Name = "Mã xác thực")]
+    public string Code { get; set; } = string.Empty;
+
+    public bool RememberMachine { get; set; }
+}
+
+public class EnableAuthenticatorViewModel
+{
+    [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "Vui lòng nhập mã")]
+    [System.ComponentModel.DataAnnotations.Display(Name = "Mã xác thực")]
+    public string Code { get; set; } = string.Empty;
+
+    public string SharedKey { get; set; } = string.Empty;
+    public string AuthenticatorUri { get; set; } = string.Empty;
+}

@@ -1,0 +1,39 @@
+@{
+    ViewData["Title"] = "Xác thực 2 lớp";
+    bool enabled = (bool)ViewBag.Is2faEnabled;
+    int recoveryLeft = (int)ViewBag.RecoveryCodesLeft;
+}
+
+<div class="container py-4" style="max-width:640px;">
+    <h3 class="mb-3">Bảo mật · Xác thực 2 lớp (2FA)</h3>
+
+    @if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            @if (enabled)
+            {
+                <div class="d-flex align-items-center mb-3">
+                    <span class="badge bg-success me-2">Đang bật</span>
+                    <span>Tài khoản của bạn được bảo vệ bằng ứng dụng Authenticator.</span>
+                </div>
+                <p class="small text-muted">Số mã khôi phục còn lại: <b>@recoveryLeft</b></p>
+                <div class="d-flex gap-2">
+                    <a asp-action="EnableAuthenticator" class="btn btn-outline-primary btn-sm">Thiết lập lại app</a>
+                    <form asp-action="Disable2fa" method="post" onsubmit="return confirm('Tắt xác thực 2 lớp?');">
+                        @Html.AntiForgeryToken()
+                        <button class="btn btn-outline-danger btn-sm">Tắt 2FA</button>
+                    </form>
+                </div>
+            }
+            else
+            {
+                <div class="d-flex align-items-center mb-3">
+                    <span class="badge bg-secondary me-2">Đang tắt</span>
+                    <span>Thêm một lớp bảo mật bằng ứng dụng Authenticator (Google/Microsoft Authenticator...).</span>
+                </div>
+                <a asp-action="EnableAuthenticator" class="btn text-white fw-bold" style="background:#7c3aed;border:none;">Bật xác thực 2 lớp</a>
+            }
+        </div>
+    </div>
+</div>

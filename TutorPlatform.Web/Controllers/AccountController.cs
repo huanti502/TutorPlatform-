@@ -248,7 +248,51 @@ public class AccountController : Controller
         if (result.Succeeded)
             return RedirectToAction("Index", "Home");
 
+        if (result.RequiresTwoFactor)
+            return RedirectToAction("LoginWith2fa", new { rememberMe = model.RememberMe });
+
         ModelState.AddModelError("", "Email hoặc mật khẩu không đúng.");
+        return View(model);
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  ĐĂNG NHẬP BƯỚC 2 — NHẬP MÃ 2FA
+    // ══════════════════════════════════════════════════════
+
+    [HttpGet]
+    public async Task<IActionResult> LoginWith2fa(bool rememberMe)
+    {
+        var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
+        if (user == null)
+        {
+            TempData["Error"] = "Phiên đăng nhập 2 lớp không hợp lệ. Vui lòng đăng nhập lại.";
+            return RedirectToAction("Login");
+        }
+        ViewBag.RememberMe = rememberMe;
+        return View(new TwoFactorLoginViewModel());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> LoginWith2fa(TwoFactorLoginViewModel model, bool rememberMe)
+    {
+        if (!ModelState.IsValid) { ViewBag.RememberMe = rememberMe; return View(model); }
+
+        var user = await _signInManager.GetTwoFactorAuthenticationUserAsync();
+        if (user == null)
+        {
+            TempData["Error"] = "Phiên đăng nhập 2 lớp không hợp lệ. Vui lòng đăng nhập lại.";
+            return RedirectToAction("Login");
+        }
+
+        var code = model.Code.Replace(" ", string.Empty).Replace("-", string.Empty);
+        var result = await _signInManager.TwoFactorAuthenticatorSignInAsync(code, rememberMe, model.RememberMachine);
+
+        if (result.Succeeded)
+            return RedirectToAction("Index", "Home");
+
+        ViewBag.RememberMe = rememberMe;
+        ModelState.AddModelError(string.Empty, "Mã xác thực không đúng.");
         return View(model);
     }
 
@@ -608,5 +652,113 @@ public class AccountController : Controller
         return string.IsNullOrEmpty(referer)
             ? RedirectToAction("Index", "Home")
             : Redirect(referer);
+    }
+
+    // ══════════════════════════════════════════════════════
+    //  XÁC THỰC 2 LỚP (2FA) — QUẢN LÝ
+    // ══════════════════════════════════════════════════════
+
+    [Authorize]
+    [HttpGet]
+    public async Task<IActionResult> TwoFactorAuthentication()
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Challenge();
+
+        ViewBag.Is2faEnabled = await _userManager.GetTwoFactorEnabledAsync(user);
+        ViewBag.HasAuthenticator = await _userManager.GetAuthenticatorKeyAsync(user) != null;
+        ViewBag.RecoveryCodesLeft = await _userManager.CountRecoveryCodesAsync(user);
+        return View();
+    }
+
+    [Authorize]
+    [HttpGet]
+    public async Task<IActionResult> EnableAuthenticator()
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Challenge();
+
+        var model = await BuildAuthenticatorViewModel(user);
+        return View(model);
+    }
+
+    [Authorize]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EnableAuthenticator(EnableAuthenticatorViewModel model)
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Challenge();
+
+        if (!ModelState.IsValid)
+            return View(await BuildAuthenticatorViewModel(user));
+
+        var code = model.Code.Replace(" ", string.Empty).Replace("-", string.Empty);
+        var isValid = await _userManager.VerifyTwoFactorTokenAsync(
+            user, _userManager.Options.Tokens.AuthenticatorTokenProvider, code);
+
+        if (!isValid)
+        {
+            ModelState.AddModelError("Code", "Mã xác thực không đúng.");
+            return View(await BuildAuthenticatorViewModel(user));
+        }
+
+        await _userManager.SetTwoFactorEnabledAsync(user, true);
+        var recoveryCodes = await _userManager.GenerateNewTwoFactorRecoveryCodesAsync(user, 10);
+        TempData["Success"] = "Đã bật xác thực 2 lớp.";
+        ViewBag.RecoveryCodes = recoveryCodes?.ToArray() ?? Array.Empty<string>();
+        return View("ShowRecoveryCodes");
+    }
+
+    [Authorize]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Disable2fa()
+    {
+        var user = await _userManager.GetUserAsync(User);
+        if (user == null) return Challenge();
+
+        await _userManager.SetTwoFactorEnabledAsync(user, false);
+        await _userManager.ResetAuthenticatorKeyAsync(user);
+        TempData["Success"] = "Đã tắt xác thực 2 lớp.";
+        return RedirectToAction("TwoFactorAuthentication");
+    }
+
+    private async Task<EnableAuthenticatorViewModel> BuildAuthenticatorViewModel(AppUser user)
+    {
+        var unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+        if (string.IsNullOrEmpty(unformattedKey))
+        {
+            await _userManager.ResetAuthenticatorKeyAsync(user);
+            unformattedKey = await _userManager.GetAuthenticatorKeyAsync(user);
+        }
+
+        var email = await _userManager.GetEmailAsync(user) ?? "user";
+        return new EnableAuthenticatorViewModel
+        {
+            SharedKey = FormatKey(unformattedKey!),
+            AuthenticatorUri = GenerateQrCodeUri(email, unformattedKey!)
+        };
+    }
+
+    private static string FormatKey(string unformattedKey)
+    {
+        var result = new System.Text.StringBuilder();
+        int currentPosition = 0;
+        while (currentPosition + 4 < unformattedKey.Length)
+        {
+            result.Append(unformattedKey.AsSpan(currentPosition, 4)).Append(' ');
+            currentPosition += 4;
+        }
+        if (currentPosition < unformattedKey.Length)
+            result.Append(unformattedKey.AsSpan(currentPosition));
+        return result.ToString().ToLowerInvariant();
+    }
+
+    private static string GenerateQrCodeUri(string email, string unformattedKey)
+    {
+        const string issuer = "GiaSuViet";
+        return $"otpauth://totp/{Uri.EscapeDataString(issuer)}:{Uri.EscapeDataString(email)}" +
+               $"?secret={unformattedKey}&issuer={Uri.EscapeDataString(issuer)}&digits=6";
     }
 }
