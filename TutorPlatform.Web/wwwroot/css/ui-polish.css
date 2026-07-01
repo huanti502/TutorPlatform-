@@ -1,0 +1,260 @@
+/* =========================================================
+   UI POLISH LAYER — phủ lên site.css, dùng lại token có sẵn.
+   Mục tiêu: đẹp & chuyên nghiệp hơn, chuyển động mượt,
+   focus/hover rõ ràng, đồng bộ card/nút/form/bảng.
+   An toàn: chỉ tinh chỉnh thẩm mỹ, không đổi layout/cấu trúc.
+   ========================================================= */
+
+/* --- Font tiếng Việt chuyên nghiệp --- */
+body,
+.navbar,
+button,
+input,
+select,
+textarea,
+.btn {
+    font-family: 'Be Vietnam Pro', 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+    font-family: 'Be Vietnam Pro', 'Plus Jakarta Sans', sans-serif;
+    letter-spacing: -0.015em;
+}
+
+/* --- Chuyển động mượt cho phần tử tương tác (150–250ms) --- */
+a,
+.btn,
+button,
+.card,
+.badge,
+.nav-link,
+.dropdown-item,
+input,
+select,
+textarea,
+.page-link {
+    transition: background-color .18s ease, color .18s ease,
+                border-color .18s ease, box-shadow .2s ease,
+                transform .2s ease, opacity .18s ease;
+}
+
+/* --- Focus ring rõ ràng cho accessibility --- */
+a:focus-visible,
+.btn:focus-visible,
+button:focus-visible,
+.form-control:focus-visible,
+.form-select:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+.page-link:focus-visible {
+    outline: 3px solid color-mix(in srgb, var(--primary) 45%, transparent);
+    outline-offset: 2px;
+}
+
+/* =======================  NAVBAR  ======================= */
+.navbar.sticky-top {
+    background: color-mix(in srgb, var(--surface) 88%, transparent);
+    -webkit-backdrop-filter: saturate(180%) blur(12px);
+    backdrop-filter: saturate(180%) blur(12px);
+    border-bottom: 1px solid var(--border-subtle);
+    box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+}
+
+.navbar .nav-link {
+    border-radius: var(--radius-sm);
+    padding-inline: .75rem;
+}
+
+.navbar .nav-link:hover {
+    background: var(--primary-light);
+    color: var(--primary) !important;
+}
+
+/* =======================  CARD  ======================= */
+.card {
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Card nội dung (danh sách gia sư, lịch học…) nổi nhẹ khi hover */
+.card.h-100:hover,
+.card.shadow-sm:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: color-mix(in srgb, var(--primary) 22%, var(--border));
+}
+
+/* =======================  BUTTON  ======================= */
+.btn {
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+    letter-spacing: .1px;
+}
+
+.btn:active {
+    transform: translateY(1px);
+}
+
+.btn-primary {
+    background: var(--primary);
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(79,70,229,0.18);
+}
+
+.btn-primary:hover {
+    background: var(--primary-dark);
+    border-color: var(--primary-dark);
+    box-shadow: 0 8px 20px rgba(79,70,229,0.26);
+}
+
+.btn-success {
+    box-shadow: 0 4px 12px rgba(16,185,129,0.18);
+}
+
+.btn-outline-primary:hover {
+    box-shadow: 0 6px 16px rgba(79,70,229,0.16);
+}
+
+/* Nút phụ dạng lưới trong thẻ lịch học (bk-btn) */
+.bk-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
+}
+
+.bk-primary {
+    box-shadow: 0 3px 10px rgba(0,0,0,0.06);
+}
+
+.bk-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+    filter: brightness(0.98);
+}
+
+/* =======================  FORM  ======================= */
+.form-control,
+.form-select {
+    border-radius: var(--radius-sm);
+    border-color: var(--border);
+}
+
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 14%, transparent);
+}
+
+.input-group .btn {
+    box-shadow: none;
+}
+
+/* =======================  BADGE / PILL  ======================= */
+.badge {
+    font-weight: 600;
+    letter-spacing: .2px;
+    border-radius: var(--radius-full);
+    padding: .38em .7em;
+}
+
+/* =======================  TABLE  ======================= */
+.table {
+    --bs-table-hover-bg: var(--primary-light);
+}
+
+.table > thead th {
+    font-size: .78rem;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    color: var(--text-muted);
+    font-weight: 700;
+    border-bottom: 1px solid var(--border);
+}
+
+.table > tbody > tr {
+    border-color: var(--border-subtle);
+}
+
+.table-responsive {
+    border-radius: var(--radius-md);
+}
+
+/* =======================  PAGINATION  ======================= */
+.pagination .page-link {
+    color: var(--text-secondary);
+    border-color: var(--border);
+    border-radius: var(--radius-sm) !important;
+    margin: 0 2px;
+    min-width: 38px;
+    text-align: center;
+}
+
+.pagination .page-item.active .page-link {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: #fff;
+}
+
+.pagination .page-link:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+/* =======================  DROPDOWN  ======================= */
+.dropdown-menu {
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-lg);
+    padding: 6px;
+}
+
+.dropdown-item {
+    border-radius: var(--radius-sm);
+    padding: .5rem .7rem;
+}
+
+.dropdown-item:hover {
+    background: var(--primary-light);
+    color: var(--primary);
+}
+
+/* =======================  ALERT  ======================= */
+.alert {
+    border: 1px solid transparent;
+    border-radius: var(--radius-md);
+}
+
+/* =======================  AVATAR  ======================= */
+.avatar {
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+/* =======================  SCROLLBAR (desktop)  ======================= */
+@media (min-width: 992px) {
+    * { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+    *::-webkit-scrollbar { width: 10px; height: 10px; }
+    *::-webkit-scrollbar-thumb {
+        background: var(--border-strong);
+        border-radius: 999px;
+        border: 2px solid var(--surface);
+    }
+    *::-webkit-scrollbar-thumb:hover { background: var(--slate-400); }
+}
+
+/* =======================  TÔN TRỌNG reduced-motion  ======================= */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        transition-duration: .01ms !important;
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+    .card.h-100:hover,
+    .card.shadow-sm:hover,
+    .btn:active,
+    .bk-btn:hover,
+    .bk-primary:hover { transform: none; }
+}
