@@ -258,3 +258,49 @@ textarea:focus-visible,
     .bk-btn:hover,
     .bk-primary:hover { transform: none; }
 }
+
+/* =======================  MENU TÀI KHOẢN GỌN HƠN  =======================
+   Áp cho các dropdown trong navbar (trừ dropdown thông báo .notif-dropdown).
+   Nén padding, thu nhỏ header/divider, canh icon + chữ thẳng hàng,
+   giới hạn chiều cao để menu dài (gia sư) không tràn màn hình. */
+.navbar .dropdown-menu:not(.notif-dropdown) {
+    min-width: 236px;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 6px;
+}
+
+.navbar .dropdown-menu:not(.notif-dropdown) .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    padding: .42rem .6rem;
+    font-size: .875rem;
+    line-height: 1.2;
+    border-radius: var(--radius-sm);
+}
+
+.navbar .dropdown-menu:not(.notif-dropdown) .dropdown-item svg {
+    flex-shrink: 0;
+    opacity: .75;
+}
+
+.navbar .dropdown-menu:not(.notif-dropdown) .dropdown-header {
+    padding: .55rem .6rem .25rem;
+    font-size: .68rem;
+    font-weight: 700;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.navbar .dropdown-menu:not(.notif-dropdown) .dropdown-divider {
+    margin: .3rem .25rem;
+    opacity: .55;
+}
+
+/* Mục đăng xuất nổi bật nhẹ bằng màu, tách khỏi nhóm trên */
+.navbar .dropdown-menu:not(.notif-dropdown) .dropdown-item.text-danger:hover {
+    background: var(--danger-light);
+    color: var(--danger) !important;
+}
