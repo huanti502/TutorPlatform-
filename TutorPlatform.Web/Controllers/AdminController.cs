@@ -80,17 +80,26 @@ public class AdminController : Controller
         return View();
     }
 
-    public async Task<IActionResult> Users(string? search, string? role)
+    public async Task<IActionResult> Users(string? search, string? role, int page = 1)
     {
+        const int pageSize = 20;
+        if (page < 1) page = 1;
+
         var query = _db.Users.AsQueryable();
         if (!string.IsNullOrEmpty(search))
             query = query.Where(u => u.FullName.Contains(search) || u.Email!.Contains(search));
         if (!string.IsNullOrEmpty(role))
             query = query.Where(u => u.Role == role);
 
-        var users = await query.OrderByDescending(u => u.CreatedAt).Take(50).ToListAsync();
+        var total = await query.CountAsync();
+        var users = await query.OrderByDescending(u => u.CreatedAt)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
+
         ViewBag.Search = search;
         ViewBag.Role = role;
+        ViewBag.Page = page;
+        ViewBag.TotalPages = (int)Math.Ceiling(total / (double)pageSize);
+        ViewBag.Total = total;
         return View(users);
     }
 
@@ -541,6 +550,31 @@ public class AdminController : Controller
         ViewBag.ChartLabels = System.Text.Json.JsonSerializer.Serialize(labels);
         ViewBag.ChartData = System.Text.Json.JsonSerializer.Serialize(data);
         return View();
+    }
+
+    // ==========================================
+    // QUẢN LÝ GÓI HỌC TOÀN HỆ THỐNG
+    // ==========================================
+
+    [HttpGet]
+    public async Task<IActionResult> Packages()
+    {
+        var packages = await _db.LessonPackages
+            .Include(p => p.TutorProfile).ThenInclude(t => t.User)
+            .OrderByDescending(p => p.CreatedAt)
+            .ToListAsync();
+
+        var purchases = await _db.PackagePurchases
+            .Include(p => p.LessonPackage).ThenInclude(lp => lp!.TutorProfile).ThenInclude(t => t!.User)
+            .Where(p => p.Status != "Pending")
+            .OrderByDescending(p => p.CreatedAt)
+            .Take(50)
+            .ToListAsync();
+
+        ViewBag.Purchases = purchases;
+        ViewBag.TotalPackageRevenue = purchases.Sum(p => p.PricePaid);
+        ViewBag.PurchaseCount = purchases.Count;
+        return View(packages);
     }
 
     // ==========================================

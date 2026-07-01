@@ -195,6 +195,33 @@ public class PaymentController : Controller
         return (c, discount, null);
     }
 
+    // Biên nhận thanh toán (in / lưu PDF từ trình duyệt).
+    [HttpGet]
+    public async Task<IActionResult> Receipt(int bookingId)
+    {
+        var payment = await _db.Payments
+            .Include(p => p.Booking).ThenInclude(b => b!.Student)
+            .Include(p => p.Booking).ThenInclude(b => b!.Subject)
+            .Include(p => p.Booking).ThenInclude(b => b!.TutorProfile).ThenInclude(t => t.User)
+            .Where(p => p.BookingId == bookingId && p.Status == "Paid")
+            .OrderByDescending(p => p.PaidAt)
+            .FirstOrDefaultAsync();
+
+        if (payment == null)
+        {
+            TempData["Error"] = "Không tìm thấy biên nhận cho buổi học này.";
+            return RedirectToAction("MyBookings", "Booking");
+        }
+
+        var uid = _userManager.GetUserId(User);
+        var isOwner = payment.Booking!.StudentId == uid;
+        var isTutor = payment.Booking.TutorProfile.UserId == uid;
+        var isAdmin = User.IsInRole("Admin");
+        if (!isOwner && !isTutor && !isAdmin) return Forbid();
+
+        return View(payment);
+    }
+
     // VNPay chuyển hướng về sau khi thanh toán.
     public async Task<IActionResult> VnPayReturn()
     {

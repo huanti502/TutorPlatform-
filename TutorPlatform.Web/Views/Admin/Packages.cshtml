@@ -1,0 +1,88 @@
+@model List<TutorPlatform.Core.Models.LessonPackage>
+@{
+    ViewData["Title"] = "Gói học";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    var purchases = ViewBag.Purchases as List<TutorPlatform.Core.Models.PackagePurchase> ?? new();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Gói học toàn hệ thống</h3>
+    <span class="text-muted">Doanh thu gói: <b>@(((decimal)ViewBag.TotalPackageRevenue).ToString("N0"))đ</b> · @ViewBag.PurchaseCount lượt mua</span>
+</div>
+
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <h6 class="fw-bold mb-3">Danh sách gói (@Model.Count)</h6>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr><th>Gia sư</th><th>Tên gói</th><th>Số buổi</th><th class="text-end">Giá</th><th>Trạng thái</th></tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr><td colspan="5" class="text-center text-muted py-4">Chưa có gói nào.</td></tr>
+                    }
+                    @foreach (var p in Model)
+                    {
+                        <tr>
+                            <td>@p.TutorProfile?.User?.FullName</td>
+                            <td>@p.Name</td>
+                            <td>@p.SessionCount</td>
+                            <td class="text-end">@p.Price.ToString("N0")đ</td>
+                            <td>
+                                @if (p.IsActive)
+                                {
+                                    <span class="badge bg-success">Đang bán</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Đã ẩn</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        <h6 class="fw-bold mb-3">Lượt mua gần đây</h6>
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr><th>Thời gian</th><th>Gói</th><th>Gia sư</th><th>Còn lại</th><th>Trạng thái</th><th class="text-end">Giá</th></tr>
+                </thead>
+                <tbody>
+                    @if (!purchases.Any())
+                    {
+                        <tr><td colspan="6" class="text-center text-muted py-4">Chưa có lượt mua nào.</td></tr>
+                    }
+                    @foreach (var pu in purchases)
+                    {
+                        <tr>
+                            <td class="small">@(pu.ActivatedAt?.AddHours(7).ToString("HH:mm dd/MM/yyyy"))</td>
+                            <td>@pu.LessonPackage?.Name</td>
+                            <td>@pu.LessonPackage?.TutorProfile?.User?.FullName</td>
+                            <td>@pu.RemainingSessions/@pu.TotalSessions</td>
+                            <td>
+                                @if (pu.Status == "Used")
+                                {
+                                    <span class="badge bg-secondary">Đã dùng hết</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Còn hiệu lực</span>
+                                }
+                            </td>
+                            <td class="text-end">@pu.PricePaid.ToString("N0")đ</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

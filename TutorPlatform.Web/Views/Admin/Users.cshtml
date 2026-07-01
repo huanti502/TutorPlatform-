@@ -15,7 +15,7 @@
             </a>
             <div>
                 <h4 style="font-weight:800;margin:0;letter-spacing:-0.03em;">Người dùng</h4>
-                <p style="color:var(--text-muted);font-size:0.85rem;margin:2px 0 0;">@Model.Count() tài khoản</p>
+                <p style="color:var(--text-muted);font-size:0.85rem;margin:2px 0 0;">@ViewBag.Total tài khoản</p>
             </div>
         </div>
     </div>
@@ -122,5 +122,29 @@
                 </tbody>
             </table>
         </div>
+
+        @{
+            int curPage = (int)(ViewBag.Page ?? 1);
+            int totalPages = (int)(ViewBag.TotalPages ?? 1);
+        }
+        @if (totalPages > 1)
+        {
+            <nav class="mt-3">
+                <ul class="pagination pagination-sm justify-content-center mb-0">
+                    <li class="page-item @(curPage <= 1 ? "disabled" : "")">
+                        <a class="page-link" href="?search=@ViewBag.Search&role=@ViewBag.Role&page=@(curPage - 1)">‹</a>
+                    </li>
+                    @for (int p = 1; p <= totalPages; p++)
+                    {
+                        <li class="page-item @(p == curPage ? "active" : "")">
+                            <a class="page-link" href="?search=@ViewBag.Search&role=@ViewBag.Role&page=@p">@p</a>
+                        </li>
+                    }
+                    <li class="page-item @(curPage >= totalPages ? "disabled" : "")">
+                        <a class="page-link" href="?search=@ViewBag.Search&role=@ViewBag.Role&page=@(curPage + 1)">›</a>
+                    </li>
+                </ul>
+            </nav>
+        }
     </div>
 </div>

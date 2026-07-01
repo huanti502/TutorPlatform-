@@ -206,6 +206,13 @@
                                                 <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Đã thanh toán
                                             </span>
                                         </div>
+                                        @if (b.PaidByPackagePurchaseId == null)
+                                        {
+                                            <a asp-controller="Payment" asp-action="Receipt" asp-route-bookingId="@b.Id" target="_blank"
+                                               class="btn btn-sm w-100 mb-2" style="border-radius:8px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;">
+                                                🧾 Biên nhận
+                                            </a>
+                                        }
                                     }
                                     <a href="/Whiteboard/Index?bookingId=@b.Id"
                                        target="_blank"
