@@ -158,6 +158,8 @@ using (var scope = app.Services.CreateScope())
         // Dùng raw SQL vì dotnet-ef đang lỗi với Npgsql 10.
         await db.Database.ExecuteSqlRawAsync(
             "ALTER TABLE \"Bookings\" ADD COLUMN IF NOT EXISTS \"ReminderSent\" boolean NOT NULL DEFAULT false;");
+        await db.Database.ExecuteSqlRawAsync(
+            "ALTER TABLE \"Bookings\" ADD COLUMN IF NOT EXISTS \"PaidByPackagePurchaseId\" integer NULL;");
 
         // Bảng lưu khoá DataProtection (cố định khoá qua các lần deploy).
         await db.Database.ExecuteSqlRawAsync("""

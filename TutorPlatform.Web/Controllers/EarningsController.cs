@@ -26,6 +26,9 @@ public class EarningsController : Controller
         var uid = _userManager.GetUserId(User)!;
         var rate = _config.GetValue<decimal?>("Platform:CommissionRate") ?? 0.15m;
 
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(t => t.UserId == uid);
+        var profileId = profile?.Id ?? -1;
+
         var payments = await _db.Payments
             .Include(p => p.Booking).ThenInclude(b => b!.Student)
             .Include(p => p.Booking).ThenInclude(b => b!.Subject)
@@ -34,7 +37,16 @@ public class EarningsController : Controller
             .OrderByDescending(p => p.PaidAt)
             .ToListAsync();
 
-        var gross = payments.Sum(p => p.Amount);
+        // Doanh thu từ gói đã kích hoạt
+        var packageSales = await _db.PackagePurchases
+            .Include(p => p.LessonPackage)
+            .Where(p => p.TutorProfileId == profileId && p.Status != "Pending")
+            .OrderByDescending(p => p.ActivatedAt)
+            .ToListAsync();
+
+        var grossFromPayments = payments.Sum(p => p.Amount);
+        var grossFromPackages = packageSales.Sum(p => p.PricePaid);
+        var gross = grossFromPayments + grossFromPackages;
         var commission = Math.Round(gross * rate);
         var net = gross - commission;
 
@@ -46,19 +58,19 @@ public class EarningsController : Controller
         {
             var month = new DateTime(now.Year, now.Month, 1).AddMonths(-i);
             labels.Add(month.ToString("MM/yyyy"));
-            var monthGross = payments
-                .Where(p => p.PaidAt.HasValue
-                            && p.PaidAt.Value.Year == month.Year
-                            && p.PaidAt.Value.Month == month.Month)
-                .Sum(p => p.Amount);
+            var monthGross =
+                payments.Where(p => p.PaidAt.HasValue && p.PaidAt.Value.Year == month.Year && p.PaidAt.Value.Month == month.Month).Sum(p => p.Amount)
+                + packageSales.Where(p => p.ActivatedAt.HasValue && p.ActivatedAt.Value.Year == month.Year && p.ActivatedAt.Value.Month == month.Month).Sum(p => p.PricePaid);
             data.Add(monthGross - Math.Round(monthGross * rate));
         }
 
         ViewBag.Gross = gross;
+        ViewBag.GrossFromPackages = grossFromPackages;
         ViewBag.Commission = commission;
         ViewBag.Net = net;
         ViewBag.Rate = rate;
-        ViewBag.PaidCount = payments.Count;
+        ViewBag.PaidCount = payments.Count + packageSales.Count;
+        ViewBag.PackageSales = packageSales;
         ViewBag.ChartLabels = System.Text.Json.JsonSerializer.Serialize(labels);
         ViewBag.ChartData = System.Text.Json.JsonSerializer.Serialize(data);
 

@@ -341,9 +341,12 @@ public class AccountController : Controller
 
         var email = info.Principal.FindFirstValue(ClaimTypes.Email);
 
-        // 1) Đã từng đăng nhập Google trước đó → đăng nhập luôn
+        // 1) Đã từng đăng nhập Google trước đó → đăng nhập luôn (tôn trọng 2FA nếu bật)
         var signInResult = await _signInManager.ExternalLoginSignInAsync(
-            info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: true);
+            info.LoginProvider, info.ProviderKey, isPersistent: false, bypassTwoFactor: false);
+
+        if (signInResult.RequiresTwoFactor)
+            return RedirectToAction("LoginWith2fa", new { rememberMe = false });
 
         if (signInResult.Succeeded)
         {

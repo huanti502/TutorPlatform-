@@ -18,6 +18,8 @@ public class Booking
     public bool IsPaid { get; set; } = false;
 
     public bool ReminderSent { get; set; } = false; // Đã gửi email nhắc lịch chưa (BackgroundService)
+
+    public int? PaidByPackagePurchaseId { get; set; } // nếu buổi này trả bằng gói -> id lượt mua gói
     
     public string? MeetingRoomId { get; set; } // Jitsi room ID tự động tạo
 }

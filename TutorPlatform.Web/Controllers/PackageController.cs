@@ -245,6 +245,7 @@ public class PackageController : Controller
         purchase.RemainingSessions--;
         if (purchase.RemainingSessions <= 0) purchase.Status = "Used";
         booking.IsPaid = true;
+        booking.PaidByPackagePurchaseId = purchase.Id;
         await _db.SaveChangesAsync();
 
         TempData["Success"] = $"Đã dùng 1 buổi trong gói. Còn lại {purchase.RemainingSessions} buổi.";

@@ -36,6 +36,33 @@
         </div>
     </div>
 
+    @{ var packageSales = ViewBag.PackageSales as List<TutorPlatform.Core.Models.PackagePurchase> ?? new(); }
+    @if (packageSales.Any())
+    {
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="fw-bold mb-1">Doanh thu từ gói</h6>
+                <p class="text-muted small mb-3">Tổng từ bán gói: <b>@(((decimal)ViewBag.GrossFromPackages).ToString("N0"))đ</b> (đã tính vào tổng doanh thu ở trên)</p>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead><tr><th>Thời gian</th><th>Gói</th><th>Số buổi</th><th class="text-end">Giá</th></tr></thead>
+                        <tbody>
+                            @foreach (var ps in packageSales)
+                            {
+                                <tr>
+                                    <td class="small">@(ps.ActivatedAt?.AddHours(7).ToString("HH:mm dd/MM/yyyy"))</td>
+                                    <td>@ps.LessonPackage?.Name</td>
+                                    <td>@ps.TotalSessions buổi</td>
+                                    <td class="text-end">@ps.PricePaid.ToString("N0")đ</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
             <h6 class="fw-bold mb-3">Thu nhập ròng 6 tháng gần nhất</h6>

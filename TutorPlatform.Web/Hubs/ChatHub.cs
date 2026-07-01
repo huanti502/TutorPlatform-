@@ -52,6 +52,30 @@ public class ChatHub : Hub
         // 3. Push tới cả 2 phía ngay lập tức
         await Clients.User(sender.Id).SendAsync("ReceiveMessage", payload);
         await Clients.User(receiverId).SendAsync("ReceiveMessage", payload);
+
+        // 4. Thông báo cho người nhận (gộp: 1 thông báo chưa đọc / mỗi người gửi để tránh spam)
+        var link = "/Message/Chat/" + sender.Id;
+        var preview = message.Content.Length > 40 ? message.Content.Substring(0, 40) + "…" : message.Content;
+        var existing = await _db.Notifications.FirstOrDefaultAsync(n =>
+            n.UserId == receiverId && !n.IsRead && n.Link == link);
+        if (existing != null)
+        {
+            existing.Content = $"{sender.FullName}: {preview}";
+            existing.CreatedAt = DateTime.UtcNow;
+        }
+        else
+        {
+            _db.Notifications.Add(new Notification
+            {
+                UserId = receiverId,
+                Title = "💬 Tin nhắn mới",
+                Content = $"{sender.FullName}: {preview}",
+                Link = link,
+                IsRead = false,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+        await _db.SaveChangesAsync();
     }
 
     // Đánh dấu đã đọc

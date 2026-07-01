@@ -150,6 +150,12 @@ public class AssignmentController : Controller
         var a = await _db.Assignments.FirstOrDefaultAsync(x => x.Id == id && x.StudentId == uid);
         if (a == null) return RedirectToAction("MyAssignments");
 
+        if (a.Status == "Graded")
+        {
+            TempData["Error"] = "Bài tập đã được chấm, không thể nộp lại.";
+            return RedirectToAction("MyAssignments");
+        }
+
         if (string.IsNullOrWhiteSpace(submissionText) && (file == null || file.Length == 0))
         {
             TempData["Error"] = "Vui lòng nhập nội dung hoặc đính kèm file.";

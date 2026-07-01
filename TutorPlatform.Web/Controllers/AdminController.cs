@@ -370,6 +370,18 @@ public class AdminController : Controller
             return RedirectToAction("Coupons");
         }
 
+        var isPercent = discountType == "Percent";
+        if (isPercent && (discountValue <= 0 || discountValue > 100))
+        {
+            TempData["Error"] = "Giảm theo phần trăm phải trong khoảng 1–100%.";
+            return RedirectToAction("Coupons");
+        }
+        if (!isPercent && discountValue < 1000)
+        {
+            TempData["Error"] = "Số tiền giảm tối thiểu 1.000đ.";
+            return RedirectToAction("Coupons");
+        }
+
         _db.Coupons.Add(new Coupon
         {
             Code = norm,
@@ -477,19 +489,31 @@ public class AdminController : Controller
             .Where(p => p.Status == "Paid")
             .ToListAsync();
 
-        var gross = payments.Sum(p => p.Amount);
+        var packageSales = await _db.PackagePurchases
+            .Include(p => p.LessonPackage).ThenInclude(lp => lp!.TutorProfile).ThenInclude(t => t!.User)
+            .Where(p => p.Status != "Pending")
+            .ToListAsync();
+
+        // Gộp thành các "khoản thu" (tên gia sư, số tiền, thời điểm)
+        var entries = new List<(string Tutor, decimal Amount, DateTime? When)>();
+        entries.AddRange(payments.Select(p =>
+            (p.Booking!.TutorProfile.User!.FullName ?? "Gia sư", p.Amount, p.PaidAt)));
+        entries.AddRange(packageSales.Select(p =>
+            (p.LessonPackage!.TutorProfile!.User!.FullName ?? "Gia sư", p.PricePaid, p.ActivatedAt)));
+
+        var gross = entries.Sum(e => e.Amount);
         var commission = Math.Round(gross * rate);
 
         // Theo từng gia sư
-        var perTutor = payments
-            .GroupBy(p => p.Booking!.TutorProfile.User!.FullName ?? "Gia sư")
+        var perTutor = entries
+            .GroupBy(e => e.Tutor)
             .Select(g => new
             {
                 Tutor = g.Key,
                 Count = g.Count(),
-                Gross = g.Sum(p => p.Amount),
-                Commission = Math.Round(g.Sum(p => p.Amount) * rate),
-                Net = g.Sum(p => p.Amount) - Math.Round(g.Sum(p => p.Amount) * rate)
+                Gross = g.Sum(e => e.Amount),
+                Commission = Math.Round(g.Sum(e => e.Amount) * rate),
+                Net = g.Sum(e => e.Amount) - Math.Round(g.Sum(e => e.Amount) * rate)
             })
             .OrderByDescending(x => x.Gross)
             .ToList();
@@ -502,9 +526,9 @@ public class AdminController : Controller
         {
             var month = new DateTime(now.Year, now.Month, 1).AddMonths(-i);
             labels.Add(month.ToString("MM/yyyy"));
-            var mGross = payments
-                .Where(p => p.PaidAt.HasValue && p.PaidAt.Value.Year == month.Year && p.PaidAt.Value.Month == month.Month)
-                .Sum(p => p.Amount);
+            var mGross = entries
+                .Where(e => e.When.HasValue && e.When.Value.Year == month.Year && e.When.Value.Month == month.Month)
+                .Sum(e => e.Amount);
             data.Add(Math.Round(mGross * rate));
         }
 
@@ -512,7 +536,7 @@ public class AdminController : Controller
         ViewBag.Gross = gross;
         ViewBag.Commission = commission;
         ViewBag.PaidToTutors = gross - commission;
-        ViewBag.PaidCount = payments.Count;
+        ViewBag.PaidCount = entries.Count;
         ViewBag.PerTutor = perTutor;
         ViewBag.ChartLabels = System.Text.Json.JsonSerializer.Serialize(labels);
         ViewBag.ChartData = System.Text.Json.JsonSerializer.Serialize(data);

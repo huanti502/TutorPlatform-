@@ -22,19 +22,22 @@ public class BookingController : Controller
     private readonly BadgeService _badgeService;
     private readonly IHubContext<ChatHub> _hubContext;
     private readonly XpService _xpService; // ✅ Khai báo XpService
+    private readonly NotificationService _notif;
 
     public BookingController(
         AppDbContext db,
         UserManager<AppUser> userManager,
         BadgeService badgeService,
         IHubContext<ChatHub> hubContext,
-        XpService xpService) // ✅ Inject XpService
+        XpService xpService, // ✅ Inject XpService
+        NotificationService notif)
     {
         _db = db;
         _userManager = userManager;
         _badgeService = badgeService;
         _hubContext = hubContext;
         _xpService = xpService; // ✅ Gán XpService
+        _notif = notif;
     }
 
     [Authorize(Roles = "Student")]
@@ -321,16 +324,60 @@ public class BookingController : Controller
         // Chỉ chủ booking mới được hủy
         if (booking.StudentId != user!.Id) return Forbid();
 
-        // Chỉ cho hủy khi đang Pending
-        if (booking.Status != "Pending")
+        // Cho hủy khi Pending hoặc Confirmed (và buổi học chưa bắt đầu)
+        if (booking.Status != "Pending" && booking.Status != "Confirmed")
         {
-            TempData["Error"] = "Chỉ có thể hủy lịch đang chờ xác nhận.";
+            TempData["Error"] = "Chỉ có thể hủy lịch đang chờ hoặc đã xác nhận.";
+            return RedirectToAction("MyBookings");
+        }
+        if (booking.StartTime <= DateTime.UtcNow)
+        {
+            TempData["Error"] = "Không thể hủy buổi học đã bắt đầu.";
             return RedirectToAction("MyBookings");
         }
 
         booking.Status = "Cancelled";
+
+        // Hoàn tiền nếu đã thanh toán
+        if (booking.IsPaid)
+        {
+            if (booking.PaidByPackagePurchaseId.HasValue)
+            {
+                // Trả lại 1 buổi vào gói
+                var purchase = await _db.PackagePurchases.FindAsync(booking.PaidByPackagePurchaseId.Value);
+                if (purchase != null)
+                {
+                    purchase.RemainingSessions++;
+                    if (purchase.Status == "Used") purchase.Status = "Active";
+                }
+                booking.PaidByPackagePurchaseId = null;
+                TempData["Success"] = "Đã hủy lịch và hoàn lại 1 buổi vào gói của bạn.";
+            }
+            else
+            {
+                // Đánh dấu giao dịch VNPay là đã hoàn (sandbox: không chuyển tiền thật)
+                var payment = await _db.Payments
+                    .Where(p => p.BookingId == booking.Id && p.Status == "Paid")
+                    .OrderByDescending(p => p.PaidAt)
+                    .FirstOrDefaultAsync();
+                if (payment != null) payment.Status = "Refunded";
+                TempData["Success"] = "Đã hủy lịch. Yêu cầu hoàn tiền sẽ được xử lý (môi trường sandbox).";
+            }
+            booking.IsPaid = false;
+        }
+        else
+        {
+            TempData["Success"] = "Đã hủy lịch học.";
+        }
+
         await _db.SaveChangesAsync();
-        TempData["Success"] = "Đã hủy lịch học.";
+
+        // Báo cho gia sư
+        var tutorProfile = await _db.TutorProfiles.FindAsync(booking.TutorProfileId);
+        if (tutorProfile != null)
+            await _notif.NotifyAsync(tutorProfile.UserId, "❌ Lịch học bị hủy",
+                $"{user.FullName} đã hủy một buổi học.", "/Booking/TutorRequests");
+
         return RedirectToAction("MyBookings");
     }
 
