@@ -25,6 +25,16 @@
             box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
         }
     }
+
+    /* Nút hành động gọn cho thẻ lịch học */
+    .bk-primary { display:block; width:100%; text-align:center; font-weight:700; padding:.6rem; border-radius:8px; text-decoration:none; border:none; cursor:pointer; }
+    .bk-pill { display:inline-flex; align-items:center; gap:6px; font-size:.78rem; font-weight:700; padding:.32rem .7rem; border-radius:20px; }
+    .bk-tools { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .bk-cell { flex:1 1 calc(50% - 4px); min-width:0; margin:0; }
+    .bk-btn { width:100%; display:inline-flex; align-items:center; justify-content:center; gap:6px; font-size:.8rem; font-weight:600; padding:.45rem .4rem; border-radius:8px; text-decoration:none; background:#f8fafc; color:#475569; border:1px solid #e5e7eb; cursor:pointer; transition:background .15s; }
+    .bk-btn:hover { background:#eef2f7; }
+    .bk-btn.danger { color:#dc2626; background:#fef2f2; border-color:#fecaca; }
+    .bk-btn.danger:hover { background:#fee2e2; }
 </style>
 
 <section class="section-sm">
@@ -158,77 +168,62 @@
                                 @* Pending: nút huỷ *@
                                 @if (b.Status == "Pending")
                                 {
+                                    <div class="text-center small mb-2" style="color:#D97706;">⏳ Đang chờ gia sư xác nhận</div>
                                     <form asp-action="Cancel" method="post">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="id" value="@b.Id" />
-                                        <button type="submit" class="btn btn-sm w-100"
-                                                style="border-radius:8px;
-                                            background:var(--danger-light);
-                                            color:var(--danger);
-                                            font-weight:600;border:none;"
-                                                onclick="return confirm('Huỷ lịch học này?')">
-                                            Huỷ lịch
-                                        </button>
+                                        <button type="submit" class="bk-primary" style="background:var(--danger-light);color:var(--danger);"
+                                                onclick="return confirm('Huỷ lịch học này?')">Huỷ lịch</button>
                                     </form>
                                 }
 
                                 @* Confirmed: thanh toán + bảng trắng *@
                                 else if (b.Status == "Confirmed")
                                 {
-                                    @* DEMO: Luôn hiện nút vào lớp nếu có MeetingRoomId (kể cả chưa thanh toán) *@
+                                    @* Nút chính: vào lớp *@
                                     @if (b.MeetingRoomId != null)
                                     {
                                         <a href="https://meet.jit.si/@b.MeetingRoomId" target="_blank"
-                                           class="btn btn-success btn-sm w-100 fw-bold mb-2"
-                                           style="animation:pulse 1.5s infinite; border-radius:8px; padding:0.6rem;">
-                                            🎥 Tham gia lớp học ngay!
+                                           class="bk-primary" style="background:#059669;color:#fff;animation:pulse 1.5s infinite;">
+                                            🎥 Vào lớp học
                                         </a>
                                     }
+
+                                    @* Thanh toán / trạng thái *@
                                     @if (!b.IsPaid)
                                     {
-                                        <a asp-controller="Payment" asp-action="Checkout" asp-route-bookingId="@b.Id"
-                                           class="btn btn-sm w-100 mb-2"
-                                           style="border-radius:8px; background:var(--primary); color:white; font-weight:600; border:none;">
-                                            💳 Thanh toán ngay
-                                        </a>
-                                        <form asp-controller="Package" asp-action="UseForBooking" method="post" class="mb-2">
-                                            @Html.AntiForgeryToken()
-                                            <input type="hidden" name="bookingId" value="@b.Id" />
-                                            <button class="btn btn-sm w-100" style="border-radius:8px;background:#ede9fe;color:#6d28d9;font-weight:600;border:1px solid #ddd6fe;">
-                                                📦 Dùng gói học
-                                            </button>
-                                        </form>
+                                        <div class="d-flex gap-2 mt-2">
+                                            <a asp-controller="Payment" asp-action="Checkout" asp-route-bookingId="@b.Id"
+                                               class="bk-primary" style="background:var(--primary);color:#fff;flex:1;">💳 Thanh toán</a>
+                                            <form asp-controller="Package" asp-action="UseForBooking" method="post" style="flex:1;margin:0;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="bookingId" value="@b.Id" />
+                                                <button class="bk-primary" style="background:#ede9fe;color:#6d28d9;border:1px solid #ddd6fe;">📦 Dùng gói</button>
+                                            </form>
+                                        </div>
                                     }
                                     else
                                     {
-                                        <div class="text-center mb-2">
-                                            <span class="badge bg-success w-100 py-2" style="border-radius:8px;">
-                                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Đã thanh toán
-                                            </span>
+                                        <div class="mt-2">
+                                            <span class="bk-pill" style="background:#ecfdf5;color:#059669;border:1px solid #a7f3d0;">✓ Đã thanh toán</span>
                                         </div>
-                                        @if (b.PaidByPackagePurchaseId == null)
-                                        {
-                                            <a asp-controller="Payment" asp-action="Receipt" asp-route-bookingId="@b.Id" target="_blank"
-                                               class="btn btn-sm w-100 mb-2" style="border-radius:8px;background:#f3f4f6;color:#374151;border:1px solid #e5e7eb;">
-                                                🧾 Biên nhận
-                                            </a>
-                                        }
                                     }
-                                    <a href="/Whiteboard/Index?bookingId=@b.Id"
-                                       target="_blank"
-                                       class="btn btn-sm w-100 mt-2"
-                                       style="background:#1e3a5f; color:white; border-radius:8px;">
-                                        🎨 Bảng Trắng
-                                    </a>
-                                    <form asp-action="Cancel" method="post" class="mt-2">
-                                        @Html.AntiForgeryToken()
-                                        <input type="hidden" name="id" value="@b.Id" />
-                                        <button type="submit" class="btn btn-sm w-100"
-                                                style="border-radius:8px;background:var(--danger-light);color:var(--danger);font-weight:600;border:none;"
-                                                onclick="return confirm('Huỷ buổi học này? Nếu đã thanh toán, tiền/buổi trong gói sẽ được hoàn.')">
-                                            Huỷ lịch
-                                        </button>
-                                    </form>
+
+                                    @* Nút phụ gọn (lưới 2 cột) *@
+                                    <div class="bk-tools">
+                                        <a href="/Whiteboard/Index?bookingId=@b.Id" target="_blank" class="bk-cell bk-btn">🎨 Bảng trắng</a>
+                                        <a asp-controller="LessonNote" asp-action="View" asp-route-bookingId="@b.Id" class="bk-cell bk-btn">📝 Ghi chú</a>
+                                        @if (b.IsPaid && b.PaidByPackagePurchaseId == null)
+                                        {
+                                            <a asp-controller="Payment" asp-action="Receipt" asp-route-bookingId="@b.Id" target="_blank" class="bk-cell bk-btn">🧾 Biên nhận</a>
+                                        }
+                                        <form asp-action="Cancel" method="post" class="bk-cell">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="id" value="@b.Id" />
+                                            <button type="submit" class="bk-btn danger"
+                                                    onclick="return confirm('Huỷ buổi học này? Nếu đã thanh toán, tiền/buổi trong gói sẽ được hoàn.')">✕ Huỷ lịch</button>
+                                        </form>
+                                    </div>
                                 }
 
                                 @* Completed: nút đánh giá *@
@@ -237,31 +232,21 @@
                                     @if (alreadyReviewed)
                                     {
                                         <div class="text-center">
-                                            <span class="badge w-100 py-2"
-                                                  style="background:#f0fdf4; color:#059669; border-radius:8px;">
-                                                <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Đã đánh giá
-                                            </span>
+                                            <span class="bk-pill" style="background:#f0fdf4;color:#059669;border:1px solid #bbf7d0;">✓ Đã đánh giá</span>
                                         </div>
                                     }
                                     else
                                     {
-                                        <a href="/Review/Create?bookingId=@b.Id"
-                                           class="btn btn-sm w-100"
-                                           style="border-radius:8px;
-                                            background:#fef9c3; color:#854d0e;
-                                            font-weight:600; border:1px solid #fde047;">
-                                            <svg width="14" height="14" fill="#F59E0B" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg> Đánh giá gia sư
-                                        </a>
+                                        <a href="/Review/Create?bookingId=@b.Id" class="bk-primary"
+                                           style="background:#fef9c3;color:#854d0e;border:1px solid #fde047;">⭐ Đánh giá gia sư</a>
                                     }
-                                }
-
-                                @if (b.Status == "Confirmed" || b.Status == "Completed")
-                                {
-                                    <a asp-controller="LessonNote" asp-action="View" asp-route-bookingId="@b.Id"
-                                       class="btn btn-sm w-100 mt-2"
-                                       style="background:#0d9488;color:white;border-radius:8px;">
-                                        📝 Ghi chú buổi học
-                                    </a>
+                                    <div class="bk-tools">
+                                        <a asp-controller="LessonNote" asp-action="View" asp-route-bookingId="@b.Id" class="bk-cell bk-btn">📝 Ghi chú</a>
+                                        @if (b.IsPaid && b.PaidByPackagePurchaseId == null)
+                                        {
+                                            <a asp-controller="Payment" asp-action="Receipt" asp-route-bookingId="@b.Id" target="_blank" class="bk-cell bk-btn">🧾 Biên nhận</a>
+                                        }
+                                    </div>
                                 }
 
                             </div>
