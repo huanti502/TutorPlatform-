@@ -151,6 +151,9 @@ public class AdminController : Controller
             ? $"Đã khoá tài khoản {user.Email}."
             : $"Đã mở khoá tài khoản {user.Email}.";
 
+        await LogAuditAsync(user.IsLocked ? "Khoá tài khoản" : "Mở khoá tài khoản",
+            "User", user.FullName ?? user.Email);
+
         var referer = Request.Headers["Referer"].ToString();
         return referer.Contains("UserDetail")
             ? RedirectToAction("UserDetail", new { id = userId })
@@ -188,6 +191,10 @@ public class AdminController : Controller
             IsRead = false
         });
         await _db.SaveChangesAsync();
+
+        var tUser = await _userManager.FindByIdAsync(tutor.UserId);
+        await LogAuditAsync("Duyệt gia sư", "Tutor", tUser?.FullName ?? tutor.UserId);
+
         return RedirectToAction("PendingTutors");
     }
 
@@ -203,6 +210,7 @@ public class AdminController : Controller
         if (tutor == null) return NotFound();
 
         var user = tutor.User;
+        var rejectedName = user?.FullName ?? user?.Email ?? tutor.UserId;
         _db.Certificates.RemoveRange(tutor.Certificates);
         _db.TutorSubjects.RemoveRange(tutor.TutorSubjects);
         _db.TutorProfiles.Remove(tutor);
@@ -210,6 +218,8 @@ public class AdminController : Controller
 
         if (user != null)
             await _userManager.DeleteAsync(user);
+
+        await LogAuditAsync("Từ chối hồ sơ gia sư", "Tutor", rejectedName, reason);
 
         return RedirectToAction("PendingTutors");
     }
@@ -377,6 +387,8 @@ public class AdminController : Controller
         await _db.SaveChangesAsync();
 
         TempData["Success"] = $"Đã tạo mã {norm}.";
+        await LogAuditAsync("Tạo mã giảm giá", "Coupon", norm,
+            discountType == "Percent" ? $"{discountValue}%" : $"{discountValue:N0}đ");
         return RedirectToAction("Coupons");
     }
 
@@ -400,8 +412,10 @@ public class AdminController : Controller
         var c = await _db.Coupons.FindAsync(id);
         if (c != null)
         {
+            var deletedCode = c.Code;
             _db.Coupons.Remove(c);
             await _db.SaveChangesAsync();
+            await LogAuditAsync("Xoá mã giảm giá", "Coupon", deletedCode);
         }
         return RedirectToAction("Coupons");
     }
@@ -444,6 +458,8 @@ public class AdminController : Controller
             $"Báo cáo của bạn về {c.TargetName ?? c.TargetType} {statusText}.", "/");
 
         TempData["Success"] = c.Status == "Resolved" ? "Đã xử lý khiếu nại." : "Đã bỏ qua khiếu nại.";
+        await LogAuditAsync(c.Status == "Resolved" ? "Xử lý khiếu nại" : "Bỏ qua khiếu nại",
+            "Complaint", c.TargetName, adminNote);
         return RedirectToAction("Complaints");
     }
 
@@ -501,5 +517,36 @@ public class AdminController : Controller
         ViewBag.ChartLabels = System.Text.Json.JsonSerializer.Serialize(labels);
         ViewBag.ChartData = System.Text.Json.JsonSerializer.Serialize(data);
         return View();
+    }
+
+    // ==========================================
+    // NHẬT KÝ HOẠT ĐỘNG (AUDIT LOG)
+    // ==========================================
+
+    [HttpGet]
+    public async Task<IActionResult> AuditLogs()
+    {
+        var logs = await _db.AuditLogs
+            .OrderByDescending(a => a.CreatedAt)
+            .Take(200)
+            .ToListAsync();
+        return View(logs);
+    }
+
+    // Ghi 1 dòng nhật ký cho admin đang đăng nhập.
+    private async Task LogAuditAsync(string action, string? targetType = null, string? targetName = null, string? details = null)
+    {
+        var actor = await _userManager.GetUserAsync(User);
+        _db.AuditLogs.Add(new AuditLog
+        {
+            ActorId = _userManager.GetUserId(User) ?? "",
+            ActorName = actor?.FullName ?? actor?.Email ?? "Admin",
+            Action = action,
+            TargetType = targetType,
+            TargetName = targetName,
+            Details = details,
+            CreatedAt = DateTime.UtcNow
+        });
+        await _db.SaveChangesAsync();
     }
 }

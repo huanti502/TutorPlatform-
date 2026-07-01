@@ -44,6 +44,7 @@ public class AppDbContext : IdentityDbContext<AppUser>, IDataProtectionKeyContex
     public DbSet<LessonPackage> LessonPackages => Set<LessonPackage>();
     public DbSet<PackagePurchase> PackagePurchases => Set<PackagePurchase>();
     public DbSet<Referral> Referrals => Set<Referral>();
+    public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

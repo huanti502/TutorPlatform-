@@ -1,0 +1,53 @@
+@model List<TutorPlatform.Core.Models.AuditLog>
+@{
+    ViewData["Title"] = "Nhật ký hoạt động";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Nhật ký hoạt động</h3>
+    <span class="text-muted small">200 hoạt động gần nhất</span>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-body">
+        @if (!Model.Any())
+        {
+            <p class="text-center text-muted py-4 mb-0">Chưa có hoạt động nào được ghi lại.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Quản trị viên</th>
+                            <th>Hành động</th>
+                            <th>Đối tượng</th>
+                            <th>Chi tiết</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var a in Model)
+                        {
+                            <tr>
+                                <td class="small text-muted">@a.CreatedAt.AddHours(7).ToString("HH:mm dd/MM/yyyy")</td>
+                                <td>@a.ActorName</td>
+                                <td><span class="badge bg-light text-dark border">@a.Action</span></td>
+                                <td>
+                                    @if (!string.IsNullOrEmpty(a.TargetType))
+                                    {
+                                        <span class="text-muted small">@a.TargetType:</span>
+                                    }
+                                    @a.TargetName
+                                </td>
+                                <td class="small text-muted">@a.Details</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
