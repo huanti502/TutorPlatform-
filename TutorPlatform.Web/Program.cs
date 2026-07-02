@@ -192,7 +192,7 @@ using (var scope = app.Services.CreateScope())
             "ALTER TABLE \"TutorProfiles\" ADD COLUMN IF NOT EXISTS \"Longitude\" double precision NULL;");
 
         await SeedData.SeedAllAsync(db, userManager, roleManager);
-        await DemoSeed.EnrichAsync(db); // làm giàu dữ liệu demo (avatar, vị trí, blog, thanh toán...)
+        await DemoSeed.EnrichAsync(db, userManager); // làm giàu dữ liệu demo (avatar, vị trí, blog, thanh toán...)
 
         await db.Database.ExecuteSqlRawAsync(
             "SELECT setval(pg_get_serial_sequence('\"Subjects\"', 'Id'), (SELECT COALESCE(MAX(\"Id\"), 1) FROM \"Subjects\"));");

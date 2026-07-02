@@ -109,8 +109,15 @@ Tìm gia sư ngay
                                 <!-- Header -->
 <div class="d-flex align-items-center justify-content-between mb-3">
 <div class="d-flex align-items-center gap-2">
-<div class="avatar avatar-sm">
-@tutorInitial
+<div class="avatar avatar-sm" style="overflow:hidden;">
+@if (!string.IsNullOrEmpty(b.TutorProfile.User.AvatarUrl))
+{
+    <img src="@b.TutorProfile.User.AvatarUrl" alt="@b.TutorProfile.User.FullName" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" />
+}
+else
+{
+    @tutorInitial
+}
                                         </div>
 <div>
 <div style="font-weight:700;font-size:0.875rem;">
