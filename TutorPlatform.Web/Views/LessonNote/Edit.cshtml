@@ -28,6 +28,19 @@
         </div>
     </div>
 
+    <!-- 🎙️ Ghi âm buổi học -> Whisper gỡ băng -> AI tóm tắt -->
+    <div class="card border-0 shadow-sm mb-3" style="background:#fefce8;">
+        <div class="card-body">
+            <h6 class="fw-bold mb-1">🎙️ Ghi âm & tóm tắt tự động</h6>
+            <p class="small text-muted mb-2">Ghi âm buổi dạy — AI (Whisper) gỡ băng thành văn bản rồi tự tóm tắt vào ghi chú.</p>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button type="button" id="recBtn" class="btn btn-sm text-white fw-bold" style="background:#dc2626;border:none;">● Bắt đầu ghi</button>
+                <span id="recTime" class="small fw-bold" style="display:none;color:#dc2626;">00:00</span>
+                <span id="recStatus" class="small text-muted"></span>
+            </div>
+        </div>
+    </div>
+
     @if (!string.IsNullOrWhiteSpace(Model.Content))
     {
         <form asp-action="Summarize" method="post" class="mb-3">
@@ -48,3 +61,75 @@
         </div>
     }
 </div>
+
+@section Scripts {
+<script>
+    (function () {
+        const recBtn = document.getElementById('recBtn');
+        const recTime = document.getElementById('recTime');
+        const recStatus = document.getElementById('recStatus');
+        const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+        let mediaRecorder = null, chunks = [], timer = null, seconds = 0;
+
+        function fmt(s) { return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0'); }
+
+        async function start() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                chunks = []; seconds = 0;
+                mediaRecorder = new MediaRecorder(stream);
+                mediaRecorder.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+                mediaRecorder.onstop = upload;
+                mediaRecorder.start();
+                recBtn.textContent = '■ Dừng & gỡ băng';
+                recBtn.style.background = '#7c3aed';
+                recTime.style.display = 'inline';
+                recStatus.textContent = 'Đang ghi âm…';
+                timer = setInterval(() => { seconds++; recTime.textContent = fmt(seconds);
+                    if (seconds >= 600) stop(); // tối đa 10 phút / lần
+                }, 1000);
+            } catch { recStatus.textContent = 'Hãy cấp quyền micro cho trang web.'; }
+        }
+
+        function stop() {
+            clearInterval(timer);
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+            mediaRecorder?.stream?.getTracks().forEach(t => t.stop());
+        }
+
+        async function upload() {
+            recBtn.disabled = true;
+            recBtn.textContent = '● Bắt đầu ghi';
+            recBtn.style.background = '#dc2626';
+            recTime.style.display = 'none';
+            recStatus.textContent = '⏳ Đang gỡ băng bằng AI (Whisper)… có thể mất 10–30 giây.';
+
+            const blob = new Blob(chunks, { type: 'audio/webm' });
+            const fd = new FormData();
+            fd.append('bookingId', '@Model.BookingId');
+            fd.append('audioFile', blob, 'recording.webm');
+            fd.append('__RequestVerificationToken', token);
+
+            try {
+                const res = await fetch('@Url.Action("Transcribe", "LessonNote")', { method: 'POST', body: fd });
+                const data = await res.json();
+                if (data.ok) {
+                    recStatus.textContent = '✅ Đã gỡ băng & tóm tắt xong! Đang tải lại…';
+                    setTimeout(() => location.reload(), 900);
+                } else {
+                    recStatus.textContent = '❌ ' + (data.message || 'Có lỗi xảy ra.');
+                    recBtn.disabled = false;
+                }
+            } catch {
+                recStatus.textContent = '❌ Lỗi mạng khi tải bản ghi lên.';
+                recBtn.disabled = false;
+            }
+        }
+
+        recBtn.addEventListener('click', () => {
+            if (mediaRecorder && mediaRecorder.state === 'recording') stop(); else start();
+        });
+    })();
+</script>
+}

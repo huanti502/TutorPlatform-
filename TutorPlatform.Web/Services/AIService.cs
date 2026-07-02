@@ -28,6 +28,27 @@ public class AIService
             new AuthenticationHeaderValue("Bearer", _apiKey);
     }
 
+    // ==== Gỡ băng audio bằng Groq Whisper (whisper-large-v3) ====
+    public async Task<string> TranscribeAsync(Stream audio, string fileName)
+    {
+        using var form = new MultipartFormDataContent();
+        var fileContent = new StreamContent(audio);
+        fileContent.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+        form.Add(fileContent, "file", fileName);
+        form.Add(new StringContent("whisper-large-v3"), "model");
+        form.Add(new StringContent("vi"), "language");
+        form.Add(new StringContent("text"), "response_format");
+
+        var res = await _http.PostAsync("/openai/v1/audio/transcriptions", form);
+        var text = await res.Content.ReadAsStringAsync();
+        if (!res.IsSuccessStatusCode)
+        {
+            _logger.LogError("Groq Whisper lỗi: {Text}", text);
+            throw new Exception("Whisper API lỗi");
+        }
+        return text.Trim();
+    }
+
     public async Task<string> ChatAsync(
         string systemPrompt,
         string userMessage,

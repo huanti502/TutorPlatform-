@@ -1,0 +1,115 @@
+@model List<TutorPlatform.Web.Controllers.AdminController.SentimentItem>
+@{
+    ViewData["Title"] = "Cảm xúc đánh giá";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    bool aiOk = ViewBag.AiOk ?? true;
+}
+
+<div class="d-flex justify-content-between align-items-end mb-4">
+    <div>
+        <h3 class="mb-1">🧠 AI phân tích cảm xúc đánh giá</h3>
+        <p class="text-muted mb-0">AI đọc @Model.Count đánh giá gần nhất, phân loại cảm xúc và cảnh báo gia sư bị phàn nàn.</p>
+    </div>
+</div>
+
+@if (!aiOk)
+{
+    <div class="alert alert-warning">⚠️ AI đang bận — kết quả dưới đây phân loại tạm theo số sao. Tải lại trang để thử AI lần nữa.</div>
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-4">
+        <div class="card border-0 shadow-sm"><div class="card-body">
+            <div class="text-muted small">😊 Tích cực</div>
+            <div class="fs-3 fw-bold text-success">@ViewBag.Positive</div>
+        </div></div>
+    </div>
+    <div class="col-4">
+        <div class="card border-0 shadow-sm"><div class="card-body">
+            <div class="text-muted small">😐 Trung lập</div>
+            <div class="fs-3 fw-bold text-secondary">@ViewBag.Neutral</div>
+        </div></div>
+    </div>
+    <div class="col-4">
+        <div class="card border-0 shadow-sm"><div class="card-body">
+            <div class="text-muted small">😞 Tiêu cực</div>
+            <div class="fs-3 fw-bold text-danger">@ViewBag.Negative</div>
+        </div></div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body">
+            <h6 class="fw-bold mb-3">Tỉ lệ cảm xúc</h6>
+            <canvas id="sentChart" height="200"></canvas>
+        </div></div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm h-100"><div class="card-body">
+            <h6 class="fw-bold mb-3">🚨 Gia sư cần chú ý (≥ 2 đánh giá tiêu cực)</h6>
+            @{ var flagged = ViewBag.Flagged as System.Collections.IEnumerable; int flaggedCount = 0; }
+            <table class="table table-sm align-middle">
+                <thead><tr><th>Gia sư</th><th>Số ĐG tiêu cực</th><th></th></tr></thead>
+                <tbody>
+                @foreach (dynamic f in flagged!)
+                {
+                    flaggedCount++;
+                    <tr>
+                        <td class="fw-semibold">@f.Tutor</td>
+                        <td><span class="badge bg-danger">@f.Count</span></td>
+                        <td><a href="/Tutor/Detail/@f.TutorProfileId" class="small">Xem hồ sơ →</a></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+            @if (flaggedCount == 0)
+            {
+                <p class="text-muted small mb-0">✅ Không có gia sư nào bị phàn nàn nhiều trong lô đánh giá gần đây.</p>
+            }
+        </div></div>
+    </div>
+
+    <div class="col-12">
+        <div class="card border-0 shadow-sm"><div class="card-body">
+            <h6 class="fw-bold mb-3">Chi tiết đánh giá đã phân tích</h6>
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead><tr><th>Gia sư</th><th>Sao</th><th>Bình luận</th><th>Cảm xúc</th></tr></thead>
+                    <tbody>
+                    @foreach (var r in Model)
+                    {
+                        var (bg, label) = r.Label switch
+                        {
+                            "positive" => ("bg-success", "Tích cực"),
+                            "negative" => ("bg-danger", "Tiêu cực"),
+                            _ => ("bg-secondary", "Trung lập")
+                        };
+                        <tr>
+                            <td style="white-space:nowrap;">@r.Tutor</td>
+                            <td style="white-space:nowrap;">@r.Rating ★</td>
+                            <td class="small">@r.Comment</td>
+                            <td><span class="badge @bg">@label</span></td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+        new Chart(document.getElementById('sentChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Tích cực', 'Trung lập', 'Tiêu cực'],
+                datasets: [{ data: [@ViewBag.Positive, @ViewBag.Neutral, @ViewBag.Negative],
+                    backgroundColor: ['#10b981', '#9ca3af', '#ef4444'] }]
+            },
+            options: { plugins: { legend: { position: 'bottom' } } }
+        });
+    </script>
+}

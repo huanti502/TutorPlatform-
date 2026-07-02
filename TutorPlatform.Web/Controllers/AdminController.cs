@@ -16,14 +16,16 @@ public class AdminController : Controller
     private readonly ReportService _reportService;
     private readonly NotificationService _notif;
     private readonly IConfiguration _config;
+    private readonly AIService _ai;
 
-    public AdminController(AppDbContext db, UserManager<AppUser> userManager, ReportService reportService, NotificationService notif, IConfiguration config)
+    public AdminController(AppDbContext db, UserManager<AppUser> userManager, ReportService reportService, NotificationService notif, IConfiguration config, AIService ai)
     {
         _db = db;
         _userManager = userManager;
         _reportService = reportService;
         _notif = notif;
         _config = config;
+        _ai = ai;
     }
 
     public async Task<IActionResult> Index()
@@ -633,6 +635,98 @@ public class AdminController : Controller
         ViewBag.SubjectData = System.Text.Json.JsonSerializer.Serialize(topSubjects.Select(s => s.Count).ToList());
         ViewBag.StatusData = System.Text.Json.JsonSerializer.Serialize(new[] { completed, confirmed, pending, cancelled, rejected });
         return View();
+    }
+
+    // ==========================================
+    // AI PHÂN TÍCH CẢM XÚC ĐÁNH GIÁ
+    // ==========================================
+
+    [HttpGet]
+    public async Task<IActionResult> Sentiment()
+    {
+        // Lấy tối đa 60 đánh giá gần nhất có bình luận
+        var reviews = await _db.Reviews
+            .Include(r => r.TutorProfile).ThenInclude(t => t.User)
+            .Where(r => r.Comment != null && r.Comment != "")
+            .OrderByDescending(r => r.CreatedAt)
+            .Take(60)
+            .ToListAsync();
+
+        var items = reviews.Select(r => new SentimentItem
+        {
+            Id = r.Id,
+            Tutor = r.TutorProfile?.User?.FullName ?? "?",
+            TutorProfileId = r.TutorProfileId,
+            Rating = r.Rating,
+            Comment = r.Comment ?? "",
+            Label = "neutral"
+        }).ToList();
+
+        if (items.Count > 0)
+        {
+            try
+            {
+                var listText = string.Join("\n", items.Select(i => $"{i.Id}|sao:{i.Rating}|{i.Comment.Replace("\n", " ")}"));
+                var system = "Bạn là công cụ phân loại cảm xúc. Với mỗi dòng 'id|sao:x|bình luận' hãy phân loại bình luận " +
+                             "tiếng Việt thành positive, neutral hoặc negative. " +
+                             "CHỈ trả về JSON array thuần, không markdown, dạng: [{\"id\":1,\"label\":\"positive\"}]";
+                var raw = await _ai.ChatAsync(system, listText, 2000);
+                raw = raw.Replace("```json", "").Replace("```", "").Trim();
+                var start = raw.IndexOf('['); var end = raw.LastIndexOf(']');
+                if (start >= 0 && end > start)
+                {
+                    var parsed = System.Text.Json.JsonSerializer.Deserialize<List<SentimentLabel>>(
+                        raw.Substring(start, end - start + 1),
+                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (parsed != null)
+                    {
+                        var map = parsed.GroupBy(x => x.Id).ToDictionary(g => g.Key, g => g.First().Label ?? "neutral");
+                        foreach (var it in items)
+                            if (map.TryGetValue(it.Id, out var lb)) it.Label = lb.ToLower();
+                    }
+                }
+                ViewBag.AiOk = true;
+            }
+            catch
+            {
+                // AI lỗi -> fallback theo số sao để dashboard vẫn dùng được
+                foreach (var it in items)
+                    it.Label = it.Rating >= 4 ? "positive" : (it.Rating <= 2 ? "negative" : "neutral");
+                ViewBag.AiOk = false;
+            }
+        }
+        else ViewBag.AiOk = true;
+
+        ViewBag.Positive = items.Count(i => i.Label == "positive");
+        ViewBag.Neutral = items.Count(i => i.Label == "neutral");
+        ViewBag.Negative = items.Count(i => i.Label == "negative");
+
+        // Gia sư bị cảnh báo: có >= 2 đánh giá tiêu cực trong lô phân tích
+        ViewBag.Flagged = items
+            .Where(i => i.Label == "negative")
+            .GroupBy(i => new { i.TutorProfileId, i.Tutor })
+            .Where(g => g.Count() >= 2)
+            .Select(g => new { g.Key.Tutor, g.Key.TutorProfileId, Count = g.Count() })
+            .OrderByDescending(x => x.Count)
+            .ToList();
+
+        return View(items);
+    }
+
+    public class SentimentItem
+    {
+        public int Id { get; set; }
+        public string Tutor { get; set; } = "";
+        public int TutorProfileId { get; set; }
+        public int Rating { get; set; }
+        public string Comment { get; set; } = "";
+        public string Label { get; set; } = "neutral";
+    }
+
+    public class SentimentLabel
+    {
+        public int Id { get; set; }
+        public string? Label { get; set; }
     }
 
     // ==========================================

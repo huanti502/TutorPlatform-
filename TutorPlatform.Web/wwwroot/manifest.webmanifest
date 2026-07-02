@@ -1,0 +1,17 @@
+{
+  "name": "Gia Sư Việt - Nền tảng gia sư 1-1",
+  "short_name": "Gia Sư Việt",
+  "description": "Kết nối học sinh với gia sư chất lượng cao. Học online hoặc trực tiếp.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#7c3aed",
+  "lang": "vi",
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

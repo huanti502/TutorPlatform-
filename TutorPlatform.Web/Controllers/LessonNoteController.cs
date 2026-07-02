@@ -108,6 +108,54 @@ public class LessonNoteController : Controller
         return RedirectToAction("Edit", new { bookingId });
     }
 
+    // ✅ Ghi âm buổi học -> Whisper gỡ băng -> AI tóm tắt vào ghi chú
+    [Authorize(Roles = "Tutor")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequestSizeLimit(25_000_000)] // ~25MB audio
+    public async Task<IActionResult> Transcribe(int bookingId, IFormFile? audioFile)
+    {
+        var uid = _userManager.GetUserId(User)!;
+        var booking = await LoadBookingAsync(bookingId);
+        if (booking == null || booking.TutorProfile.UserId != uid)
+            return Json(new { ok = false, message = "Không có quyền." });
+
+        if (audioFile == null || audioFile.Length == 0)
+            return Json(new { ok = false, message = "Không nhận được file ghi âm." });
+
+        try
+        {
+            // 1) Gỡ băng bằng Groq Whisper
+            using var stream = audioFile.OpenReadStream();
+            var transcript = await _ai.TranscribeAsync(stream, audioFile.FileName ?? "recording.webm");
+
+            if (string.IsNullOrWhiteSpace(transcript))
+                return Json(new { ok = false, message = "Không nghe được nội dung trong bản ghi." });
+
+            // 2) AI tóm tắt lời thoại thành ghi chú buổi học
+            var system = "Bạn là trợ lý giáo dục. Dưới đây là lời thoại (transcript) một buổi học gia sư 1-1 bằng tiếng Việt. " +
+                         "Hãy tóm tắt thành đúng 3 mục, mỗi mục vài gạch đầu dòng ngắn: '📘 Đã học', '🔁 Cần ôn tập', '💡 Gợi ý luyện tập'. " +
+                         "Không thêm lời mở đầu hay kết luận.";
+            var summary = await _ai.ChatAsync(system,
+                $"Môn: {booking.Subject?.Name}\nLời thoại buổi học:\n{transcript}", 800);
+
+            // 3) Lưu vào ghi chú
+            var note = await GetOrCreateNoteAsync(booking, uid);
+            var stamp = DateTime.UtcNow.AddHours(7).ToString("HH:mm dd/MM/yyyy");
+            note.Content = (string.IsNullOrWhiteSpace(note.Content) ? "" : note.Content + "\n\n")
+                + $"===== 🎙️ Gỡ băng ghi âm ({stamp}) =====\n{transcript}";
+            note.AiSummary = summary;
+            note.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+
+            return Json(new { ok = true, transcript, summary });
+        }
+        catch
+        {
+            return Json(new { ok = false, message = "Lỗi khi xử lý âm thanh. Thử lại với đoạn ghi ngắn hơn." });
+        }
+    }
+
     // ===================== HỌC VIÊN =====================
 
     [Authorize(Roles = "Student")]
