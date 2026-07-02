@@ -32,6 +32,89 @@ public class AIController : Controller
     // Trợ lý giọng nói (Web Speech API + Groq)
     public IActionResult Voice() => View();
 
+    // ==========================================
+    // #2 AI SINH ĐỀ LUYỆN TẬP THEO CHỦ ĐỀ
+    // ==========================================
+    public IActionResult Practice() => View();
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> PracticeGenerate([FromBody] PracticeReq req)
+    {
+        if (string.IsNullOrWhiteSpace(req?.Topic))
+            return Json(new { ok = false, message = "Hãy nhập chủ đề." });
+        int n = Math.Clamp(req.Count, 3, 10);
+        try
+        {
+            var system = "Bạn là công cụ tạo đề trắc nghiệm tiếng Việt. CHỈ trả về JSON array thuần, không markdown, dạng: " +
+                "[{\"q\":\"câu hỏi\",\"options\":[\"A\",\"B\",\"C\",\"D\"],\"correct\":0,\"explain\":\"giải thích ngắn\"}]. " +
+                "correct là chỉ số 0-3 của đáp án đúng. Câu hỏi bám sát chương trình phổ thông Việt Nam, độ khó trung bình.";
+            var raw = await _ai.ChatAsync(system, $"Tạo {n} câu trắc nghiệm về chủ đề: {req.Topic}", 2500);
+            raw = raw.Replace("```json", "").Replace("```", "").Trim();
+            int a = raw.IndexOf('['); int b = raw.LastIndexOf(']');
+            if (a < 0 || b <= a) return Json(new { ok = false, message = "AI trả về không hợp lệ, thử lại nhé." });
+            var json = raw.Substring(a, b - a + 1);
+            var parsed = System.Text.Json.JsonSerializer.Deserialize<List<PracticeQ>>(json,
+                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (parsed == null || parsed.Count == 0) return Json(new { ok = false, message = "Không tạo được đề, thử chủ đề khác." });
+            return Json(new { ok = true, questions = parsed });
+        }
+        catch { return Json(new { ok = false, message = "AI đang bận, thử lại sau ít phút." }); }
+    }
+
+    public class PracticeReq { public string? Topic { get; set; } public int Count { get; set; } = 5; }
+    public class PracticeQ
+    {
+        public string Q { get; set; } = "";
+        public List<string> Options { get; set; } = new();
+        public int Correct { get; set; }
+        public string? Explain { get; set; }
+    }
+
+    // ==========================================
+    // #20 FLASHCARD TỪ GHI CHÚ BUỔI HỌC
+    // ==========================================
+    public async Task<IActionResult> Flashcards()
+    {
+        var uid = _userManager.GetUserId(User)!;
+        var notes = await _db.LessonNotes
+            .Include(nt => nt.Booking).ThenInclude(bk => bk!.Subject)
+            .Where(nt => (nt.StudentId == uid || nt.TutorId == uid) && nt.Content != null && nt.Content != "")
+            .OrderByDescending(nt => nt.CreatedAt)
+            .Take(20)
+            .ToListAsync();
+        return View(notes);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> FlashcardsGenerate([FromBody] FlashReq req)
+    {
+        var uid = _userManager.GetUserId(User)!;
+        var note = await _db.LessonNotes
+            .Include(nt => nt.Booking).ThenInclude(bk => bk!.Subject)
+            .FirstOrDefaultAsync(nt => nt.Id == req.NoteId && (nt.StudentId == uid || nt.TutorId == uid));
+        if (note == null) return Json(new { ok = false, message = "Không tìm thấy ghi chú." });
+        try
+        {
+            var system = "Bạn là công cụ tạo flashcard ôn tập tiếng Việt. CHỈ trả về JSON array thuần, không markdown, dạng: " +
+                "[{\"front\":\"câu hỏi/khái niệm ngắn\",\"back\":\"câu trả lời ngắn gọn\"}]. Tạo 6-10 thẻ từ nội dung buổi học.";
+            var content = $"Môn: {note.Booking?.Subject?.Name}\nGhi chú buổi học:\n{note.Content}\n{note.AiSummary}";
+            var raw = await _ai.ChatAsync(system, content, 1800);
+            raw = raw.Replace("```json", "").Replace("```", "").Trim();
+            int a = raw.IndexOf('['); int b = raw.LastIndexOf(']');
+            if (a < 0 || b <= a) return Json(new { ok = false, message = "AI trả về không hợp lệ, thử lại nhé." });
+            var cards = System.Text.Json.JsonSerializer.Deserialize<List<FlashCard>>(raw.Substring(a, b - a + 1),
+                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (cards == null || cards.Count == 0) return Json(new { ok = false, message = "Không tạo được thẻ từ ghi chú này." });
+            return Json(new { ok = true, cards });
+        }
+        catch { return Json(new { ok = false, message = "AI đang bận, thử lại sau ít phút." }); }
+    }
+
+    public class FlashReq { public int NoteId { get; set; } }
+    public class FlashCard { public string Front { get; set; } = ""; public string Back { get; set; } = ""; }
+
     // Proxy giọng đọc tiếng Việt: server tải audio từ Google Translate TTS
     // rồi trả về cùng domain -> không bị trình duyệt chặn (CORS/tracking prevention).
     private static readonly HttpClient _ttsClient = new HttpClient();

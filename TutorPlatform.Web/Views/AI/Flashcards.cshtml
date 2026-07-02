@@ -1,0 +1,88 @@
+@model List<TutorPlatform.Core.Models.LessonNote>
+@{ ViewData["Title"] = "Flashcard ôn tập"; }
+@Html.AntiForgeryToken()
+
+<style>
+    .flash-wrap { perspective: 1000px; max-width: 460px; margin: 0 auto; }
+    .flash-card { position: relative; width: 100%; aspect-ratio: 8/5; transform-style: preserve-3d; transition: transform .45s; cursor: pointer; }
+    .flash-card.flipped { transform: rotateY(180deg); }
+    .flash-face { position: absolute; inset: 0; backface-visibility: hidden; border-radius: 18px;
+        display: flex; align-items: center; justify-content: center; padding: 1.4rem; text-align: center;
+        font-size: 1.05rem; box-shadow: 0 10px 26px rgba(0,0,0,.12); }
+    .flash-front { background: linear-gradient(135deg, #7c3aed, #a855f7); color: #fff; font-weight: 700; }
+    .flash-back { background: var(--bg, #fff); color: var(--text, #1e293b); transform: rotateY(180deg); border: 1px solid var(--border, #e2e8f0); }
+</style>
+
+<div class="container py-4" style="max-width:720px;">
+    <h3 class="mb-1">Flashcard ôn tập</h3>
+    <p class="text-muted mb-4">Chọn một buổi học — AI tạo bộ thẻ hỏi-đáp từ ghi chú để bạn ôn nhanh.</p>
+
+    <div class="card border-0 shadow-sm mb-4"><div class="card-body">
+        @if (Model.Count == 0)
+        {
+            <p class="text-muted mb-0">Chưa có ghi chú buổi học nào. Ghi chú được tạo bởi gia sư sau mỗi buổi (hoặc từ tính năng ghi âm).</p>
+        }
+        else
+        {
+            <div class="d-flex gap-2 flex-wrap">
+                <select id="noteSel" class="form-select" style="flex:1;min-width:260px;">
+                    @foreach (var nt in Model)
+                    {
+                        <option value="@nt.Id">@(nt.Booking?.Subject?.Name ?? "Buổi học") — @nt.CreatedAt.AddHours(7).ToString("dd/MM/yyyy")</option>
+                    }
+                </select>
+                <button id="genBtn" class="btn text-white fw-bold" style="background:#7c3aed;border:none;">Tạo flashcard</button>
+            </div>
+            <div id="st" class="small text-muted mt-2"></div>
+        }
+    </div></div>
+
+    <div id="deck" style="display:none;">
+        <div class="flash-wrap mb-3">
+            <div class="flash-card" id="card" onclick="this.classList.toggle('flipped')">
+                <div class="flash-face flash-front" id="front"></div>
+                <div class="flash-face flash-back" id="back"></div>
+            </div>
+        </div>
+        <div class="d-flex justify-content-center align-items-center gap-3">
+            <button class="btn btn-outline-secondary" id="prevBtn">← Trước</button>
+            <span class="fw-bold" id="pos"></span>
+            <button class="btn btn-outline-secondary" id="nextBtn">Sau →</button>
+        </div>
+        <p class="text-center text-muted small mt-2">Bấm vào thẻ để lật xem đáp án.</p>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    let cards = [], idx = 0;
+
+    const gen = document.getElementById('genBtn');
+    if (gen) gen.addEventListener('click', async () => {
+        const st = document.getElementById('st');
+        st.textContent = 'AI đang tạo thẻ… (10-20 giây)';
+        try {
+            const res = await fetch('@Url.Action("FlashcardsGenerate")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
+                body: JSON.stringify({ noteId: parseInt(document.getElementById('noteSel').value) })
+            });
+            const data = await res.json();
+            if (!data.ok) { st.textContent = data.message; return; }
+            cards = data.cards; idx = 0; st.textContent = 'Đã tạo ' + cards.length + ' thẻ.';
+            document.getElementById('deck').style.display = 'block';
+            show();
+        } catch { st.textContent = 'Lỗi mạng, thử lại nhé.'; }
+    });
+
+    function show() {
+        document.getElementById('card').classList.remove('flipped');
+        document.getElementById('front').textContent = cards[idx].front;
+        document.getElementById('back').textContent = cards[idx].back;
+        document.getElementById('pos').textContent = (idx + 1) + ' / ' + cards.length;
+    }
+    document.getElementById('prevBtn').addEventListener('click', () => { if (idx > 0) { idx--; show(); } });
+    document.getElementById('nextBtn').addEventListener('click', () => { if (idx < cards.length - 1) { idx++; show(); } });
+</script>
+}

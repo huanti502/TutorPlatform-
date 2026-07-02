@@ -1,0 +1,81 @@
+@{ ViewData["Title"] = "Luyện tập AI"; }
+@Html.AntiForgeryToken()
+
+<div class="container py-4" style="max-width:720px;">
+    <h3 class="mb-1">Luyện tập AI</h3>
+    <p class="text-muted mb-4">Nhập chủ đề bất kỳ — AI tạo đề trắc nghiệm cho bạn làm ngay.</p>
+
+    <div class="card border-0 shadow-sm mb-4"><div class="card-body">
+        <div class="d-flex gap-2 flex-wrap">
+            <input id="topic" class="form-control" style="min-width:260px;flex:1;" placeholder="VD: Phương trình bậc 2, Thì hiện tại hoàn thành, Sóng cơ..." />
+            <select id="count" class="form-select" style="width:auto;">
+                <option value="5" selected>5 câu</option><option value="8">8 câu</option><option value="10">10 câu</option>
+            </select>
+            <button id="genBtn" class="btn text-white fw-bold" style="background:#7c3aed;border:none;">Tạo đề</button>
+        </div>
+        <div id="genStatus" class="small text-muted mt-2"></div>
+    </div></div>
+
+    <div id="quizArea"></div>
+    <div id="resultArea"></div>
+</div>
+
+@section Scripts {
+<script>
+    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+    let QS = [];
+
+    document.getElementById('genBtn').addEventListener('click', async () => {
+        const topic = document.getElementById('topic').value.trim();
+        if (!topic) return;
+        const st = document.getElementById('genStatus');
+        st.textContent = 'AI đang soạn đề… (10-20 giây)';
+        document.getElementById('quizArea').innerHTML = '';
+        document.getElementById('resultArea').innerHTML = '';
+        try {
+            const res = await fetch('@Url.Action("PracticeGenerate")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
+                body: JSON.stringify({ topic, count: parseInt(document.getElementById('count').value) })
+            });
+            const data = await res.json();
+            if (!data.ok) { st.textContent = data.message; return; }
+            QS = data.questions; st.textContent = '';
+            render();
+        } catch { st.textContent = 'Lỗi mạng, thử lại nhé.'; }
+    });
+
+    function render() {
+        const area = document.getElementById('quizArea');
+        area.innerHTML = QS.map((q, i) => `
+            <div class="card border-0 shadow-sm mb-3"><div class="card-body">
+                <div class="fw-semibold mb-2">Câu ${i + 1}. ${q.q}</div>
+                ${q.options.map((o, j) => `
+                    <label class="d-block p-2 rounded mb-1" style="cursor:pointer;border:1px solid var(--border,#e2e8f0);">
+                        <input type="radio" name="q${i}" value="${j}" class="me-2" />${o}
+                    </label>`).join('')}
+                <div class="small mt-1" id="ex${i}" style="display:none;"></div>
+            </div></div>`).join('') +
+            '<button id="gradeBtn" class="btn text-white fw-bold w-100" style="background:#059669;border:none;">Nộp bài & chấm điểm</button>';
+        document.getElementById('gradeBtn').addEventListener('click', grade);
+    }
+
+    function grade() {
+        let ok = 0;
+        QS.forEach((q, i) => {
+            const sel = document.querySelector(`input[name="q${i}"]:checked`);
+            const ex = document.getElementById('ex' + i);
+            const good = sel && parseInt(sel.value) === q.correct;
+            if (good) ok++;
+            ex.style.display = 'block';
+            ex.innerHTML = (good ? '<span class="text-success fw-bold">Đúng.</span> ' :
+                `<span class="text-danger fw-bold">Sai.</span> Đáp án đúng: <b>${q.options[q.correct]}</b>. `) + (q.explain || '');
+        });
+        document.getElementById('resultArea').innerHTML =
+            `<div class="alert ${ok >= QS.length * 0.7 ? 'alert-success' : 'alert-warning'} text-center fw-bold fs-5 mt-3">
+                Kết quả: ${ok}/${QS.length} câu đúng</div>`;
+        document.getElementById('gradeBtn').disabled = true;
+        window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    }
+</script>
+}
