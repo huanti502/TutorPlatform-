@@ -120,15 +120,57 @@
         return parts;
     }
 
-    async function speak(text) {
-        if (!('speechSynthesis' in window)) return;
-        speechSynthesis.cancel();
-        const voice = await ensureViVoice();
-        if (!voice) {
-            statusEl.textContent = '⚠️ Máy chưa có giọng đọc tiếng Việt (Chrome thường có "Google Tiếng Việt"). Câu trả lời hiển thị ở trên.';
+    // ==== Dự phòng: đọc bằng Google Translate TTS khi máy không có giọng Việt ====
+    let gttsQueue = [];
+    let gttsAudio = null;
+    let gttsPlaying = false;
+
+    function stopGtts() {
+        gttsQueue = [];
+        gttsPlaying = false;
+        if (gttsAudio) { gttsAudio.pause(); gttsAudio = null; }
+        micBtn.classList.remove('speaking');
+        stopBtn.style.display = 'none';
+    }
+
+    function playGttsQueue() {
+        if (!gttsQueue.length) {
+            gttsPlaying = false;
+            micBtn.classList.remove('speaking');
+            stopBtn.style.display = 'none';
+            statusEl.textContent = 'Sẵn sàng — bấm micro để nói';
             return;
         }
-        const chunks = chunkText(toSpeech(text));
+        const part = gttsQueue.shift();
+        const url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=' + encodeURIComponent(part);
+        gttsAudio = new Audio(url);
+        gttsAudio.onended = playGttsQueue;
+        gttsAudio.onerror = () => {
+            statusEl.textContent = '⚠️ Không phát được giọng đọc. Câu trả lời hiển thị ở trên.';
+            stopGtts();
+        };
+        gttsAudio.play().catch(() => stopGtts());
+    }
+
+    function speakViaGtts(text) {
+        stopGtts();
+        gttsQueue = chunkText(text, 170);
+        gttsPlaying = true;
+        micBtn.classList.add('speaking');
+        stopBtn.style.display = 'inline-block';
+        statusEl.textContent = 'Đang đọc câu trả lời…';
+        playGttsQueue();
+    }
+
+    async function speak(text) {
+        const clean = toSpeech(text);
+        const voice = ('speechSynthesis' in window) ? await ensureViVoice() : null;
+
+        // Không có giọng Việt trên máy -> dùng Google Translate TTS
+        if (!voice) { speakViaGtts(clean); return; }
+
+        speechSynthesis.cancel();
+        const chunks = chunkText(clean);
         chunks.forEach((part, i) => {
             const u = new SpeechSynthesisUtterance(part);
             u.voice = voice; u.lang = voice.lang || 'vi-VN'; u.rate = 1.02;
@@ -138,7 +180,7 @@
         });
     }
 
-    stopBtn.addEventListener('click', () => speechSynthesis.cancel());
+    stopBtn.addEventListener('click', () => { speechSynthesis.cancel(); stopGtts(); statusEl.textContent = 'Sẵn sàng — bấm micro để nói'; });
 
     async function ask(text) {
         addMsg(text, 'user');
@@ -165,6 +207,7 @@
         micBtn.addEventListener('click', () => {
             if (listening) { recog.stop(); return; }
             speechSynthesis.cancel();
+            stopGtts();
             try { recog.start(); } catch { }
         });
 
