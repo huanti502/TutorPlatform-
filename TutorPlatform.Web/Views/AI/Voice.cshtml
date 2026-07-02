@@ -1,0 +1,143 @@
+@{
+    ViewData["Title"] = "Trợ lý giọng nói";
+}
+
+<style>
+    .voice-wrap { max-width: 640px; margin: 0 auto; }
+    .mic-btn {
+        width: 96px; height: 96px; border-radius: 50%; border: none;
+        background: #7c3aed; color: #fff; font-size: 2.2rem;
+        box-shadow: 0 8px 24px rgba(124,58,237,.35);
+        transition: transform .15s ease, background .15s ease;
+    }
+    .mic-btn:hover { transform: scale(1.05); }
+    .mic-btn.listening {
+        background: #ef4444;
+        animation: pulse 1.2s infinite;
+    }
+    .mic-btn.speaking { background: #059669; }
+    @@keyframes pulse {
+        0% { box-shadow: 0 0 0 0 rgba(239,68,68,.45); }
+        70% { box-shadow: 0 0 0 22px rgba(239,68,68,0); }
+        100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+    }
+    .vc-msg { border-radius: 14px; padding: .6rem .9rem; max-width: 85%; font-size: .92rem; }
+    .vc-user { background: #7c3aed; color: #fff; margin-left: auto; border-bottom-right-radius: 4px; }
+    .vc-ai { background: #f1f5f9; color: #1e293b; margin-right: auto; border-bottom-left-radius: 4px; }
+</style>
+
+<div class="container py-4 voice-wrap">
+    <div class="text-center mb-3">
+        <h3 class="mb-1">🎙️ Trợ lý giọng nói AI</h3>
+        <p class="text-muted mb-0">Bấm micro và hỏi bằng giọng nói — AI trả lời và đọc cho bạn nghe.</p>
+        <p class="text-muted small">Ví dụ: "Tìm gia sư Toán giá dưới 200 nghìn", "Gia sư nào được đánh giá cao nhất?"</p>
+    </div>
+
+    <div id="chatLog" class="d-flex flex-column gap-2 mb-3 p-3 bg-white border rounded-4 shadow-sm"
+         style="min-height:240px;max-height:380px;overflow-y:auto;"></div>
+
+    <div class="text-center">
+        <div id="voiceStatus" class="small text-muted mb-2">Sẵn sàng — bấm micro để nói</div>
+        <button id="micBtn" class="mic-btn" title="Nói">🎙️</button>
+        <div class="mt-2">
+            <button id="stopSpeak" class="btn btn-sm btn-outline-secondary" style="display:none;">⏹ Dừng đọc</button>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const micBtn = document.getElementById('micBtn');
+    const statusEl = document.getElementById('voiceStatus');
+    const log = document.getElementById('chatLog');
+    const stopBtn = document.getElementById('stopSpeak');
+    const history = [];
+
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+        statusEl.textContent = 'Trình duyệt không hỗ trợ nhận dạng giọng nói. Hãy dùng Chrome hoặc Edge.';
+        micBtn.disabled = true;
+    }
+
+    const recog = SR ? new SR() : null;
+    if (recog) { recog.lang = 'vi-VN'; recog.interimResults = false; recog.maxAlternatives = 1; }
+
+    let listening = false;
+
+    function addMsg(text, who) {
+        const div = document.createElement('div');
+        div.className = 'vc-msg ' + (who === 'user' ? 'vc-user' : 'vc-ai');
+        div.textContent = text;
+        log.appendChild(div);
+        log.scrollTop = log.scrollHeight;
+    }
+
+    // Bỏ markdown/emoji cho giọng đọc mượt
+    function toSpeech(text) {
+        return text
+            .replace(/[*_#`>~\-]+/g, ' ')
+            .replace(/\[(.*?)\]\(.*?\)/g, '$1')
+            .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
+            .replace(/\s{2,}/g, ' ').trim();
+    }
+
+    function speak(text) {
+        if (!('speechSynthesis' in window)) return;
+        speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(toSpeech(text));
+        u.lang = 'vi-VN'; u.rate = 1.02;
+        const viVoice = speechSynthesis.getVoices().find(v => v.lang && v.lang.startsWith('vi'));
+        if (viVoice) u.voice = viVoice;
+        u.onstart = () => { micBtn.classList.add('speaking'); stopBtn.style.display = 'inline-block'; statusEl.textContent = 'Đang đọc câu trả lời…'; };
+        u.onend = () => { micBtn.classList.remove('speaking'); stopBtn.style.display = 'none'; statusEl.textContent = 'Sẵn sàng — bấm micro để nói'; };
+        speechSynthesis.speak(u);
+    }
+
+    stopBtn.addEventListener('click', () => speechSynthesis.cancel());
+
+    async function ask(text) {
+        addMsg(text, 'user');
+        statusEl.textContent = 'AI đang suy nghĩ…';
+        try {
+            const res = await fetch('/AI/SendMessage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: text, history })
+            });
+            const data = await res.json();
+            const reply = data.reply || 'Xin lỗi, mình chưa trả lời được.';
+            history.push({ role: 'user', content: text });
+            history.push({ role: 'assistant', content: reply });
+            if (history.length > 12) history.splice(0, history.length - 12);
+            addMsg(reply, 'ai');
+            speak(reply);
+        } catch {
+            statusEl.textContent = 'Có lỗi khi gọi AI. Thử lại nhé.';
+        }
+    }
+
+    if (recog) {
+        micBtn.addEventListener('click', () => {
+            if (listening) { recog.stop(); return; }
+            speechSynthesis.cancel();
+            try { recog.start(); } catch { }
+        });
+
+        recog.onstart = () => { listening = true; micBtn.classList.add('listening'); statusEl.textContent = '🎧 Đang nghe… hãy nói câu hỏi'; };
+        recog.onend = () => { listening = false; micBtn.classList.remove('listening'); if (statusEl.textContent.startsWith('🎧')) statusEl.textContent = 'Sẵn sàng — bấm micro để nói'; };
+        recog.onerror = e => {
+            listening = false; micBtn.classList.remove('listening');
+            statusEl.textContent = e.error === 'not-allowed'
+                ? 'Hãy cấp quyền micro cho trang web.'
+                : 'Không nghe rõ — bấm micro thử lại.';
+        };
+        recog.onresult = e => {
+            const text = e.results[0][0].transcript;
+            ask(text);
+        };
+    }
+
+    // load voices sớm (Chrome nạp async)
+    if ('speechSynthesis' in window) speechSynthesis.getVoices();
+</script>
+}

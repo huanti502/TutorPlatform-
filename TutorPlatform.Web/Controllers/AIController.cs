@@ -29,6 +29,9 @@ public class AIController : Controller
 
     public IActionResult Chat() => View();
 
+    // Trợ lý giọng nói (Web Speech API + Groq)
+    public IActionResult Voice() => View();
+
     [HttpPost]
     public async Task<IActionResult> SendMessage([FromBody] ChatRequest request)
     {
