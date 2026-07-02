@@ -58,7 +58,7 @@ public class BookingController : Controller
     [Authorize(Roles = "Student")]
     [HttpPost]
     public async Task<IActionResult> Create(int tutorProfileId, int subjectId,
-        DateTime startTime, DateTime endTime, string teachingMode, string? note)
+        DateTime startTime, DateTime endTime, string teachingMode, string? note, int repeatWeeks = 1)
     {
         var user = await _userManager.GetUserAsync(User);
 
@@ -96,6 +96,7 @@ public class BookingController : Controller
         if (conflict)
         {
             TempData["Error"] = "Gia sư đã có lịch trong khung giờ này. Vui lòng chọn giờ khác.";
+            TempData["Suggest"] = string.Join(" · ", await SuggestSlotsAsync(tutorProfileId, (endUtc - startUtc).TotalHours));
             return RedirectToAction("Create", new { tutorId = tutorProfileId });
         }
 
@@ -115,6 +116,7 @@ public class BookingController : Controller
         if (!await IsWithinAvailabilityAsync(tutorProfileId, startUtc, endUtc))
         {
             TempData["Error"] = "Gia sư không rảnh trong khung giờ này. Vui lòng chọn giờ nằm trong lịch rảnh của gia sư.";
+            TempData["Suggest"] = string.Join(" · ", await SuggestSlotsAsync(tutorProfileId, (endUtc - startUtc).TotalHours));
             return RedirectToAction("Create", new { tutorId = tutorProfileId });
         }
 
@@ -142,6 +144,32 @@ public class BookingController : Controller
         });
 
         await _db.SaveChangesAsync();
+
+        // #3: Đặt lịch định kỳ hàng tuần (bỏ qua tuần bị trùng/ngoài lịch rảnh)
+        int createdMore = 0;
+        repeatWeeks = Math.Clamp(repeatWeeks, 1, 8);
+        for (int w = 1; w < repeatWeeks; w++)
+        {
+            var ws = startUtc.AddDays(7 * w); var we = endUtc.AddDays(7 * w);
+            bool clash = await _db.Bookings.AnyAsync(b =>
+                (b.TutorProfileId == tutorProfileId || b.StudentId == user!.Id) &&
+                (b.Status == "Confirmed" || b.Status == "Pending") &&
+                b.StartTime < we && b.EndTime > ws);
+            if (clash || !await IsWithinAvailabilityAsync(tutorProfileId, ws, we)) continue;
+            _db.Bookings.Add(new Booking
+            {
+                StudentId = user!.Id, TutorProfileId = tutorProfileId, SubjectId = booking.SubjectId,
+                StartTime = ws, EndTime = we, Status = "Pending",
+                TeachingMode = booking.TeachingMode, Note = note
+            });
+            createdMore++;
+        }
+        if (createdMore > 0)
+        {
+            await _db.SaveChangesAsync();
+            TempData["Success"] = $"Đã tạo thêm {createdMore} buổi lặp hàng tuần (chờ gia sư xác nhận).";
+        }
+
 
         // Push thông báo realtime cho gia sư
         await ChatHub.SendNotificationToUser(
@@ -354,6 +382,10 @@ public class BookingController : Controller
         booking.Status = "Cancelled";
 
         // Hoàn tiền nếu đã thanh toán
+        // #9: Chính sách hoàn theo thời gian huỷ
+        var hoursLeft = (booking.StartTime - DateTime.UtcNow).TotalHours;
+        double refundRate = hoursLeft >= 24 ? 1.0 : (hoursLeft >= 6 ? 0.5 : 0.0);
+
         if (booking.IsPaid)
         {
             if (booking.PaidByPackagePurchaseId.HasValue)
@@ -362,7 +394,7 @@ public class BookingController : Controller
                 var purchase = await _db.PackagePurchases.FindAsync(booking.PaidByPackagePurchaseId.Value);
                 if (purchase != null)
                 {
-                    purchase.RemainingSessions++;
+                    if (refundRate > 0) purchase.RemainingSessions++;
                     if (purchase.Status == "Used") purchase.Status = "Active";
                 }
                 booking.PaidByPackagePurchaseId = null;
@@ -375,8 +407,8 @@ public class BookingController : Controller
                     .Where(p => p.BookingId == booking.Id && p.Status == "Paid")
                     .OrderByDescending(p => p.PaidAt)
                     .FirstOrDefaultAsync();
-                if (payment != null) payment.Status = "Refunded";
-                TempData["Success"] = "Đã hủy lịch. Yêu cầu hoàn tiền sẽ được xử lý (môi trường sandbox).";
+                if (payment != null) payment.Status = refundRate >= 1.0 ? "Refunded" : (refundRate > 0 ? "PartialRefund" : "Paid");
+                TempData["Success"] = refundRate >= 1.0 ? "Đã huỷ buổi học. Hoàn 100% (huỷ trước 24 giờ)." : (refundRate > 0 ? "Đã huỷ buổi học. Hoàn 50% (huỷ trước 6-24 giờ)." : "Đã huỷ buổi học. Không hoàn do huỷ sát giờ (dưới 6 tiếng).");
             }
             booking.IsPaid = false;
         }
@@ -655,6 +687,35 @@ public class BookingController : Controller
         var s = startLocal.TimeOfDay;
         var e = endLocal.TimeOfDay;
         return avails.Any(a => a.DayOfWeek == dow && a.StartTime <= s && a.EndTime >= e);
+    }
+
+
+    // #13: tìm 3 khung giờ trống gần nhất của gia sư (trong lịch rảnh, không trùng booking)
+    private async Task<List<string>> SuggestSlotsAsync(int tutorProfileId, double hours)
+    {
+        var res = new List<string>();
+        var avails = await _db.TutorAvailabilities.Where(a => a.TutorProfileId == tutorProfileId).ToListAsync();
+        if (avails.Count == 0) return res;
+        var busy = await _db.Bookings
+            .Where(b => b.TutorProfileId == tutorProfileId && (b.Status == "Confirmed" || b.Status == "Pending") && b.EndTime > DateTime.UtcNow)
+            .Select(b => new { b.StartTime, b.EndTime }).ToListAsync();
+        var nowLocal = DateTime.UtcNow.AddHours(7);
+        for (int d = 0; d < 10 && res.Count < 3; d++)
+        {
+            var day = nowLocal.Date.AddDays(d);
+            foreach (var a in avails.Where(x => x.DayOfWeek == day.DayOfWeek))
+            {
+                for (var t = a.StartTime; t + TimeSpan.FromHours(hours) <= a.EndTime && res.Count < 3; t += TimeSpan.FromHours(1))
+                {
+                    var sLocal = day + t;
+                    if (sLocal < nowLocal.AddHours(2)) continue;
+                    var sUtc = sLocal.AddHours(-7); var eUtc = sUtc.AddHours(hours);
+                    if (busy.Any(b => b.StartTime < eUtc && b.EndTime > sUtc)) continue;
+                    res.Add(sLocal.ToString("HH:mm 'ngày' dd/MM"));
+                }
+            }
+        }
+        return res;
     }
 
     // ===== ĐỔI GIỜ BUỔI HỌC (RESCHEDULE) =====
