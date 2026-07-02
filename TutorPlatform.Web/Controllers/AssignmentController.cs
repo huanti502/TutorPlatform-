@@ -96,7 +96,7 @@ public class AssignmentController : Controller
         _db.Assignments.Add(assignment);
         await _db.SaveChangesAsync();
 
-        await _notif.NotifyAsync(booking.StudentId, "📚 Bài tập mới",
+        await _notif.NotifyAsync(booking.StudentId, "Bài tập mới",
             $"Bạn được giao bài: {assignment.Title}.", "/Assignment/MyAssignments");
 
         TempData["Success"] = "Đã giao bài tập.";
@@ -118,7 +118,7 @@ public class AssignmentController : Controller
         a.Status = "Graded";
         await _db.SaveChangesAsync();
 
-        await _notif.NotifyAsync(a.StudentId, "✅ Bài tập đã được chấm",
+        await _notif.NotifyAsync(a.StudentId, "Bài tập đã được chấm",
             $"\"{a.Title}\" — Điểm: {grade}.", "/Assignment/MyAssignments");
 
         TempData["Success"] = "Đã chấm bài.";
@@ -173,7 +173,7 @@ public class AssignmentController : Controller
         await _db.SaveChangesAsync();
 
         var student = await _userManager.GetUserAsync(User);
-        await _notif.NotifyAsync(a.TutorId, "📝 Học viên đã nộp bài",
+        await _notif.NotifyAsync(a.TutorId, "Học viên đã nộp bài",
             $"{student?.FullName} đã nộp: {a.Title}.", "/Assignment/Manage");
 
         TempData["Success"] = "Đã nộp bài.";

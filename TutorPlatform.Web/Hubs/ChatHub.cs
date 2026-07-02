@@ -68,7 +68,7 @@ public class ChatHub : Hub
             _db.Notifications.Add(new Notification
             {
                 UserId = receiverId,
-                Title = "💬 Tin nhắn mới",
+                Title = "Tin nhắn mới",
                 Content = $"{sender.FullName}: {preview}",
                 Link = link,
                 IsRead = false,

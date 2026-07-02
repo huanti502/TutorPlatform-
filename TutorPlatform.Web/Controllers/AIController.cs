@@ -105,11 +105,11 @@ public class AIController : Controller
             - Khi học viên hỏi về gia sư, hãy phân tích yêu cầu (môn học, ngân sách, khu vực, hình thức)
               rồi giới thiệu 2-3 gia sư phù hợp nhất với lý do cụ thể
             - Định dạng khi giới thiệu gia sư:
-              ✨ **[Tên gia sư]** — [Giá]/giờ
-              📚 Môn: [môn] | 📍 Khu vực: [khu vực]
-              ⭐ Rating: [số]/5 | 🎓 [số] năm kinh nghiệm
-              💡 Lý do phù hợp: [giải thích ngắn gọn]
-              👉 [Link xem hồ sơ: /Tutor/Detail/ID]
+               **[Tên gia sư]** — [Giá]/giờ
+               Môn: [môn] |  Khu vực: [khu vực]
+               Rating: [số]/5 |  [số] năm kinh nghiệm
+               Lý do phù hợp: [giải thích ngắn gọn]
+               [Link xem hồ sơ: /Tutor/Detail/ID]
             - Nếu không có gia sư phù hợp, hãy gợi ý học viên mở rộng tiêu chí
             - Có thể trả lời câu hỏi về cách sử dụng nền tảng, cách đặt lịch, thanh toán
             - KHÔNG bịa ra thông tin gia sư không có trong danh sách
@@ -127,7 +127,7 @@ public class AIController : Controller
         }
         catch
         {
-            return Json(new { success = false, reply = "Xin lỗi, AI đang bận. Vui lòng thử lại sau! 🙏" });
+            return Json(new { success = false, reply = "Xin lỗi, AI đang bận. Vui lòng thử lại sau! " });
         }
     }
 
@@ -182,7 +182,7 @@ public class AIController : Controller
         var materials = GetMaterials(subject.Name);
         var warnings = GetWarnings(req.CurrentLevel, daysLeft);
 
-        string difficulty = req.CurrentLevel is "Mất gốc" or "Cơ bản"
+        string difficulty = req.CurrentLevel is "Mất gốc"or "Cơ bản"
             ? "Trung bình"
             : req.CurrentLevel == "Nâng cao" ? "Khó" : "Trung bình";
 
@@ -266,14 +266,14 @@ public class AIController : Controller
     {
         return subject switch
         {
-            "Toán học" or "Toán cao cấp" => new()
+            "Toán học"or "Toán cao cấp" => new()
             {
                 "Đại số & Giải tích cơ bản",
                 "Luyện tập dạng bài trung cấp",
                 "Hình học & Bài toán nâng cao",
                 "Sprint cuối — Ôn thi tổng lực"
             },
-            "Tiếng Anh" or "IELTS" => new()
+            "Tiếng Anh"or "IELTS" => new()
             {
                 "Vocabulary & Grammar Foundation",
                 "4 Skills: Reading & Listening",
@@ -430,7 +430,7 @@ public class AIController : Controller
     {
         return subject switch
         {
-            "Toán học" or "Toán cao cấp" => new()
+            "Toán học"or "Toán cao cấp" => new()
             {
                 "Sách giáo khoa + SBT Toán 12",
                 "Đề thi THPTQG các năm (2018-2024)",
@@ -511,7 +511,7 @@ public class AIController : Controller
             warnings.Add("Thời gian rất gấp — ưu tiên ôn phần trọng tâm, bỏ qua chi tiết nhỏ");
         if (daysLeft < 14)
             warnings.Add("Còn dưới 2 tuần — KHÔNG học kiến thức mới, chỉ ôn và làm đề");
-        if (level is "Mất gốc" or "Cơ bản")
+        if (level is "Mất gốc"or "Cơ bản")
             warnings.Add("Đừng vội học nâng cao khi chưa vững cơ bản — nền tảng quan trọng hơn");
 
         warnings.Add("Nghỉ ngơi đủ giấc (7-8 tiếng/đêm) — não cần ngủ để ghi nhớ kiến thức");

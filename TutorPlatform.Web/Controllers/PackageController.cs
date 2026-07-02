@@ -204,7 +204,7 @@ public class PackageController : Controller
 
             var tutorUserId = purchase.LessonPackage?.TutorProfile?.UserId;
             if (!string.IsNullOrEmpty(tutorUserId))
-                await _notif.NotifyAsync(tutorUserId, "📦 Học viên mua gói",
+                await _notif.NotifyAsync(tutorUserId, "Học viên mua gói",
                     $"Một học viên vừa mua gói {purchase.TotalSessions} buổi của bạn.", "/Package/Manage");
 
             TempData["Success"] = $"Mua gói thành công! Bạn có {purchase.RemainingSessions} buổi.";

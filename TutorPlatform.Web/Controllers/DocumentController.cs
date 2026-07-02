@@ -106,10 +106,10 @@ public class DocumentController : Controller
         var fileType = ext switch
         {
             ".pdf" => "pdf",
-            ".doc" or ".docx" => "word",
-            ".ppt" or ".pptx" => "powerpoint",
-            ".xls" or ".xlsx" => "excel",
-            ".jpg" or ".jpeg" or ".png" => "image",
+            ".doc"or ".docx" => "word",
+            ".ppt"or ".pptx" => "powerpoint",
+            ".xls"or ".xlsx" => "excel",
+            ".jpg"or ".jpeg"or ".png" => "image",
             _ => "other"
         };
 
@@ -294,10 +294,10 @@ public class DocumentController : Controller
         var systemPrompt = """
             Bạn là trợ lý AI giáo dục chuyên phân tích tài liệu học tập.
             Hãy đọc nội dung tài liệu và tạo ra:
-            1. 📋 TÓM TẮT: 3-5 câu ngắn gọn về nội dung chính
-            2. 🎯 ĐIỂM CHÍNH: Liệt kê 5-7 ý quan trọng nhất (dạng bullet)
-            3. ❓ CÂU HỎI ÔN TẬP: 3 câu hỏi giúp học viên kiểm tra hiểu biết
-            4. 💡 GỢI Ý HỌC: Một lời khuyên ngắn gọn về cách học tài liệu này
+            1.  TÓM TẮT: 3-5 câu ngắn gọn về nội dung chính
+            2.  ĐIỂM CHÍNH: Liệt kê 5-7 ý quan trọng nhất (dạng bullet)
+            3.  CÂU HỎI ÔN TẬP: 3 câu hỏi giúp học viên kiểm tra hiểu biết
+            4.  GỢI Ý HỌC: Một lời khuyên ngắn gọn về cách học tài liệu này
             Trả lời bằng tiếng Việt, rõ ràng, phù hợp với học sinh/sinh viên.
             Dùng emoji để dễ đọc. Nếu nội dung không phải tài liệu học tập,
             hãy tóm tắt nội dung thông thường.

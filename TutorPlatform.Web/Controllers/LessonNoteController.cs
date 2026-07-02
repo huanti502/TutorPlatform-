@@ -63,7 +63,7 @@ public class LessonNoteController : Controller
         note.UpdatedAt = DateTime.UtcNow;
         await _db.SaveChangesAsync();
 
-        await _notif.NotifyAsync(booking.StudentId, "📝 Ghi chú buổi học",
+        await _notif.NotifyAsync(booking.StudentId, "Ghi chú buổi học",
             $"Gia sư đã cập nhật ghi chú buổi {booking.Subject?.Name}.", $"/LessonNote/View?bookingId={bookingId}");
 
         TempData["Success"] = "Đã lưu ghi chú.";
@@ -90,7 +90,7 @@ public class LessonNoteController : Controller
         try
         {
             var system = "Bạn là trợ lý giáo dục. Hãy tóm tắt ghi chú buổi học bằng tiếng Việt thành đúng 3 mục, " +
-                         "mỗi mục vài gạch đầu dòng ngắn gọn: '📘 Đã học', '🔁 Cần ôn tập', '💡 Gợi ý luyện tập'. " +
+                         "mỗi mục vài gạch đầu dòng ngắn gọn: ' Đã học', ' Cần ôn tập', ' Gợi ý luyện tập'. " +
                          "Không thêm lời mở đầu hay kết luận.";
             var summary = await _ai.ChatAsync(system,
                 $"Môn: {booking.Subject?.Name}\nGhi chú của gia sư:\n{note.Content}", 800);
@@ -108,7 +108,7 @@ public class LessonNoteController : Controller
         return RedirectToAction("Edit", new { bookingId });
     }
 
-    // ✅ Ghi âm buổi học -> Whisper gỡ băng -> AI tóm tắt vào ghi chú
+    //  Ghi âm buổi học -> Whisper gỡ băng -> AI tóm tắt vào ghi chú
     [Authorize(Roles = "Tutor")]
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -134,7 +134,7 @@ public class LessonNoteController : Controller
 
             // 2) AI tóm tắt lời thoại thành ghi chú buổi học
             var system = "Bạn là trợ lý giáo dục. Dưới đây là lời thoại (transcript) một buổi học gia sư 1-1 bằng tiếng Việt. " +
-                         "Hãy tóm tắt thành đúng 3 mục, mỗi mục vài gạch đầu dòng ngắn: '📘 Đã học', '🔁 Cần ôn tập', '💡 Gợi ý luyện tập'. " +
+                         "Hãy tóm tắt thành đúng 3 mục, mỗi mục vài gạch đầu dòng ngắn: ' Đã học', ' Cần ôn tập', ' Gợi ý luyện tập'. " +
                          "Không thêm lời mở đầu hay kết luận.";
             var summary = await _ai.ChatAsync(system,
                 $"Môn: {booking.Subject?.Name}\nLời thoại buổi học:\n{transcript}", 800);
@@ -143,7 +143,7 @@ public class LessonNoteController : Controller
             var note = await GetOrCreateNoteAsync(booking, uid);
             var stamp = DateTime.UtcNow.AddHours(7).ToString("HH:mm dd/MM/yyyy");
             note.Content = (string.IsNullOrWhiteSpace(note.Content) ? "" : note.Content + "\n\n")
-                + $"===== 🎙️ Gỡ băng ghi âm ({stamp}) =====\n{transcript}";
+                + $"=====  Gỡ băng ghi âm ({stamp}) =====\n{transcript}";
             note.AiSummary = summary;
             note.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();

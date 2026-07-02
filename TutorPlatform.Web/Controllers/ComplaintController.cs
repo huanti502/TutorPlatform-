@@ -62,7 +62,7 @@ public class ComplaintController : Controller
         var reporter = await _userManager.GetUserAsync(User);
         await _notif.NotifyManyAsync(
             admins.Select(a => a.Id),
-            "🚩 Báo cáo mới",
+            "Báo cáo mới",
             $"{reporter?.FullName ?? "Người dùng"} đã báo cáo {targetName ?? targetType}: {reason}.",
             "/Admin/Complaints");
 

@@ -64,7 +64,7 @@ public class StudentController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return NotFound();
 
-        // ✅ Xử lý Upload Avatar — lưu lên Cloudinary (KHÔNG lưu local vì Render xóa đĩa mỗi lần deploy)
+        //  Xử lý Upload Avatar — lưu lên Cloudinary (KHÔNG lưu local vì Render xóa đĩa mỗi lần deploy)
         if (model.AvatarFile != null && model.AvatarFile.Length > 0)
         {
             var avatarUrl = await _cloudinary.UploadImageAsync(model.AvatarFile, "avatars");
@@ -137,8 +137,8 @@ public class StudentController : Controller
             THỐNG KÊ TỔNG QUAN:
             - Tổng số buổi đặt lịch: {bookings.Count}
             - Đã hoàn thành: {completed.Count} buổi ({totalHours:F1} giờ)
-            - Đang chờ/Xác nhận: {bookings.Count(b => b.Status is "Pending" or "Confirmed")}
-            - Bị hủy/Từ chối: {bookings.Count(b => b.Status is "Cancelled" or "Rejected")}
+            - Đang chờ/Xác nhận: {bookings.Count(b => b.Status is "Pending"or "Confirmed")}
+            - Bị hủy/Từ chối: {bookings.Count(b => b.Status is "Cancelled"or "Rejected")}
             - Điểm đánh giá TB cho gia sư: {avgRatingGiven:F1}/5
             - Số gia sư đã học: {bookings.Select(b => b.TutorProfileId).Distinct().Count()}
 
@@ -158,22 +158,22 @@ public class StudentController : Controller
 
             Báo cáo gồm các phần (dùng emoji và định dạng rõ ràng):
 
-            📊 TỔNG KẾT TIẾN ĐỘ
+             TỔNG KẾT TIẾN ĐỘ
             Nhận xét tổng quan về hành trình học tập: tích cực hay cần cải thiện,
             đề cập số buổi, thời gian, sự đều đặn.
 
-            💪 ĐIỂM MẠNH
+             ĐIỂM MẠNH
             2-3 điểm tích cực phát hiện từ dữ liệu
             (ví dụ: chăm chỉ, đa dạng môn học, đánh giá tốt gia sư...)
 
-            ⚠️ ĐIỂM CẦN CẢI THIỆN
+             ĐIỂM CẦN CẢI THIỆN
             2-3 điểm có thể làm tốt hơn
             (ví dụ: tần suất học chưa đều, chưa đánh giá gia sư, ít môn học...)
 
-            🎯 KẾ HOẠCH TUẦN TỚI
+             KẾ HOẠCH TUẦN TỚI
             3 gợi ý cụ thể, thực tế cho tuần tới
 
-            ⭐ ĐÁNH GIÁ TỔNG THỂ
+             ĐÁNH GIÁ TỔNG THỂ
             Cho điểm từ 1-10 kèm nhận xét ngắn và lời động viên
 
             Viết bằng tiếng Việt, thân thiện như gia sư riêng, ngắn gọn và động viên.

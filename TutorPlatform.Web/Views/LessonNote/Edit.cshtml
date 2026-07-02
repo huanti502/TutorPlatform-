@@ -5,10 +5,10 @@
 }
 
 <div class="container py-4" style="max-width:720px;">
-    <a asp-controller="Booking" asp-action="TutorRequests" class="small text-muted text-decoration-none">← Quay lại yêu cầu học</a>
-    <h3 class="mt-2 mb-1">Ghi chú buổi học</h3>
-    <p class="text-muted">
-        HV: <b>@booking?.Student?.FullName</b> · @booking?.Subject?.Name ·
+<a asp-controller="Booking" asp-action="TutorRequests" class="small text-muted text-decoration-none">← Quay lại yêu cầu học</a>
+<h3 class="mt-2 mb-1">Ghi chú buổi học</h3>
+<p class="text-muted">
+HV: <b>@booking?.Student?.FullName</b> · @booking?.Subject?.Name ·
         @booking?.StartTime.AddHours(7).ToString("HH:mm dd/MM/yyyy")
     </p>
 
@@ -16,55 +16,55 @@
     @if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
 
     <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body">
-            <form asp-action="Save" method="post">
-                @Html.AntiForgeryToken()
+<div class="card-body">
+<form asp-action="Save" method="post">
+@Html.AntiForgeryToken()
                 <input type="hidden" name="bookingId" value="@Model.BookingId" />
-                <label class="form-label fw-semibold">Nội dung đã dạy / nhận xét</label>
-                <textarea name="content" class="form-control" rows="7"
+<label class="form-label fw-semibold">Nội dung đã dạy / nhận xét</label>
+<textarea name="content" class="form-control" rows="7"
                           placeholder="VD: Hôm nay học phương trình bậc 2, công thức nghiệm, học viên còn yếu phần biện luận delta...">@Model.Content</textarea>
-                <button class="btn btn-primary mt-3" style="background:#7c3aed;border:none;">💾 Lưu ghi chú</button>
-            </form>
-        </div>
-    </div>
+<button class="btn btn-primary mt-3" style="background:#7c3aed;border:none;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg> Lưu ghi chú</button>
+</form>
+</div>
+</div>
 
-    <!-- 🎙️ Ghi âm buổi học -> Whisper gỡ băng -> AI tóm tắt -->
-    <div class="card border-0 shadow-sm mb-3" style="background:#fefce8;">
-        <div class="card-body">
-            <h6 class="fw-bold mb-1">🎙️ Ghi âm & tóm tắt tự động</h6>
-            <p class="small text-muted mb-2">Ghi âm buổi dạy — AI (Whisper) gỡ băng thành văn bản rồi tự tóm tắt vào ghi chú.</p>
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <button type="button" id="recBtn" class="btn btn-sm text-white fw-bold" style="background:#dc2626;border:none;">● Bắt đầu ghi</button>
-                <span id="recTime" class="small fw-bold" style="display:none;color:#dc2626;">00:00</span>
-                <span id="recStatus" class="small text-muted"></span>
-            </div>
-        </div>
-    </div>
+    <!-- <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg> Ghi âm buổi học -> Whisper gỡ băng -> AI tóm tắt -->
+<div class="card border-0 shadow-sm mb-3" style="background:#fefce8;">
+<div class="card-body">
+<h6 class="fw-bold mb-1"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg> Ghi âm & tóm tắt tự động</h6>
+<p class="small text-muted mb-2">Ghi âm buổi dạy — AI (Whisper) gỡ băng thành văn bản rồi tự tóm tắt vào ghi chú.</p>
+<div class="d-flex align-items-center gap-2 flex-wrap">
+<button type="button" id="recBtn" class="btn btn-sm text-white fw-bold" style="background:#dc2626;border:none;">● Bắt đầu ghi</button>
+<span id="recTime" class="small fw-bold" style="display:none;color:#dc2626;">00:00</span>
+<span id="recStatus" class="small text-muted"></span>
+</div>
+</div>
+</div>
 
     @if (!string.IsNullOrWhiteSpace(Model.Content))
     {
         <form asp-action="Summarize" method="post" class="mb-3">
-            @Html.AntiForgeryToken()
+@Html.AntiForgeryToken()
             <input type="hidden" name="bookingId" value="@Model.BookingId" />
-            <button class="btn btn-outline-primary">✨ Tóm tắt bằng AI</button>
-            <span class="small text-muted ms-2">AI sẽ tạo: Đã học · Cần ôn tập · Gợi ý luyện tập</span>
-        </form>
-    }
+<button class="btn btn-outline-primary"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M12 3v2M12 19v2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4 7 17M17 7l1.4-1.4"/><circle cx="12" cy="12" r="3"/></svg> Tóm tắt bằng AI</button>
+<span class="small text-muted ms-2">AI sẽ tạo: Đã học · Cần ôn tập · Gợi ý luyện tập</span>
+</form>
+}
 
     @if (!string.IsNullOrWhiteSpace(Model.AiSummary))
     {
         <div class="card border-0 shadow-sm" style="background:#f5f3ff;">
-            <div class="card-body">
-                <h6 class="fw-bold mb-2">✨ Bản tóm tắt AI</h6>
-                <div style="white-space:pre-wrap;">@Model.AiSummary</div>
-            </div>
-        </div>
-    }
+<div class="card-body">
+<h6 class="fw-bold mb-2"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M12 3v2M12 19v2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4 7 17M17 7l1.4-1.4"/><circle cx="12" cy="12" r="3"/></svg> Bản tóm tắt AI</h6>
+<div style="white-space:pre-wrap;">@Model.AiSummary</div>
+</div>
+</div>
+}
 </div>
 
 @section Scripts {
 <script>
-    (function () {
+(function () {
         const recBtn = document.getElementById('recBtn');
         const recTime = document.getElementById('recTime');
         const recStatus = document.getElementById('recStatus');
@@ -115,14 +115,14 @@
                 const res = await fetch('@Url.Action("Transcribe", "LessonNote")', { method: 'POST', body: fd });
                 const data = await res.json();
                 if (data.ok) {
-                    recStatus.textContent = '✅ Đã gỡ băng & tóm tắt xong! Đang tải lại…';
+                    recStatus.textContent = ' Đã gỡ băng & tóm tắt xong! Đang tải lại…';
                     setTimeout(() => location.reload(), 900);
                 } else {
-                    recStatus.textContent = '❌ ' + (data.message || 'Có lỗi xảy ra.');
+                    recStatus.textContent = ' ' + (data.message || 'Có lỗi xảy ra.');
                     recBtn.disabled = false;
                 }
             } catch {
-                recStatus.textContent = '❌ Lỗi mạng khi tải bản ghi lên.';
+                recStatus.textContent = ' Lỗi mạng khi tải bản ghi lên.';
                 recBtn.disabled = false;
             }
         }

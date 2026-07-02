@@ -6,11 +6,11 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🎨 Bảng trắng - @ViewBag.Subject</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M12 2a10 10 0 0 0 0 20 2 2 0 0 0 2-2v-1a2 2 0 0 1 2-2h1a5 5 0 0 0 5-5c0-5.5-4.5-10-10-10Z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16.5" cy="10.5" r="1"/></svg> Bảng trắng - @ViewBag.Subject</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
             display: flex;
@@ -314,123 +314,123 @@
     </style>
 </head>
 <body>
-    <!-- Header -->
-    <div class="wb-header">
-        <div class="wb-title">
-            🎨 Bảng trắng
+<!-- Header -->
+<div class="wb-header">
+<div class="wb-title">
+<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M12 2a10 10 0 0 0 0 20 2 2 0 0 0 2-2v-1a2 2 0 0 1 2-2h1a5 5 0 0 0 5-5c0-5.5-4.5-10-10-10Z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="12" cy="7.5" r="1"/><circle cx="16.5" cy="10.5" r="1"/></svg> Bảng trắng
             <span class="badge">@ViewBag.Subject</span>
-        </div>
-        <div class="wb-users">
-            <div class="online-dot"></div>
-            <span id="online-count">Đang kết nối...</span>
-            <span class="conn-status connecting" id="conn-status">●</span>
-            &nbsp;·&nbsp;
+</div>
+<div class="wb-users">
+<div class="online-dot"></div>
+<span id="online-count">Đang kết nối...</span>
+<span class="conn-status connecting" id="conn-status">●</span>
+&nbsp;·&nbsp;
             <button class="btn-back" onclick="goBack()">← Quay lại</button>
-        </div>
-    </div>
+</div>
+</div>
 
     <div class="wb-main">
-        <!-- Toolbar -->
-        <div class="wb-toolbar">
-            <button class="tool-btn active" id="btn-pen"    title="Bút vẽ (P)"    onclick="setTool('pen')">✏️</button>
-            <button class="tool-btn"        id="btn-eraser" title="Tẩy (E)"       onclick="setTool('eraser')">🧹</button>
-            <button class="tool-btn"        id="btn-line"   title="Đường thẳng (L)" onclick="setTool('line')">╱</button>
-            <button class="tool-btn"        id="btn-rect"   title="Hình chữ nhật (R)" onclick="setTool('rect')">▭</button>
-            <button class="tool-btn"        id="btn-circle" title="Hình tròn (C)" onclick="setTool('circle')">○</button>
-            <button class="tool-btn"        id="btn-text"   title="Chèn chữ (T)"  onclick="setTool('text')">T</button>
+<!-- Toolbar -->
+<div class="wb-toolbar">
+<button class="tool-btn active" id="btn-pen"    title="Bút vẽ (P)"    onclick="setTool('pen')"></button>
+<button class="tool-btn"        id="btn-eraser" title="Tẩy (E)"       onclick="setTool('eraser')"></button>
+<button class="tool-btn"        id="btn-line"   title="Đường thẳng (L)" onclick="setTool('line')">╱</button>
+<button class="tool-btn"        id="btn-rect"   title="Hình chữ nhật (R)" onclick="setTool('rect')">▭</button>
+<button class="tool-btn"        id="btn-circle" title="Hình tròn (C)" onclick="setTool('circle')">○</button>
+<button class="tool-btn"        id="btn-text"   title="Chèn chữ (T)"  onclick="setTool('text')">T</button>
 
             <div class="divider"></div>
 
             <div class="color-palette">
-                <div class="color-row">
-                    <div class="color-dot active" style="background:#000000" onclick="setColor('#000000')" title="Đen"></div>
-                    <div class="color-dot" style="background:#ffffff;border:1px solid #ccc" onclick="setColor('#ffffff')" title="Trắng"></div>
-                </div>
-                <div class="color-row">
-                    <div class="color-dot" style="background:#ef4444" onclick="setColor('#ef4444')" title="Đỏ"></div>
-                    <div class="color-dot" style="background:#f97316" onclick="setColor('#f97316')" title="Cam"></div>
-                </div>
-                <div class="color-row">
-                    <div class="color-dot" style="background:#eab308" onclick="setColor('#eab308')" title="Vàng"></div>
-                    <div class="color-dot" style="background:#22c55e" onclick="setColor('#22c55e')" title="Xanh lá"></div>
-                </div>
-                <div class="color-row">
-                    <div class="color-dot" style="background:#3b82f6" onclick="setColor('#3b82f6')" title="Xanh dương"></div>
-                    <div class="color-dot" style="background:#a855f7" onclick="setColor('#a855f7')" title="Tím"></div>
-                </div>
-                <input type="color" class="color-custom" id="custom-color" value="#000000"
+<div class="color-row">
+<div class="color-dot active" style="background:#000000" onclick="setColor('#000000')" title="Đen"></div>
+<div class="color-dot" style="background:#ffffff;border:1px solid #ccc" onclick="setColor('#ffffff')" title="Trắng"></div>
+</div>
+<div class="color-row">
+<div class="color-dot" style="background:#ef4444" onclick="setColor('#ef4444')" title="Đỏ"></div>
+<div class="color-dot" style="background:#f97316" onclick="setColor('#f97316')" title="Cam"></div>
+</div>
+<div class="color-row">
+<div class="color-dot" style="background:#eab308" onclick="setColor('#eab308')" title="Vàng"></div>
+<div class="color-dot" style="background:#22c55e" onclick="setColor('#22c55e')" title="Xanh lá"></div>
+</div>
+<div class="color-row">
+<div class="color-dot" style="background:#3b82f6" onclick="setColor('#3b82f6')" title="Xanh dương"></div>
+<div class="color-dot" style="background:#a855f7" onclick="setColor('#a855f7')" title="Tím"></div>
+</div>
+<input type="color" class="color-custom" id="custom-color" value="#000000"
                        title="Màu tùy chọn" onchange="setColor(this.value)">
-            </div>
+</div>
 
             <div class="divider"></div>
 
             <div class="size-picker">
-                <div class="size-dot active" style="width:6px;height:6px"   onclick="setSize(2,this)"  title="Mỏng"></div>
-                <div class="size-dot"        style="width:10px;height:10px" onclick="setSize(5,this)"  title="Vừa"></div>
-                <div class="size-dot"        style="width:14px;height:14px" onclick="setSize(10,this)" title="Dày"></div>
-                <div class="size-dot"        style="width:18px;height:18px" onclick="setSize(20,this)" title="Rất dày"></div>
-            </div>
+<div class="size-dot active" style="width:6px;height:6px"   onclick="setSize(2,this)"  title="Mỏng"></div>
+<div class="size-dot"        style="width:10px;height:10px" onclick="setSize(5,this)"  title="Vừa"></div>
+<div class="size-dot"        style="width:14px;height:14px" onclick="setSize(10,this)" title="Dày"></div>
+<div class="size-dot"        style="width:18px;height:18px" onclick="setSize(20,this)" title="Rất dày"></div>
+</div>
 
             <div class="divider"></div>
 
-            <button class="tool-btn" title="Hoàn tác (Ctrl+Z)" onclick="undoLocal()">↩️</button>
-            <button class="tool-btn" title="Xóa tất cả"        onclick="clearAll()" style="color:#ef4444">🗑️</button>
-            <button class="tool-btn" title="Lưu ảnh PNG"       onclick="saveImage()">💾</button>
-        </div>
+            <button class="tool-btn" title="Hoàn tác (Ctrl+Z)" onclick="undoLocal()">↩</button>
+<button class="tool-btn" title="Xóa tất cả"        onclick="clearAll()" style="color:#ef4444"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+<button class="tool-btn" title="Lưu ảnh PNG"       onclick="saveImage()"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2Z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg></button>
+</div>
 
         <!-- Canvas -->
-        <div class="canvas-container" id="canvas-container">
-            <canvas id="wb-canvas"></canvas>
-            <div id="text-input-popup">
-                <input type="text" id="text-input-field" placeholder="Nhập chữ, Enter để xác nhận...">
-            </div>
-        </div>
+<div class="canvas-container" id="canvas-container">
+<canvas id="wb-canvas"></canvas>
+<div id="text-input-popup">
+<input type="text" id="text-input-field" placeholder="Nhập chữ, Enter để xác nhận...">
+</div>
+</div>
 
         <!-- Right panel -->
-        <div class="wb-right">
-            <div class="panel-title">👥 Tham gia</div>
+<div class="wb-right">
+<div class="panel-title"> Tham gia</div>
 
             <!-- Người dùng hiện tại -->
-            <div class="participant">
-                <div class="participant-avatar">@ViewBag.UserName.ToString().Substring(0,1).ToUpper()</div>
-                <div class="participant-info">
-                    <div class="participant-name">@ViewBag.UserName</div>
-                    <div class="participant-role">@(ViewBag.IsStudent ? "Học sinh" : "Gia sư") · Bạn</div>
-                </div>
-                <div class="online-indicator" style="background:#22c55e"></div>
-            </div>
+<div class="participant">
+<div class="participant-avatar">@ViewBag.UserName.ToString().Substring(0,1).ToUpper()</div>
+<div class="participant-info">
+<div class="participant-name">@ViewBag.UserName</div>
+<div class="participant-role">@(ViewBag.IsStudent ? "Học sinh" : "Gia sư") · Bạn</div>
+</div>
+<div class="online-indicator" style="background:#22c55e"></div>
+</div>
 
             <!-- Đối phương -->
-            <div id="partner-card" class="participant" style="opacity:.45">
-                <div class="participant-avatar" style="background:#64748b">
-                    @ViewBag.Partner.ToString().Substring(0,1).ToUpper()
+<div id="partner-card" class="participant" style="opacity:.45">
+<div class="participant-avatar" style="background:#64748b">
+@ViewBag.Partner.ToString().Substring(0,1).ToUpper()
                 </div>
-                <div class="participant-info">
-                    <div class="participant-name">@ViewBag.Partner</div>
-                    <div class="participant-role" id="partner-role">Chưa kết nối</div>
-                </div>
-                <div class="online-indicator" id="partner-dot" style="background:#64748b"></div>
-            </div>
+<div class="participant-info">
+<div class="participant-name">@ViewBag.Partner</div>
+<div class="participant-role" id="partner-role">Chưa kết nối</div>
+</div>
+<div class="online-indicator" id="partner-dot" style="background:#64748b"></div>
+</div>
 
             <!-- Chat nhanh -->
-            <div class="quick-chat" style="margin-top:16px;">
-                <div class="panel-title">💬 Chat nhanh</div>
-                <div class="chat-msgs" id="chat-msgs"></div>
-                <div class="chat-input-row">
-                    <input type="text" class="chat-input" id="chat-input"
+<div class="quick-chat" style="margin-top:16px;">
+<div class="panel-title"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Chat nhanh</div>
+<div class="chat-msgs" id="chat-msgs"></div>
+<div class="chat-input-row">
+<input type="text" class="chat-input" id="chat-input"
                            placeholder="Nhắn tin... (Enter)"
                            onkeydown="if(event.key==='Enter')sendChat()">
-                    <button class="chat-send" onclick="sendChat()" title="Gửi">➤</button>
-                </div>
-            </div>
-        </div>
-    </div>
+<button class="chat-send" onclick="sendChat()" title="Gửi"></button>
+</div>
+</div>
+</div>
+</div>
 
     <!-- Toast -->
-    <div class="toast" id="toast"></div>
+<div class="toast" id="toast"></div>
 
     <script>
-        // ── CONFIG ────────────────────────────────────────────
+// ── CONFIG ────────────────────────────────────────────
         const ROOM_ID  = '@ViewBag.RoomId';
         const MY_NAME  = '@ViewBag.UserName';
         const IS_STUDENT = @(ViewBag.IsStudent ? "true" : "false");
@@ -555,7 +555,7 @@
                 ctx.putImageData(history.pop(), 0, 0);
                 // Sync canvas state to partner
                 syncCanvasToPartner();
-                showToast('↩️ Đã hoàn tác');
+                showToast('↩ Đã hoàn tác');
             } else {
                 showToast('Không có gì để hoàn tác');
             }
@@ -573,7 +573,7 @@
             a.download = `whiteboard-${ROOM_ID}-${Date.now()}.png`;
             a.href = canvas.toDataURL('image/png');
             a.click();
-            showToast('💾 Đã lưu ảnh!');
+            showToast(' Đã lưu ảnh!');
         }
 
         function syncCanvasToPartner() {
@@ -727,14 +727,14 @@
         // Nhận chat
         connection.on('ReceiveChat', (sender, text) => {
             addChatMsg(sender, text, false);
-            showToast(`💬 ${sender}: ${text}`);
+            showToast(` ${sender}: ${text}`);
         });
 
         // Đối phương vào phòng
         connection.on('UserJoined', count => {
             setPartnerOnline(true);
             document.getElementById('online-count').textContent = `${count} người online`;
-            showToast('🟢 Đối phương đã vào bảng!');
+            showToast(' Đối phương đã vào bảng!');
             // Gửi trạng thái canvas hiện tại cho đối phương
             setTimeout(syncCanvasToPartner, 500);
         });
@@ -743,7 +743,7 @@
         connection.on('UserLeft', count => {
             setPartnerOnline(false);
             document.getElementById('online-count').textContent = count > 0 ? `${count} người online` : '1 người online (Bạn)';
-            showToast('🔴 Đối phương đã rời bảng');
+            showToast(' Đối phương đã rời bảng');
         });
 
         // Nhận thông tin phòng khi mới vào
@@ -763,14 +763,14 @@
                 ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
             };
             img.src = dataUrl;
-            showToast('↩️ Đối phương vừa hoàn tác');
+            showToast('↩ Đối phương vừa hoàn tác');
         });
 
         // Xóa bảng
         connection.on('BoardCleared', () => {
             saveSnapshot();
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            showToast('🗑️ Bảng đã được xóa');
+            showToast(' Bảng đã được xóa');
         });
 
         // Trạng thái kết nối
@@ -780,7 +780,7 @@
         connection.onreconnected(() => {
             setConnStatus('connected', '● Online');
             safeInvoke('JoinRoom', ROOM_ID);
-            showToast('✅ Đã kết nối lại!');
+            showToast(' Đã kết nối lại!');
         });
         connection.onclose(() => {
             setConnStatus('error', '● Mất kết nối');
@@ -805,7 +805,7 @@
                 await connection.start();
                 setConnStatus('connected', '● Online');
                 await connection.invoke('JoinRoom', ROOM_ID);
-                showToast('✅ Kết nối thành công!');
+                showToast(' Kết nối thành công!');
             } catch (err) {
                 console.error(err);
                 setConnStatus('error', '● Lỗi kết nối');

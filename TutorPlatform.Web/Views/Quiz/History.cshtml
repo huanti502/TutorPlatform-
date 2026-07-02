@@ -4,99 +4,99 @@
 }
 
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold mb-0"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z"/></svg> Lịch sử làm bài Quiz</h3>
-        <a href="/Quiz" class="btn btn-primary">➕ Làm đề mới</a>
-    </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+<h3 class="fw-bold mb-0"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z"/></svg> Lịch sử làm bài Quiz</h3>
+<a href="/Quiz" class="btn btn-primary"> Làm đề mới</a>
+</div>
 
     @if (!Model.Any())
     {
         <div class="text-center py-5">
-            <div class="fs-1 mb-3">📝</div>
-            <h5 class="text-muted">Bạn chưa làm bài quiz nào</h5>
-            <a href="/Quiz" class="btn btn-primary mt-3">Thử ngay</a>
-        </div>
-    }
+<div class="fs-1 mb-3"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></div>
+<h5 class="text-muted">Bạn chưa làm bài quiz nào</h5>
+<a href="/Quiz" class="btn btn-primary mt-3">Thử ngay</a>
+</div>
+}
     else
     {
         <!-- Thống kê nhanh -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-3">
-                <div class="card border-0 bg-primary text-white text-center p-3">
-                    <div class="h3 fw-bold mb-0">@Model.Count()</div>
-                    <div class="small">Lần làm bài</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-0 bg-success text-white text-center p-3">
-                    <div class="h3 fw-bold mb-0">
-                        @(Model.Any() ? $"{(int)(Model.Average(q => (double)q.Score / q.TotalQuestions * 100))}%" : "0%")
+<div class="row g-3 mb-4">
+<div class="col-md-3">
+<div class="card border-0 bg-primary text-white text-center p-3">
+<div class="h3 fw-bold mb-0">@Model.Count()</div>
+<div class="small">Lần làm bài</div>
+</div>
+</div>
+<div class="col-md-3">
+<div class="card border-0 bg-success text-white text-center p-3">
+<div class="h3 fw-bold mb-0">
+@(Model.Any() ? $"{(int)(Model.Average(q => (double)q.Score / q.TotalQuestions * 100))}%" : "0%")
                     </div>
-                    <div class="small">Điểm trung bình</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-0 bg-warning text-dark text-center p-3">
-                    <div class="h3 fw-bold mb-0">
-                        @Model.Max(q => (int)((double)q.Score / q.TotalQuestions * 100))%
+<div class="small">Điểm trung bình</div>
+</div>
+</div>
+<div class="col-md-3">
+<div class="card border-0 bg-warning text-dark text-center p-3">
+<div class="h3 fw-bold mb-0">
+@Model.Max(q => (int)((double)q.Score / q.TotalQuestions * 100))%
                     </div>
-                    <div class="small">Điểm cao nhất</div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-0 bg-info text-white text-center p-3">
-                    <div class="h3 fw-bold mb-0">@Model.Count(q => q.Score == q.TotalQuestions)</div>
-                    <div class="small">Lần đạt 100%</div>
-                </div>
-            </div>
-        </div>
+<div class="small">Điểm cao nhất</div>
+</div>
+</div>
+<div class="col-md-3">
+<div class="card border-0 bg-info text-white text-center p-3">
+<div class="h3 fw-bold mb-0">@Model.Count(q => q.Score == q.TotalQuestions)</div>
+<div class="small">Lần đạt 100%</div>
+</div>
+</div>
+</div>
 
         <!-- Bảng lịch sử -->
-        <div class="card shadow-sm">
-            <div class="card-body p-0">
-                <table class="table table-hover mb-0">
-                    <thead class="">
-                        <tr>
-                            <th class="ps-4">Môn học</th>
-                            <th>Cấp độ</th>
-                            <th>Kết quả</th>
-                            <th>Điểm %</th>
-                            <th>Xếp loại</th>
-                            <th class="pe-4">Thời gian</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var q in Model)
+<div class="card shadow-sm">
+<div class="card-body p-0">
+<table class="table table-hover mb-0">
+<thead class="">
+<tr>
+<th class="ps-4">Môn học</th>
+<th>Cấp độ</th>
+<th>Kết quả</th>
+<th>Điểm %</th>
+<th>Xếp loại</th>
+<th class="pe-4">Thời gian</th>
+</tr>
+</thead>
+<tbody>
+@foreach (var q in Model)
                         {
                             var pct = (int)((double)q.Score / q.TotalQuestions * 100);
                             var (badge, color) = pct switch
                             {
-                                >= 90 => ("Xuất sắc <svg width='16' height='16' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24' aria-hidden='true'><path d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z'/></svg> ", "success"),
-                                >= 70 => ("Khá giỏi <svg width='14' height='14' fill='#F59E0B' viewBox='0 0 24 24' aria-hidden='true'><path d='M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z'/></svg> ", "primary"),
-                                >= 50 => ("Trung bình 📚", "warning"),
-                                _ => ("Cần cố gắng 💪", "danger")
+                                >= 90 => ("Xuất sắc", "success"),
+                                >= 70 => ("Khá giỏi", "primary"),
+                                >= 50 => ("Trung bình", "warning"),
+                                _ => ("Cần cố gắng", "danger")
                             };
                             <tr>
-                                <td class="ps-4 fw-semibold">@q.Subject?.Name</td>
-                                <td><span class="badge bg-secondary">@q.Level</span></td>
-                                <td>@q.Score / @q.TotalQuestions câu</td>
-                                <td>
-                                    <div class="d-flex align-items-center gap-2">
-                                        <div class="progress flex-grow-1" style="height:6px;min-width:80px">
-                                            <div class="progress-bar bg-@color" style="width:@pct%"></div>
-                                        </div>
-                                        <span class="small fw-bold">@pct%</span>
-                                    </div>
+<td class="ps-4 fw-semibold">@q.Subject?.Name</td>
+<td><span class="badge bg-secondary">@q.Level</span></td>
+<td>@q.Score / @q.TotalQuestions câu</td>
+<td>
+<div class="d-flex align-items-center gap-2">
+<div class="progress flex-grow-1" style="height:6px;min-width:80px">
+<div class="progress-bar bg-@color" style="width:@pct%"></div>
+</div>
+<span class="small fw-bold">@pct%</span>
+</div>
+</td>
+<td><span class="badge bg-@color">@badge</span></td>
+<td class="pe-4 text-muted small">
+@q.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
                                 </td>
-                                <td><span class="badge bg-@color">@badge</span></td>
-                                <td class="pe-4 text-muted small">
-                                    @q.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy HH:mm")
-                                </td>
-                            </tr>
-                        }
+</tr>
+}
                     </tbody>
-                </table>
-            </div>
-        </div>
-    }
+</table>
+</div>
+</div>
+}
 </div>

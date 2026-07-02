@@ -315,3 +315,63 @@ textarea:focus-visible,
     width: 92%; opacity: 1;
     transition: width 8s cubic-bezier(.15,.75,.1,1), opacity .2s;
 }
+
+/* =======================  POLISH THEO CHUẨN UI/UX  =======================
+   (focus-visible, press feedback 150ms, reduced-motion, touch target) */
+
+/* Con trỏ + vùng chạm tối thiểu cho phần tử tương tác */
+a, button, [role="button"], .btn, .dropdown-item, .nav-link { cursor: pointer; touch-action: manipulation; }
+.btn, .bk-btn, .bk-primary { min-height: 38px; }
+
+/* Phản hồi khi bấm: nhấn nhẹ xuống, không xô lệch layout */
+.btn, .bk-btn, .bk-primary, .dropdown-item, .card a.btn {
+    transition: transform .15s ease, box-shadow .2s ease, background-color .15s ease, color .15s ease;
+}
+.btn:active, .bk-btn:active, .bk-primary:active { transform: scale(.97); }
+
+/* Focus rõ ràng cho bàn phím, không ảnh hưởng chuột */
+:focus { outline: none; }
+:focus-visible {
+    outline: 3px solid rgba(124, 58, 237, .45);
+    outline-offset: 2px;
+    border-radius: 6px;
+}
+
+/* Nội dung trang hiện ra mượt (200ms, đúng dải 150-300ms) */
+main, .container.py-4, .container.py-5 {
+    animation: pageIn .2s ease-out;
+}
+@keyframes pageIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* Card & bảng gọn gàng đồng nhất */
+.card { border-radius: var(--radius-md, 14px); }
+.table > :not(caption) > * > * { padding-top: .55rem; padding-bottom: .55rem; }
+.badge { font-weight: 600; letter-spacing: .01em; }
+
+/* Icon SVG inline canh giữa với chữ */
+.btn svg, .dropdown-item svg, .nav-link svg, h3 svg, h4 svg, h5 svg, h6 svg, .alert svg {
+    flex-shrink: 0;
+}
+
+/* Ảnh không gây nhảy layout */
+img { max-width: 100%; height: auto; }
+
+/* Tôn trọng người dùng giảm chuyển động */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: .01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: .01ms !important;
+        scroll-behavior: auto !important;
+    }
+}
+
+/* Icon trong tiêu đề tự co theo cỡ chữ (CSS override attribute width/height) */
+h1 > svg, h2 > svg, h3 > svg, h4 > svg {
+    width: .85em;
+    height: .85em;
+    vertical-align: -0.08em;
+}

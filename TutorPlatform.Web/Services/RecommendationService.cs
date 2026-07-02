@@ -55,7 +55,7 @@ public class RecommendationService
             .SelectMany(r => r.TutorProfile.TutorSubjects.Select(ts => ts.SubjectId))
             .Distinct().ToHashSet();
 
-        // 3. Collaborative filtering: tìm học viên "tương tự" tôi
+        // 3. Collaborative filtering: tìm học viên "tương tự"tôi
         //    (cùng học những gia sư tôi đã học) → xem họ học thêm ai
         var similarStudentIds = await _db.Bookings
             .Where(b => myTutorIds.Contains(b.TutorProfileId) && b.StudentId != studentId)
@@ -96,7 +96,7 @@ public class RecommendationService
             { score += 25; reasons.Add("dạy môn bạn đang học"); }
 
             // +25: Rating cao
-            if (avg >= 4.8) { score += 25; reasons.Add("rating xuất sắc ⭐"); }
+            if (avg >= 4.8) { score += 25; reasons.Add("rating xuất sắc "); }
             else if (avg >= 4.5) { score += 18; reasons.Add("rating rất tốt"); }
             else if (avg >= 4.0) { score += 10; }
 

@@ -21,7 +21,7 @@ public class BookingController : Controller
     private readonly UserManager<AppUser> _userManager;
     private readonly BadgeService _badgeService;
     private readonly IHubContext<ChatHub> _hubContext;
-    private readonly XpService _xpService; // ✅ Khai báo XpService
+    private readonly XpService _xpService; //  Khai báo XpService
     private readonly NotificationService _notif;
 
     public BookingController(
@@ -29,14 +29,14 @@ public class BookingController : Controller
         UserManager<AppUser> userManager,
         BadgeService badgeService,
         IHubContext<ChatHub> hubContext,
-        XpService xpService, // ✅ Inject XpService
+        XpService xpService, //  Inject XpService
         NotificationService notif)
     {
         _db = db;
         _userManager = userManager;
         _badgeService = badgeService;
         _hubContext = hubContext;
-        _xpService = xpService; // ✅ Gán XpService
+        _xpService = xpService; //  Gán XpService
         _notif = notif;
     }
 
@@ -62,7 +62,7 @@ public class BookingController : Controller
     {
         var user = await _userManager.GetUserAsync(User);
 
-        // ✅ Chỉ cho đặt lịch với gia sư đã được duyệt
+        //  Chỉ cho đặt lịch với gia sư đã được duyệt
         var approvedTutor = await _db.TutorProfiles.FindAsync(tutorProfileId);
         if (approvedTutor == null || !approvedTutor.IsApproved)
         {
@@ -70,11 +70,11 @@ public class BookingController : Controller
             return RedirectToAction("Search", "TutorSearch");
         }
 
-        // 🛠️ SỬA LỖI POSTGRESQL: Chuyển thời gian sang UTC trước khi xử lý
+        //  SỬA LỖI POSTGRESQL: Chuyển thời gian sang UTC trước khi xử lý
         var startUtc = startTime.ToUniversalTime();
         var endUtc = endTime.ToUniversalTime();
 
-        // ✅ Validate thời gian hợp lệ
+        //  Validate thời gian hợp lệ
         if (startUtc >= endUtc)
         {
             TempData["Error"] = "Thời gian kết thúc phải sau thời gian bắt đầu.";
@@ -87,7 +87,7 @@ public class BookingController : Controller
             return RedirectToAction("Create", new { tutorId = tutorProfileId });
         }
 
-        // ✅ Kiểm tra trùng lịch phía server (Gia sư)
+        //  Kiểm tra trùng lịch phía server (Gia sư)
         var conflict = await _db.Bookings.AnyAsync(b =>
             b.TutorProfileId == tutorProfileId &&
             (b.Status == "Confirmed" || b.Status == "Pending") &&
@@ -95,11 +95,11 @@ public class BookingController : Controller
 
         if (conflict)
         {
-            TempData["Error"] = "⚠️ Gia sư đã có lịch trong khung giờ này. Vui lòng chọn giờ khác.";
+            TempData["Error"] = "Gia sư đã có lịch trong khung giờ này. Vui lòng chọn giờ khác.";
             return RedirectToAction("Create", new { tutorId = tutorProfileId });
         }
 
-        // ✅ Kiểm tra học viên tự trùng lịch với chính mình
+        //  Kiểm tra học viên tự trùng lịch với chính mình
         var selfConflict = await _db.Bookings.AnyAsync(b =>
             b.StudentId == user!.Id &&
             (b.Status == "Confirmed" || b.Status == "Pending") &&
@@ -107,14 +107,14 @@ public class BookingController : Controller
 
         if (selfConflict)
         {
-            TempData["Error"] = "⚠️ Bạn đã có lịch học khác trong khung giờ này!";
+            TempData["Error"] = "Bạn đã có lịch học khác trong khung giờ này!";
             return RedirectToAction("Create", new { tutorId = tutorProfileId });
         }
 
-        // ✅ Kiểm tra buổi học nằm trong "Lịch rảnh" gia sư đã đăng ký
+        //  Kiểm tra buổi học nằm trong "Lịch rảnh"gia sư đã đăng ký
         if (!await IsWithinAvailabilityAsync(tutorProfileId, startUtc, endUtc))
         {
-            TempData["Error"] = "⚠️ Gia sư không rảnh trong khung giờ này. Vui lòng chọn giờ nằm trong lịch rảnh của gia sư.";
+            TempData["Error"] = "Gia sư không rảnh trong khung giờ này. Vui lòng chọn giờ nằm trong lịch rảnh của gia sư.";
             return RedirectToAction("Create", new { tutorId = tutorProfileId });
         }
 
@@ -147,7 +147,7 @@ public class BookingController : Controller
         await ChatHub.SendNotificationToUser(
             _hubContext,
             tutor!.UserId,
-            "📅 Yêu cầu học mới",
+            "Yêu cầu học mới",
             $"{user.FullName} vừa đặt lịch học với bạn!",
             "/Booking/TutorRequests");
 
@@ -166,7 +166,7 @@ public class BookingController : Controller
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
 
-        // 🛠️ SỬA LỖI HIỂN THỊ: Chuyển lại Local Time khi view
+        //  SỬA LỖI HIỂN THỊ: Chuyển lại Local Time khi view
         foreach (var b in bookings)
         {
             b.StartTime = b.StartTime.ToLocalTime();
@@ -202,7 +202,7 @@ public class BookingController : Controller
             .OrderByDescending(b => b.CreatedAt)
             .ToListAsync();
 
-        // 🛠️ SỬA LỖI HIỂN THỊ: Chuyển lại Local Time khi view
+        //  SỬA LỖI HIỂN THỊ: Chuyển lại Local Time khi view
         foreach (var b in bookings)
         {
             b.StartTime = b.StartTime.ToLocalTime();
@@ -227,11 +227,11 @@ public class BookingController : Controller
 
         if (booking == null) return NotFound();
 
-        // ✅ Chỉ gia sư sở hữu booking mới được xác nhận/từ chối (chặn IDOR)
+        //  Chỉ gia sư sở hữu booking mới được xác nhận/từ chối (chặn IDOR)
         var currentUserId = _userManager.GetUserId(User);
         if (booking.TutorProfile?.UserId != currentUserId) return Forbid();
 
-        // ✅ Chỉ xử lý yêu cầu đang chờ, tránh ghi đè trạng thái đã xử lý
+        //  Chỉ xử lý yêu cầu đang chờ, tránh ghi đè trạng thái đã xử lý
         if (booking.Status != "Pending")
         {
             TempData["Error"] = "Yêu cầu này đã được xử lý trước đó.";
@@ -240,7 +240,7 @@ public class BookingController : Controller
 
         booking.Status = status;
 
-        // ✅ Tự động tạo Jitsi room ID khi Confirm
+        //  Tự động tạo Jitsi room ID khi Confirm
         if (status == "Confirmed" && string.IsNullOrEmpty(booking.MeetingRoomId))
         {
             booking.MeetingRoomId = $"TutorPlatform-{booking.Id}-{Guid.NewGuid().ToString("N")[..8]}";
@@ -260,8 +260,8 @@ public class BookingController : Controller
 
         // Push thông báo realtime cho học viên
         var statusMsg = status == "Confirmed"
-            ? "✅ Lịch học đã được xác nhận!"
-            : "❌ Lịch học bị từ chối.";
+            ? "Lịch học đã được xác nhận!"
+            : "Lịch học bị từ chối.";
         await ChatHub.SendNotificationToUser(
             _hubContext,
             booking.StudentId,
@@ -284,10 +284,10 @@ public class BookingController : Controller
             .FirstOrDefaultAsync(b => b.Id == id);
         if (booking == null) return NotFound();
 
-        // ✅ Chỉ gia sư sở hữu booking mới được đánh dấu hoàn thành (chặn IDOR)
+        //  Chỉ gia sư sở hữu booking mới được đánh dấu hoàn thành (chặn IDOR)
         if (booking.TutorProfile?.UserId != currentUserId) return Forbid();
 
-        // ✅ Chỉ hoàn thành buổi đã xác nhận, tránh hoàn thành 2 lần → cộng XP lặp
+        //  Chỉ hoàn thành buổi đã xác nhận, tránh hoàn thành 2 lần → cộng XP lặp
         if (booking.Status != "Confirmed")
         {
             TempData["Error"] = "Chỉ buổi học đã xác nhận mới được đánh dấu hoàn thành.";
@@ -298,13 +298,13 @@ public class BookingController : Controller
         _db.Notifications.Add(new Notification
         {
             UserId = booking.StudentId,
-            Title = "⭐ Mời đánh giá buổi học",
+            Title = "Mời đánh giá buổi học",
             Content = "Buổi học đã kết thúc. Hãy để lại đánh giá cho gia sư nhé!",
             Link = $"/Review/Create?bookingId={booking.Id}"
         });
         await _db.SaveChangesAsync();
 
-        // ✅ Thêm XP vào các hành động hiện có (Bước 3)
+        //  Thêm XP vào các hành động hiện có (Bước 3)
         await _xpService.AwardXpAsync(booking.StudentId, "booking_completed");
 
         var isFirst = await _db.Bookings.CountAsync(b => b.StudentId == booking.StudentId && b.Status == "Completed") == 1;
@@ -320,7 +320,7 @@ public class BookingController : Controller
         await ChatHub.SendNotificationToUser(
             _hubContext,
             booking.StudentId,
-            "🎉 Buổi học hoàn thành!",
+            "Buổi học hoàn thành!",
             "Hãy đánh giá gia sư để giúp cộng đồng nhé.",
             "/Booking/MyBookings");
 
@@ -390,13 +390,13 @@ public class BookingController : Controller
         // Báo cho gia sư
         var tutorProfile = await _db.TutorProfiles.FindAsync(booking.TutorProfileId);
         if (tutorProfile != null)
-            await _notif.NotifyAsync(tutorProfile.UserId, "❌ Lịch học bị hủy",
+            await _notif.NotifyAsync(tutorProfile.UserId, "Lịch học bị hủy",
                 $"{user.FullName} đã hủy một buổi học.", "/Booking/TutorRequests");
 
         return RedirectToAction("MyBookings");
     }
 
-    // ✅ Gia sư huỷ buổi học (việc đột xuất) — hoàn tiền/buổi cho học viên
+    //  Gia sư huỷ buổi học (việc đột xuất) — hoàn tiền/buổi cho học viên
     [Authorize(Roles = "Tutor")]
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -449,8 +449,8 @@ public class BookingController : Controller
 
         await _db.SaveChangesAsync();
 
-        var reasonTxt = string.IsNullOrWhiteSpace(reason) ? "" : $" Lý do: {reason}";
-        await _notif.NotifyAsync(booking.StudentId, "❌ Gia sư đã huỷ buổi học",
+        var reasonTxt = string.IsNullOrWhiteSpace(reason) ? "" : $"Lý do: {reason}";
+        await _notif.NotifyAsync(booking.StudentId, "Gia sư đã huỷ buổi học",
             $"Gia sư đã huỷ một buổi học của bạn.{reasonTxt} Tiền/buổi trong gói (nếu có) đã được hoàn.",
             "/Booking/MyBookings");
 
@@ -492,9 +492,9 @@ public class BookingController : Controller
         {
             id = b.Id,
             title = User.IsInRole("Tutor")
-                      ? $"📚 {b.Subject?.Name} — {b.Student?.FullName}"
-                      : $"📚 {b.Subject?.Name} — GS: {b.TutorProfile?.User?.FullName}",
-            // 🛠️ SỬA LỖI POSTGRESQL: Ép lại Local Time cho FullCalendar
+                      ? $" {b.Subject?.Name} — {b.Student?.FullName}"
+                      : $" {b.Subject?.Name} — GS: {b.TutorProfile?.User?.FullName}",
+            //  SỬA LỖI POSTGRESQL: Ép lại Local Time cho FullCalendar
             start = b.StartTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss"),
             end = b.EndTime.ToLocalTime().ToString("yyyy-MM-ddTHH:mm:ss"),
             color = b.Status switch
@@ -524,7 +524,7 @@ public class BookingController : Controller
     [HttpGet]
     public async Task<IActionResult> GetBusySlots(int tutorProfileId, DateTime date)
     {
-        // 🛠️ SỬA LỖI POSTGRESQL
+        //  SỬA LỖI POSTGRESQL
         var dayStartLocal = date.Date;
         var dayEndLocal = dayStartLocal.AddDays(1);
 
@@ -537,7 +537,7 @@ public class BookingController : Controller
                         b.StartTime >= dayStartUtc && b.StartTime < dayEndUtc &&
                         (b.Status == "Confirmed" || b.Status == "Pending"))
             .Select(b => new {
-                // 🛠️ SỬA LỖI: Render lại theo Local Time cho UI
+                //  SỬA LỖI: Render lại theo Local Time cho UI
                 start = b.StartTime.ToLocalTime().ToString("HH:mm"),
                 end = b.EndTime.ToLocalTime().ToString("HH:mm")
             })
@@ -562,7 +562,7 @@ public class BookingController : Controller
     [HttpGet]
     public async Task<IActionResult> CheckConflict(int tutorProfileId, DateTime start, DateTime end)
     {
-        // 🛠️ SỬA LỖI POSTGRESQL
+        //  SỬA LỖI POSTGRESQL
         var startUtc = start.ToUniversalTime();
         var endUtc = end.ToUniversalTime();
 
@@ -584,7 +584,7 @@ public class BookingController : Controller
     {
         var userId = _userManager.GetUserId(User);
 
-        // 🛠️ SỬA LỖI POSTGRESQL: Dùng biến UtcNow
+        //  SỬA LỖI POSTGRESQL: Dùng biến UtcNow
         var nowUtc = DateTime.UtcNow;
         var soonUtc = nowUtc.AddMinutes(30);
 
@@ -631,13 +631,13 @@ public class BookingController : Controller
             hasUpcoming = true,
             subjectName = upcoming.Subject?.Name,
             partnerName,
-            // 🛠️ SỬA LỖI: Trả về Local Time cho Jitsi hiển thị
+            //  SỬA LỖI: Trả về Local Time cho Jitsi hiển thị
             startTime = upcoming.StartTime.ToLocalTime().ToString("HH:mm"),
             joinUrl = $"https://meet.jit.si/{upcoming.MeetingRoomId}"
         });
     }
 
-    // ✅ Kiểm tra buổi học có nằm trong lịch rảnh của gia sư không (giờ VN = UTC+7).
+    //  Kiểm tra buổi học có nằm trong lịch rảnh của gia sư không (giờ VN = UTC+7).
     private async Task<bool> IsWithinAvailabilityAsync(int tutorProfileId, DateTime startUtc, DateTime endUtc)
     {
         var avails = await _db.TutorAvailabilities
@@ -730,7 +730,7 @@ public class BookingController : Controller
             b.StartTime < endUtc && b.EndTime > startUtc);
         if (conflict)
         {
-            TempData["Error"] = "⚠️ Gia sư đã có lịch trong khung giờ này.";
+            TempData["Error"] = "Gia sư đã có lịch trong khung giờ này.";
             return RedirectToAction("Reschedule", new { id });
         }
 
@@ -742,13 +742,13 @@ public class BookingController : Controller
             b.StartTime < endUtc && b.EndTime > startUtc);
         if (selfConflict)
         {
-            TempData["Error"] = "⚠️ Bạn đã có lịch học khác trong khung giờ này!";
+            TempData["Error"] = "Bạn đã có lịch học khác trong khung giờ này!";
             return RedirectToAction("Reschedule", new { id });
         }
 
         if (!await IsWithinAvailabilityAsync(booking.TutorProfileId, startUtc, endUtc))
         {
-            TempData["Error"] = "⚠️ Gia sư không rảnh trong khung giờ này.";
+            TempData["Error"] = "Gia sư không rảnh trong khung giờ này.";
             return RedirectToAction("Reschedule", new { id });
         }
 
@@ -760,7 +760,7 @@ public class BookingController : Controller
         await _db.SaveChangesAsync();
 
         var user = await _userManager.GetUserAsync(User);
-        await _notif.NotifyAsync(booking.TutorProfile.UserId, "🔄 Yêu cầu đổi giờ",
+        await _notif.NotifyAsync(booking.TutorProfile.UserId, "Yêu cầu đổi giờ",
             $"{user?.FullName} đã đổi giờ một buổi học, cần bạn xác nhận lại.", "/Booking/TutorRequests");
 
         TempData["Success"] = "Đã đổi giờ. Vui lòng chờ gia sư xác nhận lại.";

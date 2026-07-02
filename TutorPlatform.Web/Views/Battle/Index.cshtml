@@ -8,118 +8,118 @@
 }
 
 <div class="container py-4">
-    <div class="text-center mb-4">
-        <h2 class="fw-bold">⚔️ Quiz Battle 1v1</h2>
-        <p class="text-muted">Thách đấu bạn bè, ai đúng nhiều hơn trong 60 giây thắng!</p>
-    </div>
+<div class="text-center mb-4">
+<h2 class="fw-bold"> Quiz Battle 1v1</h2>
+<p class="text-muted">Thách đấu bạn bè, ai đúng nhiều hơn trong 60 giây thắng!</p>
+</div>
 
     <div id="invite-toast"
          class="alert alert-warning d-none position-fixed"
          style="top:80px;right:20px;z-index:9999;min-width:320px;box-shadow:0 4px 20px rgba(0,0,0,.15)">
-        <strong>⚔️ Lời thách đấu!</strong>
-        <p id="invite-text" class="mb-2"></p>
+<strong> Lời thách đấu!</strong>
+<p id="invite-text" class="mb-2"></p>
 
         <button class="btn btn-success btn-sm me-2" onclick="acceptInvite()">
-            ✅ Chấp nhận
+<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg> Chấp nhận
         </button>
 
         <button class="btn btn-outline-secondary btn-sm" onclick="declineInvite()">
-            ❌ Từ chối
+<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></svg> Từ chối
         </button>
-    </div>
+</div>
 
     <div class="row g-4">
-        <div class="col-md-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">⚙️ Cài đặt trận đấu</h6>
+<div class="col-md-4">
+<div class="card shadow-sm h-100">
+<div class="card-body">
+<h6 class="fw-bold mb-3"> Cài đặt trận đấu</h6>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">Môn học</label>
+<label class="form-label small fw-semibold">Môn học</label>
 
                         <select id="sel-subject" class="form-select">
-                            @if (subjects != null && subjects.Any())
+@if (subjects != null && subjects.Any())
                             {
                                 foreach (var s in subjects)
                                 {
                                     <option value="@s.Id" data-name="@s.Name">@s.Name</option>
-                                }
+}
                             }
                         </select>
-                    </div>
+</div>
 
                     <div class="mb-3">
-                        <label class="form-label small fw-semibold">Cấp độ</label>
+<label class="form-label small fw-semibold">Cấp độ</label>
 
                         <select id="sel-level" class="form-select">
-                            <option>Cơ bản</option>
-                            <option selected>Trung bình</option>
-                            <option>Nâng cao</option>
-                        </select>
-                    </div>
+<option>Cơ bản</option>
+<option selected>Trung bình</option>
+<option>Nâng cao</option>
+</select>
+</div>
 
                     <div id="challenge-status" class="alert alert-info d-none small"></div>
-                </div>
-            </div>
-        </div>
+</div>
+</div>
+</div>
 
         <div class="col-md-8">
-            <div class="card shadow-sm">
-                <div class="card-body">
-                    <h6 class="fw-bold mb-3">
-                        👥 Chọn đối thủ <span class="badge bg-secondary">Top XP</span>
-                    </h6>
+<div class="card shadow-sm">
+<div class="card-body">
+<h6 class="fw-bold mb-3">
+Chọn đối thủ <span class="badge bg-secondary">Top XP</span>
+</h6>
 
                     <div class="list-group list-group-flush">
-                        @if (users != null && users.Any())
+@if (users != null && users.Any())
                         {
                             foreach (var u in users)
                             {
                                 <div class="list-group-item d-flex align-items-center gap-3 py-3">
-                                    @if (!string.IsNullOrEmpty(u.AvatarUrl))
+@if (!string.IsNullOrEmpty(u.AvatarUrl))
                                     {
                                         <img src="@u.AvatarUrl"
                                              class="rounded-circle flex-shrink-0"
                                              style="width:42px;height:42px;object-fit:cover"
                                              alt="@u.FullName" />
-                                    }
+}
                                     else
                                     {
                                         <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center fw-bold flex-shrink-0"
                                              style="width:42px;height:42px">
-                                            @u.FullName.FirstOrDefault()
+@u.FullName.FirstOrDefault()
                                         </div>
-                                    }
+}
 
                                     <div class="flex-grow-1">
-                                        <div class="fw-semibold">@u.FullName</div>
-                                        <small class="text-muted">@u.Role · @u.XpPoints XP · @u.XpLevel</small>
-                                    </div>
+<div class="fw-semibold">@u.FullName</div>
+<small class="text-muted">@u.Role · @u.XpPoints XP · @u.XpLevel</small>
+</div>
 
                                     <button class="btn btn-outline-danger btn-sm"
                                             onclick="sendChallenge('@u.Id', '@u.FullName')">
-                                        ⚔️ Thách đấu
+Thách đấu
                                     </button>
-                                </div>
-                            }
+</div>
+}
                         }
                         else
                         {
                             <div class="text-muted small">
-                                Không có người dùng khác để thách đấu.
+Không có người dùng khác để thách đấu.
                             </div>
-                        }
+}
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
+</div>
+</div>
+</div>
+</div>
 </div>
 
 @section Scripts {
 
     <script>
-        const myId = '@me?.Id';
+const myId = '@me?.Id';
 
         let pendingRoomId = null;
         let pendingInvite = null;
@@ -152,7 +152,7 @@
 
         conn.on("ChallengeDeclined", () => {
         pendingRoomId = null;
-        showStatus("❌ Đối thủ đã từ chối lời thách đấu.", "danger");
+        showStatus(" Đối thủ đã từ chối lời thách đấu.", "danger");
         });
 
         conn.on("BattleError", message => {

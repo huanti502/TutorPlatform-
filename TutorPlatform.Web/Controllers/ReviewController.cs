@@ -16,18 +16,18 @@ public class ReviewController : Controller
 {
     private readonly AppDbContext _db;
     private readonly UserManager<AppUser> _userManager;
-    private readonly XpService _xpService; // ✅ Khai báo XpService
+    private readonly XpService _xpService; //  Khai báo XpService
     private readonly NotificationService _notif;
 
     public ReviewController(
         AppDbContext db,
         UserManager<AppUser> userManager,
-        XpService xpService, // ✅ Inject XpService
+        XpService xpService, //  Inject XpService
         NotificationService notif)
     {
         _db = db;
         _userManager = userManager;
-        _xpService = xpService; // ✅ Gán XpService
+        _xpService = xpService; //  Gán XpService
         _notif = notif;
     }
 
@@ -69,24 +69,24 @@ public class ReviewController : Controller
         var booking = await _db.Bookings.FindAsync(bookingId);
         if (booking == null) return NotFound();
 
-        // ✅ Chỉ học viên sở hữu booking mới được đánh giá (chặn IDOR)
+        //  Chỉ học viên sở hữu booking mới được đánh giá (chặn IDOR)
         if (booking.StudentId != user!.Id) return Forbid();
 
-        // ✅ Chỉ đánh giá buổi đã hoàn thành (POST có thể bị gọi trực tiếp, không qua GET)
+        //  Chỉ đánh giá buổi đã hoàn thành (POST có thể bị gọi trực tiếp, không qua GET)
         if (booking.Status != "Completed")
         {
             TempData["Error"] = "Chỉ có thể đánh giá buổi học đã hoàn thành.";
             return RedirectToAction("MyBookings", "Booking");
         }
 
-        // ✅ Chặn đánh giá trùng (1 booking chỉ 1 review)
+        //  Chặn đánh giá trùng (1 booking chỉ 1 review)
         if (await _db.Reviews.AnyAsync(r => r.BookingId == bookingId))
         {
             TempData["Error"] = "Bạn đã đánh giá buổi học này rồi.";
             return RedirectToAction("MyBookings", "Booking");
         }
 
-        // ✅ Giới hạn số sao hợp lệ trong khoảng 1–5
+        //  Giới hạn số sao hợp lệ trong khoảng 1–5
         rating = Math.Clamp(rating, 1, 5);
 
         _db.Reviews.Add(new Review
@@ -100,14 +100,14 @@ public class ReviewController : Controller
 
         await _db.SaveChangesAsync();
 
-        // ✅ Thêm XP sau khi viết review thành công
+        //  Thêm XP sau khi viết review thành công
         await _xpService.AwardXpAsync(user!.Id, "review_written");
 
-        // 🔔 Báo cho gia sư biết có đánh giá mới
+        //  Báo cho gia sư biết có đánh giá mới
         var tp = await _db.TutorProfiles.FindAsync(booking.TutorProfileId);
         if (tp != null)
-            await _notif.NotifyAsync(tp.UserId, "⭐ Đánh giá mới",
-                $"{user.FullName} đã đánh giá {rating}★ buổi học của bạn.",
+            await _notif.NotifyAsync(tp.UserId, "Đánh giá mới",
+                $"{user.FullName} đã đánh giá {rating} buổi học của bạn.",
                 "/Review/TutorReviews/" + tp.Id);
 
         TempData["Success"] = "Cảm ơn bạn đã đánh giá!";

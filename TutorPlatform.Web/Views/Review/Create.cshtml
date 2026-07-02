@@ -6,7 +6,7 @@
 }
 
 <style>
-    .star-btn {
+.star-btn {
         font-size: 2.5rem;
         cursor: pointer;
         color: #E2E8F0;
@@ -46,97 +46,97 @@
 </style>
 
 <section class="section-sm">
-    <div class="container">
-        <div class="row justify-content-center">
-            <div class="col-md-6 col-lg-5">
+<div class="container">
+<div class="row justify-content-center">
+<div class="col-md-6 col-lg-5">
 
                 <!-- Breadcrumb -->
-                <nav class="mb-4" style="font-size:0.85rem;">
-                    <a asp-controller="Booking" asp-action="MyBookings"
+<nav class="mb-4" style="font-size:0.85rem;">
+<a asp-controller="Booking" asp-action="MyBookings"
                        class="d-inline-flex align-items-center gap-1"
                        style="color:var(--text-muted);text-decoration:none;
                               font-weight:500;">
-                        <svg width="14" height="14" fill="none" stroke="currentColor"
+<svg width="14" height="14" fill="none" stroke="currentColor"
                              stroke-width="2" viewBox="0 0 24 24">
-                            <path d="m15 18-6-6 6-6"/>
-                        </svg>
-                        Trở về lịch học
+<path d="m15 18-6-6 6-6"/>
+</svg>
+Trở về lịch học
                     </a>
-                </nav>
+</nav>
 
                 <div class="card"
                      style="border-radius:24px;border:none;
                             box-shadow:var(--shadow-lg);overflow:hidden;">
 
                     <!-- Header -->
-                    <div style="background:linear-gradient(135deg,#FFF7ED,#FFFBEB);
+<div style="background:linear-gradient(135deg,#FFF7ED,#FFFBEB);
                                 border-bottom:1px solid #FDE68A;
                                 padding:2rem;text-align:center;">
 
                         <div class="avatar avatar-xl mx-auto mb-3"
                              style="background:linear-gradient(135deg,#F59E0B,#D97706);">
-                            @initial
+@initial
                         </div>
 
                         <h5 style="font-weight:800;margin-bottom:0.25rem;
                                    color:#92400E;">
-                            @booking.TutorProfile.User.FullName
+@booking.TutorProfile.User.FullName
                         </h5>
-                        <div style="font-size:0.82rem;color:#B45309;font-weight:500;">
-                            @booking.Subject.Name
+<div style="font-size:0.82rem;color:#B45309;font-weight:500;">
+@booking.Subject.Name
                             · @booking.StartTime.ToString("dd/MM/yyyy")
                         </div>
-                    </div>
+</div>
 
                     <!-- Body -->
-                    <div class="card-body p-4">
+<div class="card-body p-4">
 
                         <form method="post">
-                            @Html.AntiForgeryToken()
+@Html.AntiForgeryToken()
                             <input type="hidden" name="bookingId"
                                    value="@booking.Id"/>
 
                             <!-- Star rating -->
-                            <div class="text-center mb-4">
-                                <div style="font-size:0.78rem;font-weight:700;
+<div class="text-center mb-4">
+<div style="font-size:0.78rem;font-weight:700;
                                             color:var(--text-muted);
                                             text-transform:uppercase;
                                             letter-spacing:0.06em;
                                             margin-bottom:1rem;">
-                                    Chất lượng buổi học
+Chất lượng buổi học
                                 </div>
 
                                 <div class="d-flex justify-content-center gap-2 mb-2"
                                      id="starRow">
-                                    @for (int i = 1; i <= 5; i++)
+@for (int i = 1; i <= 5; i++)
                                     {
                                         <span class="star-btn @(i <= 5 ? "active" : "")"
-                                              data-value="@i">★</span>
-                                    }
+                                              data-value="@i"></span>
+}
                                 </div>
 
                                 <div class="rating-label" id="ratingLabel">
-                                    Xuất sắc
+Xuất sắc
                                 </div>
-                                <input type="hidden" name="rating"
+<input type="hidden" name="rating"
                                        id="ratingInput" value="5"/>
-                            </div>
+</div>
 
                             <!-- Comment -->
-                            <div class="mb-4">
-                                <label class="form-label"
+<div class="mb-4">
+<label class="form-label"
                                        style="font-weight:700;font-size:0.8rem;
                                               text-transform:uppercase;
                                               letter-spacing:0.06em;
                                               color:var(--text-muted);">
-                                    Nhận xét của bạn
+Nhận xét của bạn
                                     <span style="text-transform:none;
                                                  letter-spacing:0;
                                                  font-weight:400;">
-                                        (tuỳ chọn)
+(tuỳ chọn)
                                     </span>
-                                </label>
-                                <textarea name="comment" class="form-control"
+</label>
+<textarea name="comment" class="form-control"
                                           rows="4" id="commentArea"
                                           placeholder="Chia sẻ trải nghiệm học của bạn với gia sư này..."
                                           style="border-radius:12px;resize:none;
@@ -144,28 +144,28 @@
                                                  padding:0.75rem 1rem;
                                                  font-size:0.9rem;
                                                  line-height:1.6;"></textarea>
-                                <div class="text-end mt-1"
+<div class="text-end mt-1"
                                      style="font-size:0.75rem;color:var(--text-muted);">
-                                    <span id="charCount">0</span>/500
+<span id="charCount">0</span>/500
                                 </div>
-                            </div>
+</div>
 
                             <button type="submit" class="submit-review">
-                                ★ Gửi đánh giá
+Gửi đánh giá
                             </button>
-                        </form>
+</form>
 
                     </div>
-                </div>
+</div>
 
             </div>
-        </div>
-    </div>
+</div>
+</div>
 </section>
 
 @section Scripts {
     <script>
-        const stars     = document.querySelectorAll('.star-btn');
+const stars     = document.querySelectorAll('.star-btn');
         const input     = document.getElementById('ratingInput');
         const label     = document.getElementById('ratingLabel');
         const textarea  = document.getElementById('commentArea');
@@ -197,9 +197,9 @@
 
         stars.forEach(star => {
             star.addEventListener('mouseover', () =>
-                highlight(parseInt(star.dataset.value)));
+highlight(parseInt(star.dataset.value)));
             star.addEventListener('mouseout',  () =>
-                highlight(selected));
+highlight(selected));
             star.addEventListener('click', () => {
                 selected = parseInt(star.dataset.value);
                 input.value = selected;

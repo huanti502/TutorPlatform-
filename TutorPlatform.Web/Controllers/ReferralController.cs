@@ -104,9 +104,9 @@ public class ReferralController : Controller
         await _db.SaveChangesAsync();
         await _userManager.UpdateAsync(user);
 
-        await _notif.NotifyAsync(referrer.Id, "🎁 Giới thiệu thành công",
+        await _notif.NotifyAsync(referrer.Id, "Giới thiệu thành công",
             $"{user.FullName} đã dùng mã của bạn. Bạn nhận mã giảm giá: {referrerCode}.", "/Referral");
-        await _notif.NotifyAsync(user.Id, "🎁 Nhận thưởng giới thiệu",
+        await _notif.NotifyAsync(user.Id, "Nhận thưởng giới thiệu",
             $"Bạn nhận mã giảm giá: {refereeCode}.", "/Referral");
 
         TempData["Success"] = $"Thành công! Mã giảm giá của bạn: {refereeCode} (giảm {RewardPercent:0}%).";

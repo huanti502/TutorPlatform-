@@ -4,98 +4,91 @@
 }
 
 <div class="container py-4" style="max-width:800px">
-    <div class="d-flex align-items-center gap-3 mb-4">
-        <div style="font-size:3rem">
-            @(Model.FileType switch
-            {
-                "pdf" => "📄",
-                "word" => "📝",
-                "excel" => "<svg width='16' height='16' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24' aria-hidden='true'><path d='M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z'/></svg> ",
-                "image" => "🖼️",
-                _ => "📎"
-            })
+<div class="d-flex align-items-center gap-3 mb-4">
+<div class="d-flex align-items-center justify-content-center" style="width:56px;height:56px;border-radius:14px;background:#f5f3ff;color:#7c3aed;flex-shrink:0;">
+            <svg width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /><path d="M14 2v6h6" /></svg>
         </div>
-        <div>
-            <h4 class="fw-bold mb-1">@Model.Title</h4>
-            <div class="text-muted small">
-                @Model.FileName —
+<div>
+<h4 class="fw-bold mb-1">@Model.Title</h4>
+<div class="text-muted small">
+@Model.FileName —
                 @(Model.FileSize / 1024 < 1024
                     ? $"{Model.FileSize / 1024} KB"
                     : $"{Model.FileSize / 1024 / 1024:0.#} MB")
                 | <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> @Model.Uploader?.FullName
-                | 📥 @Model.DownloadCount lượt tải
+                |  @Model.DownloadCount lượt tải
             </div>
-        </div>
-    </div>
+</div>
+</div>
 
     @if (TempData["Success"] != null)
     {
         <div class="alert alert-success"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> @TempData["Success"]</div>
-    }
+}
     @if (TempData["Error"] != null)
     {
         <div class="alert alert-danger"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg> @TempData["Error"]</div>
-    }
+}
 
     @* Mô tả *@
     @if (!string.IsNullOrEmpty(Model.Description))
     {
         <div class="card border-0 bg-light mb-4 p-3" style="border-radius:var(--radius-md)">
-            <p class="mb-0">@Model.Description</p>
-        </div>
-    }
+<p class="mb-0">@Model.Description</p>
+</div>
+}
 
     @* Nút hành động *@
     <div class="d-flex gap-2 mb-4">
-        <a href="/Document/Download/@Model.Id" class="btn btn-primary">
-            ⬇️ Tải về
+<a href="/Document/Download/@Model.Id" class="btn btn-primary">
+Tải về
         </a>
-        @if (Model.FileType is "pdf" or "txt" or "word")
+@if (Model.FileType is "pdf" or "txt" or "word")
         {
             <form method="post" action="/Document/Summarize/@Model.Id">
-                <button class="btn btn-outline-primary" id="summarizeBtn">
-                    @if (Model.AISummary != null)
+<button class="btn btn-outline-primary" id="summarizeBtn">
+@if (Model.AISummary != null)
                     {
-                        <text>🔄 Tóm tắt lại bằng AI</text>
-                    }
+                        <text><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M21 12a9 9 0 1 1-2.64-6.36L21 8"/><path d="M21 3v5h-5"/></svg> Tóm tắt lại bằng AI</text>
+}
                     else
                     {
 
                         <text><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><line x1="7" y1="15" x2="7" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="17" y1="15" x2="17" y2="15"/></svg> Tóm tắt bằng AI</text>
-                    }
+}
                 </button>
-            </form>
-        }
+</form>
+}
         <a href="/Document/Index" class="btn btn-outline-secondary">← Quay lại</a>
-    </div>
+</div>
 
     @* AI Summary *@
     @if (!string.IsNullOrEmpty(Model.AISummary))
     {
         <div class="card  mb-4"
              style="border-radius:16px;border-left:4px solid #7c3aed!important">
-            <div class="card-body p-4">
-                <div class="d-flex align-items-center gap-2 mb-3">
-                    <span style="font-size:1.5rem"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><line x1="7" y1="15" x2="7" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="17" y1="15" x2="17" y2="15"/></svg> </span>
-                    <div>
-                        <h6 class="fw-bold mb-0">AI Tóm tắt nội dung</h6>
-                        <small class="text-muted">
-                            Được tạo lúc @Model.SummarizedAt?.ToString("HH:mm dd/MM/yyyy")
+<div class="card-body p-4">
+<div class="d-flex align-items-center gap-2 mb-3">
+<span style="font-size:1.5rem"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><line x1="7" y1="15" x2="7" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="17" y1="15" x2="17" y2="15"/></svg> </span>
+<div>
+<h6 class="fw-bold mb-0">AI Tóm tắt nội dung</h6>
+<small class="text-muted">
+Được tạo lúc @Model.SummarizedAt?.ToString("HH:mm dd/MM/yyyy")
                             bởi Claude AI
                         </small>
-                    </div>
-                </div>
-                <div style="line-height:1.8;white-space:pre-wrap">@Model.AISummary</div>
-            </div>
-        </div>
-    }
+</div>
+</div>
+<div style="line-height:1.8;white-space:pre-wrap">@Model.AISummary</div>
+</div>
+</div>
+}
     else if (Model.FileType is "pdf" or "txt")
     {
         <div class="text-center py-4 text-muted"
              style="border:2px dashed #e0e0e0;border-radius:16px">
-            <div style="font-size:3rem"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><line x1="7" y1="15" x2="7" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="17" y1="15" x2="17" y2="15"/></svg> </div>
-            <h6>Chưa có tóm tắt AI</h6>
-            <p class="small">Nhấn "Tóm tắt bằng AI" để AI đọc và tóm tắt tài liệu này</p>
-        </div>
-    }
+<div style="font-size:3rem"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M12 11V7"/><circle cx="12" cy="5" r="2"/><line x1="7" y1="15" x2="7" y2="15"/><line x1="12" y1="15" x2="12" y2="15"/><line x1="17" y1="15" x2="17" y2="15"/></svg> </div>
+<h6>Chưa có tóm tắt AI</h6>
+<p class="small">Nhấn "Tóm tắt bằng AI" để AI đọc và tóm tắt tài liệu này</p>
+</div>
+}
 </div>

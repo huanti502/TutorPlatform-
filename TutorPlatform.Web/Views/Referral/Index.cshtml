@@ -4,61 +4,61 @@
 }
 
 <div class="container py-4" style="max-width:680px;">
-    <h3 class="mb-1">Giới thiệu bạn bè 🎁</h3>
-    <p class="text-muted">Mời bạn nhập mã của bạn — cả hai cùng nhận mã giảm <b>@ViewBag.RewardPercent%</b>.</p>
+<h3 class="mb-1">Giới thiệu bạn bè <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7M7.5 8a2.5 2.5 0 0 1 0-5C11 3 12 8 12 8s1-5 4.5-5a2.5 2.5 0 0 1 0 5"/></svg></h3>
+<p class="text-muted">Mời bạn nhập mã của bạn — cả hai cùng nhận mã giảm <b>@ViewBag.RewardPercent%</b>.</p>
 
     @if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
     @if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
 
     <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body">
-            <h6 class="fw-bold mb-2">Mã giới thiệu của bạn</h6>
-            <div class="input-group mb-2">
-                <input id="myCode" class="form-control fw-bold text-center fs-5" value="@ViewBag.MyCode" readonly />
-                <button class="btn btn-outline-primary" onclick="copyText('@ViewBag.MyCode')">Sao chép mã</button>
-            </div>
-            <div class="input-group">
-                <input id="shareLink" class="form-control small" value="@ViewBag.ShareLink" readonly />
-                <button class="btn btn-outline-secondary" onclick="copyText('@ViewBag.ShareLink')">Sao chép link</button>
-            </div>
-            <div class="small text-muted mt-2">Bạn đã giới thiệu thành công <b>@ViewBag.ReferredCount</b> người.</div>
-        </div>
-    </div>
+<div class="card-body">
+<h6 class="fw-bold mb-2">Mã giới thiệu của bạn</h6>
+<div class="input-group mb-2">
+<input id="myCode" class="form-control fw-bold text-center fs-5" value="@ViewBag.MyCode" readonly />
+<button class="btn btn-outline-primary" onclick="copyText('@ViewBag.MyCode')">Sao chép mã</button>
+</div>
+<div class="input-group">
+<input id="shareLink" class="form-control small" value="@ViewBag.ShareLink" readonly />
+<button class="btn btn-outline-secondary" onclick="copyText('@ViewBag.ShareLink')">Sao chép link</button>
+</div>
+<div class="small text-muted mt-2">Bạn đã giới thiệu thành công <b>@ViewBag.ReferredCount</b> người.</div>
+</div>
+</div>
 
     @if (!(bool)ViewBag.HasBeenReferred)
     {
         <div class="card border-0 shadow-sm mb-3">
-            <div class="card-body">
-                <h6 class="fw-bold mb-2">Nhập mã người giới thiệu</h6>
-                <form asp-action="Apply" method="post" class="input-group">
-                    @Html.AntiForgeryToken()
+<div class="card-body">
+<h6 class="fw-bold mb-2">Nhập mã người giới thiệu</h6>
+<form asp-action="Apply" method="post" class="input-group">
+@Html.AntiForgeryToken()
                     <input name="code" class="form-control text-uppercase" placeholder="Nhập mã bạn được chia sẻ" required />
-                    <button class="btn btn-primary" style="background:#7c3aed;border:none;">Áp dụng</button>
-                </form>
-                <div class="small text-muted mt-2">Chỉ nhập được 1 lần.</div>
-            </div>
-        </div>
-    }
+<button class="btn btn-primary" style="background:#7c3aed;border:none;">Áp dụng</button>
+</form>
+<div class="small text-muted mt-2">Chỉ nhập được 1 lần.</div>
+</div>
+</div>
+}
 
     @if (rewardCodes.Any())
     {
         <div class="card border-0 shadow-sm">
-            <div class="card-body">
-                <h6 class="fw-bold mb-2">Mã giảm giá bạn đã nhận</h6>
-                <ul class="mb-0">
-                    @foreach (var c in rewardCodes)
+<div class="card-body">
+<h6 class="fw-bold mb-2">Mã giảm giá bạn đã nhận</h6>
+<ul class="mb-0">
+@foreach (var c in rewardCodes)
                     {
                         <li><code>@c</code> — dùng khi thanh toán buổi học</li>
-                    }
+}
                 </ul>
-            </div>
-        </div>
-    }
+</div>
+</div>
+}
 </div>
 
 @section Scripts {
     <script>
-        function copyText(t) {
+function copyText(t) {
             navigator.clipboard.writeText(t).then(() => {
                 if (window.showToast) window.showToast("Đã sao chép", t, null);
             });

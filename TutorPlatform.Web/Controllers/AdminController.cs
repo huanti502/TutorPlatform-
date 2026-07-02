@@ -137,7 +137,7 @@ public class AdminController : Controller
         var user = await _userManager.FindByIdAsync(userId);
         if (user == null) return NotFound();
 
-        // ✅ Không cho admin tự khoá chính tài khoản đang đăng nhập
+        //  Không cho admin tự khoá chính tài khoản đang đăng nhập
         var currentUserId = _userManager.GetUserId(User);
         if (user.Id == currentUserId)
         {
@@ -145,7 +145,7 @@ public class AdminController : Controller
             return RedirectToAction("Users");
         }
 
-        // ✅ Không cho khoá một tài khoản Admin khác
+        //  Không cho khoá một tài khoản Admin khác
         if (await _userManager.IsInRoleAsync(user, "Admin"))
         {
             TempData["Error"] = "Không thể khoá một tài khoản Admin.";
@@ -196,7 +196,7 @@ public class AdminController : Controller
         _db.Notifications.Add(new Notification
         {
             UserId = tutor.UserId,
-            Title = "Hồ sơ đã được duyệt ✅",
+            Title = "Hồ sơ đã được duyệt ",
             Content = "Chúc mừng! Hồ sơ gia sư của bạn đã được Admin duyệt.",
             CreatedAt = DateTime.UtcNow,
             IsRead = false

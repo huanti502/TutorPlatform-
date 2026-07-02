@@ -3,42 +3,42 @@
 }
 
 <div class="container py-4">
-    <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
-        <div>
-            <h3 class="mb-1">🗺️ Gia sư gần bạn</h3>
-            <p class="text-muted mb-0">Bấm "Vị trí của tôi" rồi chọn bán kính để tìm gia sư quanh bạn.</p>
-        </div>
-        <div class="d-flex align-items-center gap-2">
-            <select id="radius" class="form-select" style="width:auto;">
-                <option value="0">Tất cả</option>
-                <option value="3">Trong 3 km</option>
-                <option value="5" selected>Trong 5 km</option>
-                <option value="10">Trong 10 km</option>
-                <option value="20">Trong 20 km</option>
-            </select>
-            <button id="locateBtn" class="btn text-white fw-bold" style="background:#7c3aed;border:none;white-space:nowrap;">
-                📍 Vị trí của tôi
+<div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+<div>
+<h3 class="mb-1"> Gia sư gần bạn</h3>
+<p class="text-muted mb-0">Bấm "Vị trí của tôi" rồi chọn bán kính để tìm gia sư quanh bạn.</p>
+</div>
+<div class="d-flex align-items-center gap-2">
+<select id="radius" class="form-select" style="width:auto;">
+<option value="0">Tất cả</option>
+<option value="3">Trong 3 km</option>
+<option value="5" selected>Trong 5 km</option>
+<option value="10">Trong 10 km</option>
+<option value="20">Trong 20 km</option>
+</select>
+<button id="locateBtn" class="btn text-white fw-bold" style="background:#7c3aed;border:none;white-space:nowrap;">
+<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z"/><circle cx="12" cy="10" r="3"/></svg> Vị trí của tôi
             </button>
-        </div>
-    </div>
+</div>
+</div>
 
     <div id="mapStatus" class="alert alert-light border small py-2 mb-2">Đang tải danh sách gia sư…</div>
 
     <div class="row g-3">
-        <div class="col-lg-8">
-            <div id="map" class="shadow-sm" style="height:520px;border-radius:14px;"></div>
-        </div>
-        <div class="col-lg-4">
-            <div id="tutorList" class="d-flex flex-column gap-2" style="max-height:520px;overflow-y:auto;"></div>
-        </div>
-    </div>
+<div class="col-lg-8">
+<div id="map" class="shadow-sm" style="height:520px;border-radius:14px;"></div>
+</div>
+<div class="col-lg-4">
+<div id="tutorList" class="d-flex flex-column gap-2" style="max-height:520px;overflow-y:auto;"></div>
+</div>
+</div>
 </div>
 
 @section Scripts {
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-    const statusEl = document.getElementById('mapStatus');
+const statusEl = document.getElementById('mapStatus');
     const listEl = document.getElementById('tutorList');
     const radiusSel = document.getElementById('radius');
 
@@ -86,12 +86,12 @@
         }
 
         shown.forEach(t => {
-            const badge = t.faceVerified ? ' <span style="color:#15803d;">✓</span>' : '';
+            const badge = t.faceVerified ? ' <span style="color:#15803d;"></span>' : '';
             const distTxt = t.dist != null ? ` · cách ${t.dist.toFixed(1)} km` : '';
             const m = L.marker([t.lat, t.lng]).addTo(map).bindPopup(
                 `<b>${t.name}</b>${badge}<br>` +
                 `${t.subjects.join(', ')}<br>` +
-                `⭐ ${t.rating || '—'} (${t.reviewCount}) · ${fmtMoney(t.hourlyRate)}<br>` +
+                ` ${t.rating || '—'} (${t.reviewCount}) · ${fmtMoney(t.hourlyRate)}<br>` +
                 `<a href="/Tutor/Detail/${t.id}">Xem hồ sơ →</a>`
             );
             markers.push(m);
@@ -101,12 +101,12 @@
             card.className = 'text-decoration-none';
             card.innerHTML =
                 `<div class="card border-0 shadow-sm"><div class="card-body py-2 px-3">
-                    <div class="fw-bold" style="color:#1e293b;">${t.name}${badge}</div>
-                    <div class="small text-muted">${t.subjects.join(', ') || t.teachingArea}</div>
-                    <div class="small"><span style="color:#f59e0b;">⭐ ${t.rating || '—'}</span>
-                        <span class="text-muted">(${t.reviewCount})</span> ·
+<div class="fw-bold" style="color:#1e293b;">${t.name}${badge}</div>
+<div class="small text-muted">${t.subjects.join(', ') || t.teachingArea}</div>
+<div class="small"><span style="color:#f59e0b;"> ${t.rating || '—'}</span>
+<span class="text-muted">(${t.reviewCount})</span> ·
                         <b style="color:#7c3aed;">${fmtMoney(t.hourlyRate)}</b>${distTxt}</div>
-                </div></div>`;
+</div></div>`;
             card.addEventListener('mouseenter', () => m.openPopup());
             listEl.appendChild(card);
         });

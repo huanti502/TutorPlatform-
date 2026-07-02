@@ -9,7 +9,7 @@
 }
 
 <style>
-    @* Blog-specific tokens *@
+@* Blog-specific tokens *@
     .blog-accent   { color: #EC4899; }
     .blog-tag      { background:#FDF2F8; color:#EC4899; font-size:0.72rem;
                      font-weight:700; padding:0.25em 0.75em;
@@ -33,147 +33,147 @@
 
 <!-- ===== HERO HEADER ===== -->
 <section style="background:var(--text-primary);padding:3rem 0 2.5rem;">
-    <div class="container">
-        <div class="d-flex align-items-end justify-content-between flex-wrap gap-3">
-            <div>
-                <div class="blog-tag mb-3"
+<div class="container">
+<div class="d-flex align-items-end justify-content-between flex-wrap gap-3">
+<div>
+<div class="blog-tag mb-3"
                      style="background:rgba(236,72,153,0.15);color:#EC4899;display:inline-block;">
-                    Cộng đồng TutorPlatform
+Cộng đồng TutorPlatform
                 </div>
-                <h1 style="font-family:'Libre Bodoni',serif;font-weight:700;
+<h1 style="font-family:'Libre Bodoni',serif;font-weight:700;
                            font-size:clamp(2rem,5vw,3rem);color:#fff;
                            line-height:1.2;margin:0;">
-                    Blog & Chia sẻ<br>
-                    <span style="color:#EC4899;">kiến thức</span>
-                </h1>
-            </div>
-            @if (User.Identity!.IsAuthenticated)
+Blog & Chia sẻ<br>
+<span style="color:#EC4899;">kiến thức</span>
+</h1>
+</div>
+@if (User.Identity!.IsAuthenticated)
             {
                 <a asp-action="Create"
                    class="btn btn-lg flex-shrink-0"
                    style="background:#EC4899;color:#fff;border-radius:12px;
                           font-weight:700;border:none;padding:0.75rem 1.75rem;
                           box-shadow:0 4px 16px rgba(236,72,153,0.35);">
-                    <svg width="18" height="18" fill="none" stroke="currentColor"
+<svg width="18" height="18" fill="none" stroke="currentColor"
                          stroke-width="2.5" viewBox="0 0 24 24" class="me-1">
-                        <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                    </svg>
-                    Viết bài mới
+<path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+</svg>
+Viết bài mới
                 </a>
-            }
+}
         </div>
-    </div>
+</div>
 </section>
 
 <section class="section-sm py-5" style="background:var(--bg, #f8f9fa);">
-    <div class="container">
+<div class="container">
 
         @if (!posts.Any() && !featured.Any())
         {
             <!-- Empty state -->
-            <div class="text-center py-5">
-                <div style="width:72px;height:72px;border-radius:var(--radius-xl);
+<div class="text-center py-5">
+<div style="width:72px;height:72px;border-radius:var(--radius-xl);
                             background:#FDF2F8;display:flex;align-items:center;
                             justify-content:center;margin:0 auto 1.25rem;">
-                    <svg width="32" height="32" fill="none" stroke="#EC4899"
+<svg width="32" height="32" fill="none" stroke="#EC4899"
                          stroke-width="1.5" viewBox="0 0 24 24">
-                        <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                    </svg>
-                </div>
-                <h5 style="font-weight:700;">Chưa có bài viết nào</h5>
-                <p style="color:var(--text-muted);font-size:0.875rem;">
-                    Hãy là người đầu tiên chia sẻ kiến thức!
+<path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+</svg>
+</div>
+<h5 style="font-weight:700;">Chưa có bài viết nào</h5>
+<p style="color:var(--text-muted);font-size:0.875rem;">
+Hãy là người đầu tiên chia sẻ kiến thức!
                 </p>
-                @if (User.Identity!.IsAuthenticated)
+@if (User.Identity!.IsAuthenticated)
                 {
                     <a asp-action="Create" class="btn mt-2"
                        style="background:#EC4899;color:#fff;border-radius:10px;font-weight:700;border:none;">
-                        Viết bài ngay
+Viết bài ngay
                     </a>
-                }
+}
             </div>
-        }
+}
         else
         {
             <!-- ── Bài viết nổi bật ──────────────────────────────────── -->
-            @if (featured.Any())
+@if (featured.Any())
             {
                 <div class="mb-5">
-                    <h5 class="fw-bold mb-4" style="font-family:'Libre Bodoni',serif; font-size: 1.5rem;"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Bài viết nổi bật</h5>
-                    <div class="row g-4">
-                        @foreach (var post in featured)
+<h5 class="fw-bold mb-4" style="font-family:'Libre Bodoni',serif; font-size: 1.5rem;"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Bài viết nổi bật</h5>
+<div class="row g-4">
+@foreach (var post in featured)
                         {
                             <div class="col-md-4">
-                                <a href="/Blog/Detail/@post.Id" class="text-decoration-none h-100 d-block">
-                                    <div class="card  h-100"
+<a href="/Blog/Detail/@post.Id" class="text-decoration-none h-100 d-block">
+<div class="card  h-100"
                                          style="border-radius:16px;transition:transform .2s"
                                          onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 12px 32px rgba(0,0,0,0.1)'"
                                          onmouseout="this.style.transform=''; this.style.boxShadow=''">
-                                        
+
                                         @if (!string.IsNullOrEmpty(post.ImageUrl))
                                         {
                                             <img src="@post.ImageUrl" alt="@post.Title" style="width:100%; height:180px; object-fit:cover; border-radius:16px 16px 0 0;" />
-                                        }
+}
                                         else
                                         {
                                             <div style="height:180px; background:linear-gradient(135deg, #EFF6FF 0%, #FDF2F8 100%); display:flex; align-items:center; justify-content:center; border-radius:16px 16px 0 0;">
-                                                <span style="font-family:'Libre Bodoni',serif; font-size:3rem; font-weight:700; color:#E2E8F0;">
-                                                    @post.Title.FirstOrDefault()
+<span style="font-family:'Libre Bodoni',serif; font-size:3rem; font-weight:700; color:#E2E8F0;">
+@post.Title.FirstOrDefault()
                                                 </span>
-                                            </div>
-                                        }
+</div>
+}
 
                                         <div class="card-body p-4 d-flex flex-column">
-                                            <div class="d-flex gap-2 mb-2">
-                                                <span class="badge" style="background:#FEE2E2; color:#DC2626; border-radius:100px; padding:0.35em 0.8em;"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Nổi bật</span>
-                                            </div>
-                                            <h6 class="fw-bold text-dark mb-3 post-title" style="font-size: 1.1rem; display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
-                                                @post.Title
+<div class="d-flex gap-2 mb-2">
+<span class="badge" style="background:#FEE2E2; color:#DC2626; border-radius:100px; padding:0.35em 0.8em;"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Nổi bật</span>
+</div>
+<h6 class="fw-bold text-dark mb-3 post-title" style="font-size: 1.1rem; display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
+@post.Title
                                             </h6>
-                                            <div class="d-flex align-items-center justify-content-between mt-auto">
-                                                <div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">
-                                                    ✍️ @post.Author?.FullName
+<div class="d-flex align-items-center justify-content-between mt-auto">
+<div style="font-size: 0.85rem; color: #64748b; font-weight: 500;">
+<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> @post.Author?.FullName
                                                 </div>
-                                                <div class="d-flex gap-3 text-muted small" style="font-weight: 600;">
-                                                    <span>❤️ @(post.Likes?.Count ?? 0)</span>
-                                                    <span>💬 @(post.Comments?.Count ?? 0)</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </a>
-                            </div>
-                        }
+<div class="d-flex gap-3 text-muted small" style="font-weight: 600;">
+<span><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> @(post.Likes?.Count ?? 0)</span>
+<span><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> @(post.Comments?.Count ?? 0)</span>
+</div>
+</div>
+</div>
+</div>
+</a>
+</div>
+}
                     </div>
-                </div>
-                <hr class="my-5" style="border-color: #E2E8F0; opacity: 1;"/>
-            }
+</div>
+<hr class="my-5" style="border-color: #E2E8F0; opacity: 1;"/>
+}
 
             <!-- ── Bộ lọc sort ────────────────────────────────────────── -->
-            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
-                <h5 class="fw-bold mb-0" style="font-family:'Libre Bodoni',serif; font-size: 1.5rem;">📝 Tất cả bài viết</h5>
-                <div class="d-flex gap-2">
-                    <a href="?sort=newest&search=@ViewBag.Search"
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+<h5 class="fw-bold mb-0" style="font-family:'Libre Bodoni',serif; font-size: 1.5rem;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> Tất cả bài viết</h5>
+<div class="d-flex gap-2">
+<a href="?sort=newest&search=@ViewBag.Search"
                        class="btn btn-sm @(ViewBag.Sort == "newest" || string.IsNullOrEmpty(ViewBag.Sort) ? "btn-dark" : "btn-outline-secondary")"
                        style="border-radius: 8px; padding: 0.4rem 1rem;">
-                        🆕 Mới nhất
+Mới nhất
                     </a>
-                    <a href="?sort=popular&search=@ViewBag.Search"
+<a href="?sort=popular&search=@ViewBag.Search"
                        class="btn btn-sm @(ViewBag.Sort == "popular" ? "btn-dark" : "btn-outline-secondary")"
                        style="border-radius: 8px; padding: 0.4rem 1rem;">
-                        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Phổ biến
+<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg> Phổ biến
                     </a>
-                    <a href="?sort=mostliked&search=@ViewBag.Search"
+<a href="?sort=mostliked&search=@ViewBag.Search"
                        class="btn btn-sm @(ViewBag.Sort == "mostliked" ? "btn-dark" : "btn-outline-secondary")"
                        style="border-radius: 8px; padding: 0.4rem 1rem;">
-                        ❤️ Nhiều tim nhất
+<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Nhiều tim nhất
                     </a>
-                </div>
-            </div>
+</div>
+</div>
 
             <!-- ── Danh sách bài viết ─────────────────────────────────── -->
-            <div class="row g-4">
-                @foreach (var post in Model)
+<div class="row g-4">
+@foreach (var post in Model)
                 {
                     var isLiked = currentUserId != null && post.Likes != null && post.Likes.Any(l => l.UserId == currentUserId);
                     var likeCount = post.Likes?.Count ?? 0;
@@ -183,63 +183,63 @@
                     var displaySummary = !string.IsNullOrEmpty(post.Content) ? post.Content : "Đang cập nhật nội dung...";
 
                     <div class="col-12">
-                        <div class="card " style="border-radius:16px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
-                            <div class="card-body p-4 d-flex flex-column flex-md-row gap-4">
-                                
+<div class="card " style="border-radius:16px; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+<div class="card-body p-4 d-flex flex-column flex-md-row gap-4">
+
                                 @if (!string.IsNullOrEmpty(post.ImageUrl))
                                 {
                                     <div class="flex-shrink-0" style="width: 100%; max-width: 240px;">
-                                        <img src="@post.ImageUrl" style="width: 100%; height: 160px; object-fit: cover; border-radius: 12px;" alt="@post.Title" />
-                                    </div>
-                                }
+<img src="@post.ImageUrl" style="width: 100%; height: 160px; object-fit: cover; border-radius: 12px;" alt="@post.Title" />
+</div>
+}
 
                                 <div class="flex-grow-1 d-flex flex-column">
-                                    <h5 class="fw-bold mb-2">
-                                        <a href="/Blog/Detail/@post.Id" class="text-decoration-none text-dark post-title">
-                                            @post.Title
+<h5 class="fw-bold mb-2">
+<a href="/Blog/Detail/@post.Id" class="text-decoration-none text-dark post-title">
+@post.Title
                                         </a>
-                                    </h5>
-                                    <div class="text-muted small mb-3" style="font-weight: 500;">
-                                        <span class="text-dark">✍️ @post.Author?.FullName</span>
-                                        <span class="mx-2">•</span>
-                                        <span>🕒 @post.CreatedAt.ToString("dd/MM/yyyy")</span>
-                                    </div>
-                                    <p class="text-muted mb-4"
+</h5>
+<div class="text-muted small mb-3" style="font-weight: 500;">
+<span class="text-dark"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg> @post.Author?.FullName</span>
+<span class="mx-2">•</span>
+<span> @post.CreatedAt.ToString("dd/MM/yyyy")</span>
+</div>
+<p class="text-muted mb-4"
                                        style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden; line-height: 1.6;">
-                                        @displaySummary
+@displaySummary
                                     </p>
-                                    
+
                                     <div class="d-flex align-items-center gap-3 mt-auto">
-                                        <a href="/Blog/Detail/@post.Id"
+<a href="/Blog/Detail/@post.Id"
                                            class="btn btn-sm btn-outline-primary"
                                            style="border-radius: 8px; font-weight: 600;">
-                                            Đọc tiếp →
+Đọc tiếp →
                                         </a>
-                                        
-                                        @* Nút Tim ❤️ *@
+
+                                        @* Nút Tim <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> *@
                                         @if (User.Identity?.IsAuthenticated == true)
                                         {
                                             <button class="btn btn-sm like-btn @(isLiked ? "btn-danger" : "btn-outline-danger")"
                                                     data-post-id="@post.Id"
                                                     onclick="toggleLike(this, @post.Id)"
                                                     style="border-radius: 8px; font-weight: 600;">
-                                                @(isLiked ? "❤️" : "🤍")
+@(isLiked ? "♥" : "♡")
                                                 <span class="like-count">@likeCount</span>
-                                            </button>
-                                        }
+</button>
+}
                                         else
                                         {
-                                            <span class="badge bg-light text-dark border p-2" style="border-radius: 8px;">❤️ @likeCount</span>
-                                        }
-                                        <span class="text-muted small fw-bold">💬 @commentCount bình luận</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                }
+                                            <span class="badge bg-light text-dark border p-2" style="border-radius: 8px;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> @likeCount</span>
+}
+                                        <span class="text-muted small fw-bold"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> @commentCount bình luận</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+}
             </div>
-        }
+}
     </div>
 </section>
 
@@ -248,7 +248,7 @@
 
 @section Scripts {
     <script>
-        async function toggleLike(btn, postId) {
+async function toggleLike(btn, postId) {
             btn.disabled = true;
             try {
                 const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
@@ -270,11 +270,11 @@
                 const data = await res.json();
 
                 if (data.isLiked) {
-                    btn.innerHTML = `❤️ <span class="like-count">${data.likeCount}</span>`;
+                    btn.innerHTML = ` <span class="like-count">${data.likeCount}</span>`;
                     btn.classList.remove('btn-outline-danger');
                     btn.classList.add('btn-danger');
                 } else {
-                    btn.innerHTML = `🤍 <span class="like-count">${data.likeCount}</span>`;
+                    btn.innerHTML = ` <span class="like-count">${data.likeCount}</span>`;
                     btn.classList.remove('btn-danger');
                     btn.classList.add('btn-outline-danger');
                 }

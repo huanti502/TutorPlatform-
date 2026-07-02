@@ -22,13 +22,13 @@ public class XpService
     // Bảng cấp độ XP
     public static readonly List<(int minXp, string level, string icon)> Levels = new()
     {
-        (0,    "Mới bắt đầu",   "🌱"),
-        (100,  "Học viên",      "📖"),
-        (300,  "Chăm chỉ",      "⚡"),
-        (600,  "Thành thạo",    "🎯"),
-        (1000, "Xuất sắc",      "🌟"),
-        (2000, "Chuyên gia",    "💎"),
-        (5000, "Huyền thoại",   "👑"),
+        (0,    "Mới bắt đầu",   ""),
+        (100,  "Học viên",      ""),
+        (300,  "Chăm chỉ",      ""),
+        (600,  "Thành thạo",    ""),
+        (1000, "Xuất sắc",      ""),
+        (2000, "Chuyên gia",    ""),
+        (5000, "Huyền thoại",   ""),
     };
 
     public XpService(UserManager<AppUser> userManager, ILogger<XpService> logger)

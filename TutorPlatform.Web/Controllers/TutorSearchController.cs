@@ -21,15 +21,15 @@ public class TutorSearchController : Controller
 
     [HttpGet]
     public async Task<IActionResult> Search(
-        string? keyword, int? subjectId, string? mode, string? level,   // ✅ thêm "level"
+        string? keyword, int? subjectId, string? mode, string? level,   //  thêm "level"
         decimal minPrice = 0, decimal maxPrice = 1_000_000,
         double minRating = 0, string sortBy = "rating", int page = 1)
     {
         const int pageSize = 9;
 
         var query = _db.TutorProfiles
-            .AsNoTracking() // 🚀 TĂNG TỐC: Giải phóng RAM
-            .AsSplitQuery() // 🚀 TĂNG TỐC: Chia nhỏ truy vấn chống nghẽn
+            .AsNoTracking() //  TĂNG TỐC: Giải phóng RAM
+            .AsSplitQuery() //  TĂNG TỐC: Chia nhỏ truy vấn chống nghẽn
             .Include(t => t.User)
             .Include(t => t.TutorSubjects).ThenInclude(ts => ts.Subject)
             .Include(t => t.ReceivedReviews)
@@ -47,7 +47,7 @@ public class TutorSearchController : Controller
         if (subjectId.HasValue)
             query = query.Where(t => t.TutorSubjects.Any(ts => ts.SubjectId == subjectId.Value));
 
-        // ✅ LỌC THEO CẤP HỌC: chỉ lấy gia sư có ít nhất 1 môn thuộc cấp đã chọn
+        //  LỌC THEO CẤP HỌC: chỉ lấy gia sư có ít nhất 1 môn thuộc cấp đã chọn
         if (!string.IsNullOrWhiteSpace(level))
             query = query.Where(t =>
                 t.TutorSubjects.Any(ts => ts.Subject != null && ts.Subject.Level == level));
@@ -82,7 +82,7 @@ public class TutorSearchController : Controller
         ViewBag.Page = page;
         ViewBag.Subjects = await _db.Subjects.Where(s => s.IsActive).ToListAsync();
 
-        // ✅ Danh sách cấp học (lấy động từ các môn đang hoạt động) để đổ vào dropdown
+        //  Danh sách cấp học (lấy động từ các môn đang hoạt động) để đổ vào dropdown
         ViewBag.Levels = await _db.Subjects
             .Where(s => s.IsActive && s.Level != null && s.Level != "")
             .Select(s => s.Level)
@@ -92,13 +92,13 @@ public class TutorSearchController : Controller
         ViewBag.Keyword = keyword;
         ViewBag.SubjectId = subjectId;
         ViewBag.Mode = mode;
-        ViewBag.Level = level;          // ✅ giữ lại lựa chọn để hiển thị
+        ViewBag.Level = level;          //  giữ lại lựa chọn để hiển thị
         ViewBag.MinPrice = minPrice;
         ViewBag.MaxPrice = maxPrice;
         ViewBag.MinRating = minRating;
         ViewBag.SortBy = sortBy;
 
-        // ✅ Danh sách gia sư mà học viên hiện tại đã lưu (để tô nút tim)
+        //  Danh sách gia sư mà học viên hiện tại đã lưu (để tô nút tim)
         var favoriteIds = new List<int>();
         if (User.Identity?.IsAuthenticated == true)
         {

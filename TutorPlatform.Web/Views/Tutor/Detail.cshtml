@@ -13,213 +13,213 @@
 }
 
 <section class="section-sm">
-    <div class="container">
+<div class="container">
 
         <nav style="font-size:0.85rem;margin-bottom:1.5rem;display:flex;justify-content:space-between;align-items:center;">
-            <a asp-controller="TutorSearch" asp-action="Search"
+<a asp-controller="TutorSearch" asp-action="Search"
                style="color:var(--text-muted);text-decoration:none;">
-                ← Quay lại danh sách
+← Quay lại danh sách
             </a>
-            @if (User.Identity?.IsAuthenticated == true && currentUserId != Model.UserId)
+@if (User.Identity?.IsAuthenticated == true && currentUserId != Model.UserId)
             {
                 <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#reportModal">
-                    🚩 Báo cáo
+Báo cáo
                 </button>
-            }
+}
         </nav>
 
         @if (User.Identity?.IsAuthenticated == true && currentUserId != Model.UserId)
         {
             <div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog">
-                    <div class="modal-content">
-                        <form asp-controller="Complaint" asp-action="Create" method="post">
-                            @Html.AntiForgeryToken()
+<div class="modal-dialog">
+<div class="modal-content">
+<form asp-controller="Complaint" asp-action="Create" method="post">
+@Html.AntiForgeryToken()
                             <input type="hidden" name="targetType" value="Tutor" />
-                            <input type="hidden" name="targetId" value="@Model.Id" />
-                            <input type="hidden" name="targetName" value="@(Model.User?.FullName ?? "Gia sư")" />
-                            <div class="modal-header">
-                                <h5 class="modal-title">Báo cáo gia sư @Model.User?.FullName</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="mb-3">
-                                    <label class="form-label">Lý do</label>
-                                    <select name="reason" class="form-select" required>
-                                        <option value="">-- Chọn lý do --</option>
-                                        <option>Hồ sơ giả mạo / sai sự thật</option>
-                                        <option>Hành vi không phù hợp</option>
-                                        <option>Lừa đảo / vấn đề thanh toán</option>
-                                        <option>Nội dung phản cảm</option>
-                                        <option>Khác</option>
-                                    </select>
-                                </div>
-                                <div class="mb-2">
-                                    <label class="form-label">Mô tả chi tiết (tuỳ chọn)</label>
-                                    <textarea name="description" class="form-control" rows="3" placeholder="Nêu rõ tình huống bạn gặp phải..."></textarea>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Huỷ</button>
-                                <button type="submit" class="btn btn-danger">Gửi báo cáo</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        }
+<input type="hidden" name="targetId" value="@Model.Id" />
+<input type="hidden" name="targetName" value="@(Model.User?.FullName ?? "Gia sư")" />
+<div class="modal-header">
+<h5 class="modal-title">Báo cáo gia sư @Model.User?.FullName</h5>
+<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+</div>
+<div class="modal-body">
+<div class="mb-3">
+<label class="form-label">Lý do</label>
+<select name="reason" class="form-select" required>
+<option value="">-- Chọn lý do --</option>
+<option>Hồ sơ giả mạo / sai sự thật</option>
+<option>Hành vi không phù hợp</option>
+<option>Lừa đảo / vấn đề thanh toán</option>
+<option>Nội dung phản cảm</option>
+<option>Khác</option>
+</select>
+</div>
+<div class="mb-2">
+<label class="form-label">Mô tả chi tiết (tuỳ chọn)</label>
+<textarea name="description" class="form-control" rows="3" placeholder="Nêu rõ tình huống bạn gặp phải..."></textarea>
+</div>
+</div>
+<div class="modal-footer">
+<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Huỷ</button>
+<button type="submit" class="btn btn-danger">Gửi báo cáo</button>
+</div>
+</form>
+</div>
+</div>
+</div>
+}
 
         @{
             var packages = ViewBag.Packages as List<TutorPlatform.Core.Models.LessonPackage>
-                           ?? new List<TutorPlatform.Core.Models.LessonPackage>();
+?? new List<TutorPlatform.Core.Models.LessonPackage>();
         }
         @if (packages.Any())
         {
             <div class="card mb-4" style="border-radius:var(--radius-xl);">
-                <div class="card-body p-4">
-                    <h5 class="fw-bold mb-3">📦 Gói học ưu đãi</h5>
-                    <div class="row g-3">
-                        @foreach (var pkg in packages)
+<div class="card-body p-4">
+<h5 class="fw-bold mb-3"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="m3.27 6.96 8.73 5.05 8.73-5.05M12 22.08V12"/></svg> Gói học ưu đãi</h5>
+<div class="row g-3">
+@foreach (var pkg in packages)
                         {
                             var perSession = pkg.SessionCount > 0 ? pkg.Price / pkg.SessionCount : 0;
                             <div class="col-md-4">
-                                <div class="border rounded p-3 h-100 d-flex flex-column">
-                                    <b>@pkg.Name</b>
-                                    <div class="small text-muted mb-1">@pkg.SessionCount buổi</div>
-                                    <div class="fw-bold fs-5" style="color:#7c3aed;">@pkg.Price.ToString("N0")đ</div>
-                                    <div class="small text-muted mb-2">~@perSession.ToString("N0")đ/buổi</div>
-                                    @if (User.Identity?.IsAuthenticated == true && User.IsInRole("Student"))
+<div class="border rounded p-3 h-100 d-flex flex-column">
+<b>@pkg.Name</b>
+<div class="small text-muted mb-1">@pkg.SessionCount buổi</div>
+<div class="fw-bold fs-5" style="color:#7c3aed;">@pkg.Price.ToString("N0")đ</div>
+<div class="small text-muted mb-2">~@perSession.ToString("N0")đ/buổi</div>
+@if (User.Identity?.IsAuthenticated == true && User.IsInRole("Student"))
                                     {
                                         <form asp-controller="Package" asp-action="Buy" method="post" class="mt-auto">
-                                            @Html.AntiForgeryToken()
+@Html.AntiForgeryToken()
                                             <input type="hidden" name="packageId" value="@pkg.Id" />
-                                            <button class="btn btn-sm w-100 text-white" style="background:#7c3aed;border:none;">Mua gói</button>
-                                        </form>
-                                    }
+<button class="btn btn-sm w-100 text-white" style="background:#7c3aed;border:none;">Mua gói</button>
+</form>
+}
                                 </div>
-                            </div>
-                        }
+</div>
+}
                     </div>
-                </div>
-            </div>
-        }
+</div>
+</div>
+}
 
         <div class="row g-4">
 
             <div class="col-lg-4">
-                <div class="card" style="border-radius:var(--radius-xl);position:sticky;top:80px;">
-                    <div class="card-body p-4 text-center">
+<div class="card" style="border-radius:var(--radius-xl);position:sticky;top:80px;">
+<div class="card-body p-4 text-center">
 
                         <div class="avatar avatar-xl mx-auto mb-3">
-                            @initial
+@initial
                         </div>
 
                         <h4 style="font-weight:800;margin-bottom:0.25rem;">
-                            @Model.User?.FullName
+@Model.User?.FullName
                         </h4>
-                        @if (Model.FaceVerified)
+@if (Model.FaceVerified)
                         {
                             <div class="mb-1">
-                                <span class="badge" style="background:#dcfce7;color:#15803d;font-size:0.72rem;padding:0.35em 0.8em;">
-                                    ✓ Đã xác thực khuôn mặt
+<span class="badge" style="background:#dcfce7;color:#15803d;font-size:0.72rem;padding:0.35em 0.8em;">
+Đã xác thực khuôn mặt
                                 </span>
-                            </div>
-                        }
+</div>
+}
                         <p style="color:var(--text-muted);font-size:0.875rem;margin-bottom:1rem;">
-                            @Model.TeachingArea
+@Model.TeachingArea
                         </p>
 
                         <div class="d-flex justify-content-center align-items-center gap-2 mb-3">
-                            <div class="stars">
-                                @for (int i = 1; i <= 5; i++)
+<div class="stars">
+@for (int i = 1; i <= 5; i++)
                                 {
-                                    <span style="color:@(i <= Math.Round(avgRating) ? "#F59E0B" : "#E2E8F0");">★</span>
-                                }
+                                    <span style="color:@(i <= Math.Round(avgRating) ? "#F59E0B" : "#E2E8F0");"></span>
+}
                             </div>
-                            <span style="font-weight:700;font-size:0.9rem;">
-                                @avgRating.ToString("F1")
+<span style="font-weight:700;font-size:0.9rem;">
+@avgRating.ToString("F1")
                             </span>
-                            <span style="color:var(--text-muted);font-size:0.85rem;">
-                                (@(Model.ReceivedReviews?.Count() ?? 0) đánh giá)
+<span style="color:var(--text-muted);font-size:0.85rem;">
+(@(Model.ReceivedReviews?.Count() ?? 0) đánh giá)
                             </span>
-                        </div>
+</div>
 
                         <div class="mb-4">
-                            <span class="badge"
+<span class="badge"
                                   style="background:var(--primary-light);
                                 color:var(--primary);font-size:0.78rem;
                                 padding:0.4em 0.9em;">
-                                @(Model.TeachingMode == "Online" ? "Online" :
+@(Model.TeachingMode == "Online" ? "Online" :
                                   Model.TeachingMode == "Offline" ? "Trực tiếp" : "Online & Trực tiếp")
                             </span>
-                        </div>
+</div>
 
                         <div class="mb-4 d-flex justify-content-center flex-wrap gap-2">
-                            @if (Model.TutorBadges != null)
+@if (Model.TutorBadges != null)
                             {
                                 @await Html.PartialAsync("_TutorBadges", Model.TutorBadges)
                             }
                         </div>
-                        <div class="row g-2 mb-4">
-                            @foreach (var (label, val) in new[]{
+<div class="row g-2 mb-4">
+@foreach (var (label, val) in new[]{
                                 ("Học phí/giờ", $"{Model.HourlyRate:N0}đ"),
                                 ("Kinh nghiệm", $"{Model.ExperienceYears} năm"),
                                 ("Buổi dạy", $"{Model.Bookings?.Count() ?? 0}"),
                             })
                             {
                                 <div class="col-4">
-                                    <div style="background:var(--bg);border-radius:var(--radius-md);
+<div style="background:var(--bg);border-radius:var(--radius-md);
                                         padding:0.75rem 0.5rem;">
-                                        <div style="font-weight:800;font-size:0.95rem;
+<div style="font-weight:800;font-size:0.95rem;
                                             color:var(--primary);">
-                                            @val
+@val
                                         </div>
-                                        <div style="font-size:0.68rem;color:var(--text-muted);
+<div style="font-size:0.68rem;color:var(--text-muted);
                                             font-weight:500;margin-top:2px;">
-                                            @label
+@label
                                         </div>
-                                    </div>
-                                </div>
-                            }
+</div>
+</div>
+}
                         </div>
 
                         @* THÔNG TIN LIÊN HỆ - CHỈ HIỆN SAU KHI CÓ BOOKING *@
                         <div class="mb-4 text-start">
-                            @if (hasBooking)
+@if (hasBooking)
                             {
                                 <div class="alert alert-success py-2 px-3 mb-3" style="border-radius:var(--radius-md); font-size:0.85rem;">
-                                    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Bạn đã có lịch học với gia sư này
+<svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> Bạn đã có lịch học với gia sư này
                                 </div>
-                                <div class="mb-2" style="font-size:0.9rem; color:var(--text-primary);">
-                                    <strong>📞 Điện thoại:</strong> @(Model.User?.PhoneNumber ?? "Chưa cập nhật")
+<div class="mb-2" style="font-size:0.9rem; color:var(--text-primary);">
+<strong><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg> Điện thoại:</strong> @(Model.User?.PhoneNumber ?? "Chưa cập nhật")
                                 </div>
-                                <div class="mb-2" style="font-size:0.9rem; color:var(--text-primary);">
-                                    <strong>📧 Email:</strong> @(Model.User?.Email ?? "Chưa cập nhật")
+<div class="mb-2" style="font-size:0.9rem; color:var(--text-primary);">
+<strong> Email:</strong> @(Model.User?.Email ?? "Chưa cập nhật")
                                 </div>
-                            }
+}
                             else
                             {
                                 <div class="contact-blur-box p-3 rounded-3 mb-3"
                                      style="background:var(--bg);border:2px dashed var(--border);position:relative; overflow:hidden;">
-                                    <div style="filter:blur(4px);user-select:none;pointer-events:none">
-                                        <div class="mb-1" style="font-size:0.9rem;">📞 09XX XXX XXX</div>
-                                        <div style="font-size:0.9rem;">📧 ****gmail.com</div>
-                                    </div>
-                                    <div class="position-absolute top-50 start-50 translate-middle text-center w-100 px-3">
-                                        <div class="badge text-dark px-3 py-2 mb-1"
+<div style="filter:blur(4px);user-select:none;pointer-events:none">
+<div class="mb-1" style="font-size:0.9rem;"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg> 09XX XXX XXX</div>
+<div style="font-size:0.9rem;"> ****gmail.com</div>
+</div>
+<div class="position-absolute top-50 start-50 translate-middle text-center w-100 px-3">
+<div class="badge text-dark px-3 py-2 mb-1"
                                              style="background:#FFE082; font-size:0.75rem; border-radius:6px;">
-                                            🔒 Đặt lịch để xem thông tin liên hệ
+<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Đặt lịch để xem thông tin liên hệ
                                         </div>
-                                    </div>
-                                </div>
-                            }
+</div>
+</div>
+}
                         </div>
 
                         @* Cảnh báo chống bypass *@
                         <div class="alert mt-3 mb-4 py-2 px-3 text-start"
                              style="background:#fff8e1;border:1px solid #ffe082;
                             border-radius:10px;font-size:0.75rem; color:#856404;">
-                            ⚠️ <strong>Lưu ý:</strong> Mọi giao dịch cần thực hiện qua TutorPlatform để được bảo vệ quyền lợi và hoàn tiền khi có tranh chấp. Liên hệ trực tiếp ngoài hệ thống sẽ không được hỗ trợ.
+<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="m10.29 3.86-8.15 14.1A2 2 0 0 0 3.86 21h16.28a2 2 0 0 0 1.72-3.04L13.71 3.86a2 2 0 0 0-3.42 0Z"/><path d="M12 9v4M12 17h.01"/></svg> <strong>Lưu ý:</strong> Mọi giao dịch cần thực hiện qua TutorPlatform để được bảo vệ quyền lợi và hoàn tiền khi có tranh chấp. Liên hệ trực tiếp ngoài hệ thống sẽ không được hỗ trợ.
                         </div>
 
                         @if (User.IsInRole("Student"))
@@ -228,88 +228,88 @@
                                asp-route-tutorId="@Model.Id"
                                class="btn btn-primary w-100 btn-lg mb-2"
                                style="border-radius:var(--radius-md);">
-                                <svg width="18" height="18" fill="none"
+<svg width="18" height="18" fill="none"
                                      stroke="currentColor" stroke-width="2"
                                      viewBox="0 0 24 24" style="margin-right: 4px;">
-                                    <rect x="3" y="4" width="18" height="18" rx="2" />
-                                    <line x1="16" y1="2" x2="16" y2="6" />
-                                    <line x1="8" y1="2" x2="8" y2="6" />
-                                    <line x1="3" y1="10" x2="21" y2="10" />
-                                </svg>
-                                Đặt lịch học
+<rect x="3" y="4" width="18" height="18" rx="2" />
+<line x1="16" y1="2" x2="16" y2="6" />
+<line x1="8" y1="2" x2="8" y2="6" />
+<line x1="3" y1="10" x2="21" y2="10" />
+</svg>
+Đặt lịch học
                             </a>
-                        }
+}
                         else if (User.IsInRole("Admin"))
                         {
                             <form asp-area="" asp-controller="Admin" asp-action="ToggleApprove" method="post" class="mb-2">
-                                @Html.AntiForgeryToken()
+@Html.AntiForgeryToken()
                                 <input type="hidden" name="id" value="@Model.Id" />
-                                <button type="submit" class="btn w-100 btn-lg fw-bold"
+<button type="submit" class="btn w-100 btn-lg fw-bold"
                                         style="border-radius:var(--radius-md);
                                     background:@(Model.IsApproved ? "var(--danger-light)" : "var(--success-light)");
                                     color:@(Model.IsApproved ? "var(--danger)" : "#059669");
                                     border:none;">
-                                    @(Model.IsApproved ? "Huỷ duyệt gia sư" : "✓ Duyệt gia sư này")
+@(Model.IsApproved ? "Huỷ duyệt gia sư" : " Duyệt gia sư này")
                                 </button>
-                            </form>
-                        }
+</form>
+}
                         else if (!User.Identity!.IsAuthenticated)
                         {
                             <a asp-controller="Account" asp-action="Login"
                                class="btn btn-primary w-100 btn-lg mb-2"
                                style="border-radius:var(--radius-md);">
-                                Đăng nhập để đặt lịch
+Đăng nhập để đặt lịch
                             </a>
-                        }
+}
 
                         @* Thêm dấu ? vào Model.User?.UserName để tránh lỗi CS8602 *@
                         @if (User.Identity!.IsAuthenticated && User.Identity.Name != Model.User?.UserName)
                         {
                             <a asp-controller="Message" asp-action="Chat" asp-route-id="@Model.UserId"
                                class="btn btn-outline-primary w-100 btn-lg" style="border-radius:var(--radius-md);">
-                                💬 Nhắn tin trao đổi
+<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> Nhắn tin trao đổi
                             </a>
-                        }
+}
                         else if (!User.Identity!.IsAuthenticated)
                         {
                             <a asp-controller="Account" asp-action="Login"
                                class="btn btn-outline-primary w-100 btn-lg"
                                style="border-radius:var(--radius-md);">
-                                Đăng nhập để nhắn tin
+Đăng nhập để nhắn tin
                             </a>
-                        }
+}
                     </div>
-                </div>
-            </div>
+</div>
+</div>
 
             <div class="col-lg-8">
 
                 @if (!string.IsNullOrEmpty(Model.Bio))
                 {
                     <div class="card mb-3" style="border-radius:var(--radius-lg);">
-                        <div class="card-body p-4">
-                            <h6 style="font-weight:700;font-size:0.8rem;
+<div class="card-body p-4">
+<h6 style="font-weight:700;font-size:0.8rem;
                                 text-transform:uppercase;letter-spacing:0.06em;
                                 color:var(--text-muted);margin-bottom:0.75rem;">
-                                Giới thiệu
+Giới thiệu
                             </h6>
-                            <p style="color:var(--text-secondary);line-height:1.7;
+<p style="color:var(--text-secondary);line-height:1.7;
                                 font-size:0.9rem;margin:0;">
-                                @Model.Bio
+@Model.Bio
                             </p>
-                        </div>
-                    </div>
-                }
+</div>
+</div>
+}
 
                 <div class="card mb-3" style="border-radius:var(--radius-lg);">
-                    <div class="card-body p-4">
-                        <h6 style="font-weight:700;font-size:0.8rem;
+<div class="card-body p-4">
+<h6 style="font-weight:700;font-size:0.8rem;
                             text-transform:uppercase;letter-spacing:0.06em;
                             color:var(--text-muted);margin-bottom:0.75rem;">
-                            Môn học giảng dạy
+Môn học giảng dạy
                         </h6>
-                        <div class="d-flex flex-wrap gap-2">
-                            @if (Model.TutorSubjects != null)
+<div class="d-flex flex-wrap gap-2">
+@if (Model.TutorSubjects != null)
                             {
                                 @foreach (var ts in Model.TutorSubjects)
                                 {
@@ -317,29 +317,29 @@
                                         color:var(--primary);
                                         font-weight:600;font-size:0.85rem;
                                         padding:0.4em 1em;border-radius:100px;">
-                                        @ts.Subject?.Name
+@ts.Subject?.Name
                                         <span style="font-weight:400;font-size:0.78rem;
                                             opacity:0.7;">
-                                            · @ts.Subject?.Level
+· @ts.Subject?.Level
                                         </span>
-                                    </span>
-                                }
+</span>
+}
                             }
                         </div>
-                    </div>
-                </div>
+</div>
+</div>
 
                 @if (Model.Availabilities != null && Model.Availabilities.Any())
                 {
                     <div class="card mb-3" style="border-radius:var(--radius-lg);">
-                        <div class="card-body p-4">
-                            <h6 style="font-weight:700;font-size:0.8rem;
+<div class="card-body p-4">
+<h6 style="font-weight:700;font-size:0.8rem;
                                 text-transform:uppercase;letter-spacing:0.06em;
                                 color:var(--text-muted);margin-bottom:0.75rem;">
-                                Lịch rảnh
+Lịch rảnh
                             </h6>
-                            <div class="d-flex flex-wrap gap-2">
-                                @foreach (var av in Model.Availabilities.OrderBy(a => a.DayOfWeek))
+<div class="d-flex flex-wrap gap-2">
+@foreach (var av in Model.Availabilities.OrderBy(a => a.DayOfWeek))
                                 {
                                     var dayName = av.DayOfWeek switch
                                     {
@@ -355,38 +355,38 @@
                                     <div style="background:var(--bg);border:1px solid var(--border);
                                         border-radius:10px;padding:0.5rem 0.9rem;
                                         font-size:0.82rem;">
-                                        <span style="font-weight:700;color:var(--text-primary);">
-                                            @dayName
+<span style="font-weight:700;color:var(--text-primary);">
+@dayName
                                         </span>
-                                        <span style="color:var(--text-muted);margin-left:4px;">
-                                            @av.StartTime.ToString(@"hh\:mm") – @av.EndTime.ToString(@"hh\:mm")
+<span style="color:var(--text-muted);margin-left:4px;">
+@av.StartTime.ToString(@"hh\:mm") – @av.EndTime.ToString(@"hh\:mm")
                                         </span>
-                                    </div>
-                                }
+</div>
+}
                             </div>
-                        </div>
-                    </div>
-                }
+</div>
+</div>
+}
 
                 <div class="card" style="border-radius:var(--radius-lg);">
-                    <div class="card-body p-4">
-                        <h6 style="font-weight:700;font-size:0.8rem;
+<div class="card-body p-4">
+<h6 style="font-weight:700;font-size:0.8rem;
                             text-transform:uppercase;letter-spacing:0.06em;
                             color:var(--text-muted);margin-bottom:1rem;">
-                            Đánh giá từ học viên
+Đánh giá từ học viên
                             <span style="color:var(--text-primary);font-size:0.85rem;
                                 text-transform:none;letter-spacing:0;">
-                                (@(Model.ReceivedReviews?.Count() ?? 0))
+(@(Model.ReceivedReviews?.Count() ?? 0))
                             </span>
-                        </h6>
+</h6>
 
                         @if (Model.ReceivedReviews == null || !Model.ReceivedReviews.Any())
                         {
                             <p style="color:var(--text-muted);font-size:0.875rem;
                                 text-align:center;padding:1rem 0;">
-                                Chưa có đánh giá nào.
+Chưa có đánh giá nào.
                             </p>
-                        }
+}
                         else
                         {
                             @foreach (var review in Model.ReceivedReviews.OrderByDescending(r => r.CreatedAt).Take(5))
@@ -394,42 +394,42 @@
                                 // Thêm ? và ?? để tránh lỗi NullReference nếu review.Student bị rỗng
                                 var rInitial = review.Student?.FullName?.FirstOrDefault().ToString().ToUpper() ?? "U";
                                 <div style="padding:1rem 0;border-bottom:1px solid var(--border-light);">
-                                    <div class="d-flex align-items-center gap-3 mb-2">
-                                        <div class="avatar avatar-sm"
+<div class="d-flex align-items-center gap-3 mb-2">
+<div class="avatar avatar-sm"
                                              style="background:linear-gradient(135deg,var(--success),#059669);">
-                                            @rInitial
+@rInitial
                                         </div>
-                                        <div>
-                                            <div style="font-weight:700;font-size:0.875rem;">
-                                                @review.Student?.FullName
+<div>
+<div style="font-weight:700;font-size:0.875rem;">
+@review.Student?.FullName
                                             </div>
-                                            <div class="d-flex align-items-center gap-2">
-                                                <div class="stars" style="font-size:0.72rem;">
-                                                    @for (int i = 1; i <= 5; i++)
+<div class="d-flex align-items-center gap-2">
+<div class="stars" style="font-size:0.72rem;">
+@for (int i = 1; i <= 5; i++)
                                                     {
-                                                        <span style="color:@(i <= review.Rating ? "#F59E0B" : "#E2E8F0");">★</span>
-                                                    }
+                                                        <span style="color:@(i <= review.Rating ? "#F59E0B" : "#E2E8F0");"></span>
+}
                                                 </div>
-                                                <span style="font-size:0.75rem;color:var(--text-muted);">
-                                                    @review.CreatedAt.ToString("dd/MM/yyyy")
+<span style="font-size:0.75rem;color:var(--text-muted);">
+@review.CreatedAt.ToString("dd/MM/yyyy")
                                                 </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    @if (!string.IsNullOrEmpty(review.Comment))
+</div>
+</div>
+</div>
+@if (!string.IsNullOrEmpty(review.Comment))
                                     {
                                         <p style="color:var(--text-secondary);font-size:0.875rem;
                                             margin:0;line-height:1.6;padding-left:2.75rem;">
-                                            @review.Comment
+@review.Comment
                                         </p>
-                                    }
+}
                                 </div>
-                            }
+}
                         }
                     </div>
-                </div>
+</div>
 
             </div>
-        </div>
-    </div>
+</div>
+</div>
 </section>

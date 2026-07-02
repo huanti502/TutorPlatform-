@@ -4,105 +4,105 @@
 }
 
 <div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h4 class="fw-bold"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"/></svg> Tài liệu học tập</h4>
-        <a href="/Document/Upload" class="btn btn-primary">⬆️ Upload tài liệu</a>
-    </div>
+<div class="d-flex justify-content-between align-items-center mb-4">
+<h4 class="fw-bold"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-6l-2-2H5a2 2 0 0 0-2 2z"/></svg> Tài liệu học tập</h4>
+<a href="/Document/Upload" class="btn btn-primary"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M12 19V5M5 12l7-7 7 7"/></svg> Upload tài liệu</a>
+</div>
 
     @* Tìm kiếm *@
     <form method="get" class="mb-4">
-        <div class="input-group" style="max-width:400px">
-            <input name="search" class="form-control" placeholder="Tìm tài liệu..."
+<div class="input-group" style="max-width:400px">
+<input name="search" class="form-control" placeholder="Tìm tài liệu..."
                    value="@ViewBag.Search" />
-            <button class="btn btn-outline-secondary">🔍</button>
-        </div>
-    </form>
+<button class="btn btn-outline-secondary"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg></button>
+</div>
+</form>
 
     @if (TempData["Success"] != null)
     {
         <div class="alert alert-success"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg> @TempData["Success"]</div>
-    }
+}
 
     @if (!Model.Any())
     {
         <div class="text-center text-muted py-5">
-            <div style="font-size:4rem">📂</div>
-            <h5>Chưa có tài liệu nào</h5>
-            <a href="/Document/Upload" class="btn btn-primary mt-2">Upload ngay</a>
-        </div>
-    }
+<div style="font-size:4rem"></div>
+<h5>Chưa có tài liệu nào</h5>
+<a href="/Document/Upload" class="btn btn-primary mt-2">Upload ngay</a>
+</div>
+}
     else
     {
         <div class="row g-3">
-            @foreach (var doc in Model)
+@foreach (var doc in Model)
             {
                 var (icon, color) = doc.FileType switch
                 {
-                    "pdf" => ("📄", "#F44336"),
-                    "word" => ("📝", "#2196F3"),
-                    "powerpoint" => ("<svg width='16' height='16' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24' aria-hidden='true'><path d='M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z'/></svg> ", "#FF5722"),
-                    "excel" => ("📈", "#4CAF50"),
-                    "image" => ("🖼️", "#9C27B0"),
-                    _ => ("📎", "#607D8B")
+                    "pdf" => ("<svg width='15' height='15' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24' aria-hidden='true' style='vertical-align:-2px;'><path d='M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z'/><path d='M14 2v6h6'/></svg>", "#F44336"),
+                    "word" => ("<svg width='15' height='15' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24' aria-hidden='true' style='vertical-align:-2px;'><path d='M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z'/></svg>", "#2196F3"),
+                    "powerpoint" => ("<svg width='16' height='16' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24' aria-hidden='true'><path d='M9 19v-6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2zm0 0V9a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v10m-6 0a2 2 0 0 0 2 2h2a2 2 0 0 0 2-2m0 0V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z'/></svg>", "#FF5722"),
+                    "excel" => ("<svg width='15' height='15' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24' aria-hidden='true' style='vertical-align:-2px;'><path d='m22 7-8.5 8.5-5-5L2 17'/><path d='M16 7h6v6'/></svg>", "#4CAF50"),
+                    "image" => ("<svg width='15' height='15' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24' aria-hidden='true' style='vertical-align:-2px;'><rect x='3' y='3' width='18' height='18' rx='2'/><circle cx='8.5' cy='8.5' r='1.5'/><path d='m21 15-5-5L5 21'/></svg>", "#9C27B0"),
+                    _ => ("<svg width='15' height='15' fill='none' stroke='currentColor' stroke-width='2' viewBox='0 0 24 24' aria-hidden='true' style='vertical-align:-2px;'><path d='m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48'/></svg>", "#607D8B")
                 };
 
                 <div class="col-md-6 col-lg-4">
-                    <div class="card  h-100" style="border-radius:14px">
-                        <div class="card-body p-4">
-                            <div class="d-flex gap-3 mb-3">
-                                <div style="font-size:2.5rem">@icon</div>
-                                <div class="flex-grow-1">
-                                    <h6 class="fw-bold mb-0">@doc.Title</h6>
-                                    <small class="text-muted">@doc.FileName</small>
-                                </div>
-                            </div>
+<div class="card  h-100" style="border-radius:14px">
+<div class="card-body p-4">
+<div class="d-flex gap-3 mb-3">
+<div style="width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:#f8fafc;">@Html.Raw(icon.Replace("width='15' height='15'","width='24' height='24'"))</div>
+<div class="flex-grow-1">
+<h6 class="fw-bold mb-0">@doc.Title</h6>
+<small class="text-muted">@doc.FileName</small>
+</div>
+</div>
 
                             @if (!string.IsNullOrEmpty(doc.Description))
                             {
                                 <p class="text-muted small mb-2">@doc.Description</p>
-                            }
+}
 
                             <div class="d-flex justify-content-between align-items-center text-muted small mb-3">
-                                <span><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> @doc.Uploader?.FullName</span>
-                                <span>📥 @doc.DownloadCount lượt</span>
-                            </div>
-                            <div class="text-muted small mb-3">
-                                @(doc.FileSize / 1024 < 1024
+<span><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> @doc.Uploader?.FullName</span>
+<span> @doc.DownloadCount lượt</span>
+</div>
+<div class="text-muted small mb-3">
+@(doc.FileSize / 1024 < 1024
                                     ? $"{doc.FileSize / 1024} KB"
                                     : $"{doc.FileSize / 1024 / 1024:0.#} MB")
                                 — @doc.CreatedAt.ToString("dd/MM/yyyy")
                                 @if (doc.IsPublic)
                                 {
-                                    <span class="badge bg-success ms-1">🌐 Công khai</span>
-                                }
+                                    <span class="badge bg-success ms-1"> Công khai</span>
+}
                                 else
                                 {
 
-                                    <span class="badge bg-secondary ms-1">🔒 Riêng tư</span>
-                                }
+                                    <span class="badge bg-secondary ms-1"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Riêng tư</span>
+}
                             </div>
 
                             <div class="d-flex gap-2">
-                                <a href="/Document/Detail/@doc.Id"
+<a href="/Document/Detail/@doc.Id"
                                    class="btn btn-outline-primary btn-sm flex-grow-1">
-                                    🔍 Xem chi tiết
+<svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg> Xem chi tiết
                                 </a>
-                                <a href="/Document/Download/@doc.Id"
+<a href="/Document/Download/@doc.Id"
                                    class="btn btn-primary btn-sm flex-grow-1">
-                                    ⬇️ Tải về
+Tải về
                                 </a>
-                                @if (doc.UploaderId == User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value)
+@if (doc.UploaderId == User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value)
                                 {
                                     <form method="post" action="/Document/Delete/@doc.Id"
                                           onsubmit="return confirm('Xóa tài liệu này?')">
-                                        <button class="btn btn-outline-danger btn-sm">🗑</button>
-                                    </form>
-                                }
+<button class="btn btn-outline-danger btn-sm"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg></button>
+</form>
+}
                             </div>
-                        </div>
-                    </div>
-                </div>
-            }
+</div>
+</div>
+</div>
+}
         </div>
-    }
+}
 </div>

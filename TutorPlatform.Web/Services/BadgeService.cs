@@ -9,9 +9,9 @@ namespace TutorPlatform.Web.Services;
 public class BadgeService
 {
     private readonly AppDbContext _db;
-    private readonly IHubContext<ChatHub> _hubContext; // ✅ Thêm field
+    private readonly IHubContext<ChatHub> _hubContext; //  Thêm field
 
-    // ✅ Sửa constructor để Inject IHubContext
+    //  Sửa constructor để Inject IHubContext
     public BadgeService(AppDbContext db, IHubContext<ChatHub> hubContext)
     {
         _db = db;
@@ -69,7 +69,7 @@ public class BadgeService
             _db.Notifications.Add(new Notification
             {
                 UserId = profile.UserId,
-                Title = $"🏆 Huy hiệu mới: {badge.Name}",
+                Title = $"Huy hiệu mới: {badge.Name}",
                 Content = $"Chúc mừng! Bạn vừa đạt \"{badge.Name}\". {badge.Description}",
                 Link = "/Tutor/Dashboard"
             });
@@ -80,14 +80,14 @@ public class BadgeService
             _db.TutorBadges.AddRange(newBadges);
             await _db.SaveChangesAsync();
 
-            // ✅ THÊM: Push từng huy hiệu mới lên realtime cho gia sư
+            //  THÊM: Push từng huy hiệu mới lên realtime cho gia sư
             foreach (var tb in newBadges)
             {
                 var badge = allBadges.First(b => b.Id == tb.BadgeId);
                 await ChatHub.SendNotificationToUser(
                     _hubContext,
                     profile.UserId,
-                    $"🏆 Huy hiệu mới: {badge.Icon} {badge.Name}",
+                    $"Huy hiệu mới: {badge.Icon} {badge.Name}",
                     badge.Description,
                     "/Tutor/Dashboard"
                 );

@@ -277,7 +277,7 @@ public class PaymentController : Controller
             }
 
             await _db.SaveChangesAsync();
-            TempData["Success"] = "Thanh toán thành công! 🎉";
+            TempData["Success"] = "Thanh toán thành công! ";
         }
         else
         {

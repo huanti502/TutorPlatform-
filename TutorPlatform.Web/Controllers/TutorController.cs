@@ -34,8 +34,8 @@ public class TutorController : Controller
     public async Task<IActionResult> Index(string? keyword, int? subjectId, string? area, decimal? maxRate)
     {
         var query = _db.TutorProfiles
-            .AsNoTracking() // 🚀 Tối ưu
-            .AsSplitQuery() // 🚀 Tối ưu
+            .AsNoTracking() //  Tối ưu
+            .AsSplitQuery() //  Tối ưu
             .Include(t => t.User)
             .Include(t => t.TutorSubjects).ThenInclude(ts => ts.Subject)
             .Include(t => t.ReceivedReviews)
@@ -69,8 +69,8 @@ public class TutorController : Controller
     public async Task<IActionResult> Detail(int id)
     {
         var tutor = await _db.TutorProfiles
-            .AsNoTracking() // 🚀 Tối ưu
-            .AsSplitQuery() // 🚀 Tối ưu
+            .AsNoTracking() //  Tối ưu
+            .AsSplitQuery() //  Tối ưu
             .Include(t => t.User)
             .Include(t => t.TutorSubjects).ThenInclude(ts => ts.Subject)
             .Include(t => t.ReceivedReviews).ThenInclude(r => r.Student)
@@ -355,8 +355,8 @@ public class TutorController : Controller
     {
         var user = await _userManager.GetUserAsync(User);
         var profile = await _db.TutorProfiles
-            .AsNoTracking() // 🚀 Tối ưu RAM
-            .AsSplitQuery() // 🚀 Tối ưu Database
+            .AsNoTracking() //  Tối ưu RAM
+            .AsSplitQuery() //  Tối ưu Database
             .Include(t => t.Bookings).ThenInclude(b => b.Student)
             .Include(t => t.Bookings).ThenInclude(b => b.Subject)
             .Include(t => t.ReceivedReviews).ThenInclude(r => r.Student)

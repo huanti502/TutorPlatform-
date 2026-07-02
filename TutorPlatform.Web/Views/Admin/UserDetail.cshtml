@@ -6,213 +6,213 @@
 }
 
 <div class="container py-4">
-    <div class="d-flex align-items-center gap-3 mb-4">
-        <a href="/Admin/Users" class="btn btn-outline-secondary btn-sm">← Quay lại</a>
-        <h4 class="fw-bold mb-0"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Chi tiết người dùng</h4>
-    </div>
+<div class="d-flex align-items-center gap-3 mb-4">
+<a href="/Admin/Users" class="btn btn-outline-secondary btn-sm">← Quay lại</a>
+<h4 class="fw-bold mb-0"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Chi tiết người dùng</h4>
+</div>
 
     <div class="row g-4">
-        <!-- Cột trái: Thông tin tài khoản -->
-        <div class="col-lg-4">
-            <div class="card shadow-sm h-100">
-                <div class="card-body text-center pt-4">
-                    @if (!string.IsNullOrEmpty(Model.AvatarUrl))
+<!-- Cột trái: Thông tin tài khoản -->
+<div class="col-lg-4">
+<div class="card shadow-sm h-100">
+<div class="card-body text-center pt-4">
+@if (!string.IsNullOrEmpty(Model.AvatarUrl))
                     {
                         <img src="@Model.AvatarUrl" class="rounded-circle mb-3"
                              style="width:90px;height:90px;object-fit:cover;border:3px solid #e5e7eb">
-                    }
+}
                     else
                     {
                         <div class="rounded-circle bg-primary text-white d-flex align-items-center
                             justify-content-center mx-auto mb-3 fw-bold"
                              style="width:90px;height:90px;font-size:32px">
-                            @Model.FullName.FirstOrDefault()
+@Model.FullName.FirstOrDefault()
                         </div>
-                    }
+}
                     <h5 class="fw-bold mb-1">@Model.FullName</h5>
-                    <p class="text-muted small mb-2">@Model.Email</p>
-                    <span class="badge bg-@(Model.Role == "Tutor" ? "success" : Model.Role == "Admin" ? "danger" : "primary") mb-2">
-                        @Model.Role
+<p class="text-muted small mb-2">@Model.Email</p>
+<span class="badge bg-@(Model.Role == "Tutor" ? "success" : Model.Role == "Admin" ? "danger" : "primary") mb-2">
+@Model.Role
                     </span>
-                    <br>
-                    <span class="badge bg-@(Model.IsLocked ? "danger" : "success")">
-                        @(Model.IsLocked ? "🔒 Đã khoá" : "✅ Hoạt động")
+<br>
+<span class="badge bg-@(Model.IsLocked ? "danger" : "success")">
+@(Model.IsLocked ? "Đã khoá" : "Hoạt động")
                     </span>
-                </div>
-                <div class="card-body border-top pt-3">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted small">SĐT</span>
-                        <span class="small fw-semibold">@(Model.PhoneNumber ?? "—")</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted small">Ngày tạo</span>
-                        <span class="small fw-semibold">@Model.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-3">
-                        <span class="text-muted small">XP</span>
-                        <span class="small fw-semibold">@Model.XpPoints điểm — @Model.XpLevel</span>
-                    </div>
-                    <hr>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted small">Số booking</span>
-                        <span class="small fw-bold text-primary">@ViewBag.BookingCount</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-3">
-                        <span class="text-muted small">Số đánh giá</span>
-                        <span class="small fw-bold text-warning">@ViewBag.ReviewCount</span>
-                    </div>
-                    <form method="post" action="/Admin/ToggleLock">
-                        @Html.AntiForgeryToken()
+</div>
+<div class="card-body border-top pt-3">
+<div class="d-flex justify-content-between mb-2">
+<span class="text-muted small">SĐT</span>
+<span class="small fw-semibold">@(Model.PhoneNumber ?? "—")</span>
+</div>
+<div class="d-flex justify-content-between mb-2">
+<span class="text-muted small">Ngày tạo</span>
+<span class="small fw-semibold">@Model.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")</span>
+</div>
+<div class="d-flex justify-content-between mb-3">
+<span class="text-muted small">XP</span>
+<span class="small fw-semibold">@Model.XpPoints điểm — @Model.XpLevel</span>
+</div>
+<hr>
+<div class="d-flex justify-content-between mb-2">
+<span class="text-muted small">Số booking</span>
+<span class="small fw-bold text-primary">@ViewBag.BookingCount</span>
+</div>
+<div class="d-flex justify-content-between mb-3">
+<span class="text-muted small">Số đánh giá</span>
+<span class="small fw-bold text-warning">@ViewBag.ReviewCount</span>
+</div>
+<form method="post" action="/Admin/ToggleLock">
+@Html.AntiForgeryToken()
                         <input type="hidden" name="userId" value="@Model.Id">
-                        <button class="btn btn-@(Model.IsLocked ? "success" : "danger") w-100 btn-sm">
-                            @(Model.IsLocked ? "🔓 Mở khoá tài khoản" : "🔒 Khoá tài khoản")
+<button class="btn btn-@(Model.IsLocked ? "success" : "danger") w-100 btn-sm">
+@(Model.IsLocked ? "Mở khoá tài khoản" : "Khoá tài khoản")
                         </button>
-                    </form>
-                </div>
-            </div>
-        </div>
+</form>
+</div>
+</div>
+</div>
 
         <!-- Cột phải -->
-        <div class="col-lg-8">
-            @if (Model.Role == "Tutor" && profile != null)
+<div class="col-lg-8">
+@if (Model.Role == "Tutor" && profile != null)
             {
                 <div class="card shadow-sm mb-4">
-                    <div class="card-header fw-bold d-flex justify-content-between align-items-center">
-                        <span>📋 Hồ sơ Gia sư</span>
-                        <span class="badge bg-@(profile.IsApproved ? "success" : "warning text-dark")">
-                            @(profile.IsApproved ? "Đã duyệt" : "Chờ duyệt")
+<div class="card-header fw-bold d-flex justify-content-between align-items-center">
+<span><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg> Hồ sơ Gia sư</span>
+<span class="badge bg-@(profile.IsApproved ? "success" : "warning text-dark")">
+@(profile.IsApproved ? "Đã duyệt" : "Chờ duyệt")
                         </span>
-                    </div>
-                    <div class="card-body">
-                        <div class="row g-3 mb-3">
-                            <div class="col-sm-6">
-                                <div class="text-muted small mb-1">Học vấn</div>
-                                <div class="fw-semibold">@(string.IsNullOrEmpty(profile.Education) ? "—" : profile.Education)</div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="text-muted small mb-1">Kinh nghiệm</div>
-                                <div class="fw-semibold">@profile.ExperienceYears năm</div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="text-muted small mb-1">Khu vực dạy</div>
-                                <div class="fw-semibold">@(string.IsNullOrEmpty(profile.TeachingArea) ? "—" : profile.TeachingArea)</div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="text-muted small mb-1">Học phí / giờ</div>
-                                <div class="fw-semibold text-success">@profile.HourlyRate.ToString("N0") đ</div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="text-muted small mb-1">Hình thức dạy</div>
-                                <div class="fw-semibold">
-                                    @(profile.TeachingMode == "Online" ? "Online" :
+</div>
+<div class="card-body">
+<div class="row g-3 mb-3">
+<div class="col-sm-6">
+<div class="text-muted small mb-1">Học vấn</div>
+<div class="fw-semibold">@(string.IsNullOrEmpty(profile.Education) ? "—" : profile.Education)</div>
+</div>
+<div class="col-sm-6">
+<div class="text-muted small mb-1">Kinh nghiệm</div>
+<div class="fw-semibold">@profile.ExperienceYears năm</div>
+</div>
+<div class="col-sm-6">
+<div class="text-muted small mb-1">Khu vực dạy</div>
+<div class="fw-semibold">@(string.IsNullOrEmpty(profile.TeachingArea) ? "—" : profile.TeachingArea)</div>
+</div>
+<div class="col-sm-6">
+<div class="text-muted small mb-1">Học phí / giờ</div>
+<div class="fw-semibold text-success">@profile.HourlyRate.ToString("N0") đ</div>
+</div>
+<div class="col-sm-6">
+<div class="text-muted small mb-1">Hình thức dạy</div>
+<div class="fw-semibold">
+@(profile.TeachingMode == "Online" ? "Online" :
                                       profile.TeachingMode == "Offline" ? "Trực tiếp" : "Online & Trực tiếp")
                                 </div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="text-muted small mb-1">Môn dạy</div>
-                                <div>
-                                    @if (profile.TutorSubjects.Any())
+</div>
+<div class="col-sm-6">
+<div class="text-muted small mb-1">Môn dạy</div>
+<div>
+@if (profile.TutorSubjects.Any())
                                     {
                                         @foreach (var ts in profile.TutorSubjects)
                                         {
                                             <span class="badge bg-primary me-1">@ts.Subject?.Name</span>
-                                        }
+}
                                     }
                                     else
                                     {
                                         <span class="text-muted">—</span>
-                                    }
+}
                                 </div>
-                            </div>
-                        </div>
-                        @if (!string.IsNullOrEmpty(profile.Bio))
+</div>
+</div>
+@if (!string.IsNullOrEmpty(profile.Bio))
                         {
                             <div class="text-muted small mb-1">Giới thiệu bản thân</div>
-                            <p class="small">@profile.Bio</p>
-                        }
+<p class="small">@profile.Bio</p>
+}
                     </div>
-                </div>
+</div>
 
                 @if (profile.Certificates.Any())
                 {
                     <div class="card shadow-sm mb-4">
-                        <div class="card-header fw-bold">📎 Bằng cấp & Chứng chỉ</div>
-                        <div class="card-body">
-                            <div class="row g-3">
-                                @foreach (var cert in profile.Certificates)
+<div class="card-header fw-bold"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> Bằng cấp & Chứng chỉ</div>
+<div class="card-body">
+<div class="row g-3">
+@foreach (var cert in profile.Certificates)
                                 {
                                     <div class="col-sm-6">
-                                        <div class="border rounded p-2 d-flex align-items-center gap-2">
-                                            @if (cert.Type == TutorPlatform.Core.Models.CertificateType.FacePhoto)
+<div class="border rounded p-2 d-flex align-items-center gap-2">
+@if (cert.Type == TutorPlatform.Core.Models.CertificateType.FacePhoto)
                                             {
-                                                <span class="text-secondary">🪪</span>
-                                            }
+                                                <span class="text-secondary"></span>
+}
                                             else
                                             {
 
-                                                <span class="text-primary">📄</span>
-                                            }
+                                                <span class="text-primary"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></span>
+}
                                             <div class="flex-grow-1 overflow-hidden">
-                                                <div class="small fw-semibold text-truncate">@cert.Title</div>
-                                                <div class="text-muted" style="font-size:11px">
-                                                    @cert.UploadedAt.ToLocalTime().ToString("dd/MM/yyyy")
+<div class="small fw-semibold text-truncate">@cert.Title</div>
+<div class="text-muted" style="font-size:11px">
+@cert.UploadedAt.ToLocalTime().ToString("dd/MM/yyyy")
                                                 </div>
-                                            </div>
-                                            <a href="@cert.FilePath" target="_blank"
+</div>
+<a href="@cert.FilePath" target="_blank"
                                                class="btn btn-outline-secondary btn-sm py-0 px-2"
                                                style="font-size:11px">Xem</a>
-                                        </div>
-                                    </div>
-                                }
+</div>
+</div>
+}
                             </div>
-                        </div>
-                    </div>
-                }
+</div>
+</div>
+}
             }
             else if (Model.Role == "Tutor" && profile == null)
             {
                 <div class="card shadow-sm mb-4">
-                    <div class="card-body text-center py-5 text-muted">
-                        <div style="font-size:2rem">📋</div>
-                        <p class="mb-0">Gia sư này chưa có hồ sơ</p>
-                    </div>
-                </div>
-            }
+<div class="card-body text-center py-5 text-muted">
+<div style="font-size:2rem"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg></div>
+<p class="mb-0">Gia sư này chưa có hồ sơ</p>
+</div>
+</div>
+}
             else if (Model.Role == "Student")
             {
                 <div class="card shadow-sm mb-4">
-                    <div class="card-header fw-bold"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> Thông tin Học viên</div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            <div class="col-sm-6">
-                                <div class="text-muted small mb-1">Tổng số booking</div>
-                                <div class="fw-bold fs-5 text-primary">@ViewBag.BookingCount</div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="text-muted small mb-1">Số đánh giá đã viết</div>
-                                <div class="fw-bold fs-5 text-warning">@ViewBag.ReviewCount</div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="text-muted small mb-1">XP tích lũy</div>
-                                <div class="fw-semibold">@Model.XpPoints điểm</div>
-                            </div>
-                            <div class="col-sm-6">
-                                <div class="text-muted small mb-1">Cấp độ</div>
-                                <div class="fw-semibold">@Model.XpLevel</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            }
+<div class="card-header fw-bold"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg> Thông tin Học viên</div>
+<div class="card-body">
+<div class="row g-3">
+<div class="col-sm-6">
+<div class="text-muted small mb-1">Tổng số booking</div>
+<div class="fw-bold fs-5 text-primary">@ViewBag.BookingCount</div>
+</div>
+<div class="col-sm-6">
+<div class="text-muted small mb-1">Số đánh giá đã viết</div>
+<div class="fw-bold fs-5 text-warning">@ViewBag.ReviewCount</div>
+</div>
+<div class="col-sm-6">
+<div class="text-muted small mb-1">XP tích lũy</div>
+<div class="fw-semibold">@Model.XpPoints điểm</div>
+</div>
+<div class="col-sm-6">
+<div class="text-muted small mb-1">Cấp độ</div>
+<div class="fw-semibold">@Model.XpLevel</div>
+</div>
+</div>
+</div>
+</div>
+}
             else if (Model.Role == "Admin")
             {
                 <div class="card shadow-sm mb-4">
-                    <div class="card-body text-center py-5 text-muted">
-                        <div style="font-size:2rem"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> </div>
-                        <p class="mb-0">Tài khoản quản trị viên — không có hồ sơ người dùng</p>
-                    </div>
-                </div>
-            }
+<div class="card-body text-center py-5 text-muted">
+<div style="font-size:2rem"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> </div>
+<p class="mb-0">Tài khoản quản trị viên — không có hồ sơ người dùng</p>
+</div>
+</div>
+}
         </div>
-    </div>
+</div>
 </div>

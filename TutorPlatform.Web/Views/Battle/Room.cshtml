@@ -4,7 +4,7 @@
 }
 
 <style>
-    .battle-wrap {
+.battle-wrap {
         max-width: 760px;
         margin: 0 auto;
         padding: 2rem 1rem;
@@ -116,70 +116,70 @@
 </style>
 
 <div class="battle-wrap">
-    <div id="loading-card">
-        <div class="spinner-border text-primary mb-3" role="status"></div>
-        <p class="text-muted" id="loading-msg">Đang kết nối với đối thủ và tải câu hỏi...</p>
-    </div>
+<div id="loading-card">
+<div class="spinner-border text-primary mb-3" role="status"></div>
+<p class="text-muted" id="loading-msg">Đang kết nối với đối thủ và tải câu hỏi...</p>
+</div>
 
     <div id="battle-card" style="display:none">
-        <div class="scoreboard">
-            <div class="player-score">
-                <div class="fw-bold" id="p1-name">Player 1</div>
-                <div class="score-num text-primary" id="score1">0</div>
-            </div>
+<div class="scoreboard">
+<div class="player-score">
+<div class="fw-bold" id="p1-name">Player 1</div>
+<div class="score-num text-primary" id="score1">0</div>
+</div>
 
             <div class="timer-wrap">
-                <div class="timer-circle" id="timer-circle">60</div>
-                <small class="text-muted">giây</small>
-                <div class="mt-1 text-muted small" id="q-counter">Câu 1/10</div>
-            </div>
+<div class="timer-circle" id="timer-circle">60</div>
+<small class="text-muted">giây</small>
+<div class="mt-1 text-muted small" id="q-counter">Câu 1/10</div>
+</div>
 
             <div class="player-score">
-                <div class="fw-bold" id="p2-name">Player 2</div>
-                <div class="score-num text-danger" id="score2">0</div>
-            </div>
-        </div>
+<div class="fw-bold" id="p2-name">Player 2</div>
+<div class="score-num text-danger" id="score2">0</div>
+</div>
+</div>
 
         <div class="progress-bar-battle">
-            <div class="progress-fill" id="q-progress" style="width:10%"></div>
-        </div>
+<div class="progress-fill" id="q-progress" style="width:10%"></div>
+</div>
 
         <div class="card shadow-sm mb-3">
-            <div class="card-body">
-                <p class="fw-semibold fs-5 mb-3" id="question-text">Đang tải câu hỏi...</p>
-                <div id="options-wrap"></div>
-            </div>
-        </div>
-    </div>
+<div class="card-body">
+<p class="fw-semibold fs-5 mb-3" id="question-text">Đang tải câu hỏi...</p>
+<div id="options-wrap"></div>
+</div>
+</div>
+</div>
 
     <div id="result-card" class="text-center">
-        <div id="result-emoji" style="font-size:4rem" class="mb-2"></div>
-        <h3 class="fw-bold" id="result-title"></h3>
-        <p class="text-muted" id="result-detail"></p>
+<div id="result-emoji" style="font-size:4rem" class="mb-2"></div>
+<h3 class="fw-bold" id="result-title"></h3>
+<p class="text-muted" id="result-detail"></p>
 
         <div class="d-flex justify-content-center gap-3 my-3">
-            <div class="card px-4 py-3 text-center border-primary">
-                <div class="fs-3 fw-bold text-primary" id="final-score1">0</div>
-                <small id="final-p1-name" class="text-muted"></small>
-            </div>
+<div class="card px-4 py-3 text-center border-primary">
+<div class="fs-3 fw-bold text-primary" id="final-score1">0</div>
+<small id="final-p1-name" class="text-muted"></small>
+</div>
 
             <div class="card px-4 py-3 text-center border-danger">
-                <div class="fs-3 fw-bold text-danger" id="final-score2">0</div>
-                <small id="final-p2-name" class="text-muted"></small>
-            </div>
-        </div>
+<div class="fs-3 fw-bold text-danger" id="final-score2">0</div>
+<small id="final-p2-name" class="text-muted"></small>
+</div>
+</div>
 
         <div class="alert alert-success" id="xp-alert" style="display:none"></div>
 
-        <a href="/Battle" class="btn btn-primary mt-2">⚔️ Trận mới</a>
-        <a href="/Quiz" class="btn btn-outline-secondary mt-2 ms-2">📚 Quiz thường</a>
-    </div>
+        <a href="/Battle" class="btn btn-primary mt-2"> Trận mới</a>
+<a href="/Quiz" class="btn btn-outline-secondary mt-2 ms-2"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20M4 19.5A2.5 2.5 0 0 0 6.5 22H20V2H6.5A2.5 2.5 0 0 0 4 4.5v15Z"/></svg> Quiz thường</a>
+</div>
 </div>
 
 @section Scripts {
 
     <script>
-        const roomId = '@ViewBag.RoomId';
+const roomId = '@ViewBag.RoomId';
         const myId = '@ViewBag.MyId';
         const myName = '@ViewBag.MyName';
 
@@ -231,7 +231,7 @@
         if (questionsLoaded) return;
         questionsLoaded = true;
 
-        setLoadingMsg("⚡ Đang tải câu hỏi từ AI...");
+        setLoadingMsg(" Đang tải câu hỏi từ AI...");
 
         try {
         const res = await fetch("/Battle/GenerateQuestions", {
@@ -338,11 +338,11 @@
 
         let emoji, title, detail;
         if (result === "draw") {
-        emoji = "🤝"; title = "Hòa!"; detail = "Hai bên cân tài nhau!";
+        emoji = ""; title = "Hòa!"; detail = "Hai bên cân tài nhau!";
         } else if (iWon) {
-        emoji = "🏆"; title = "Bạn thắng!"; detail = "Xuất sắc!";
+        emoji = ""; title = "Bạn thắng!"; detail = "Xuất sắc!";
         } else {
-        emoji = "😤"; title = "Bạn thua!"; detail = `${winnerName} giỏi hơn lần này!`;
+        emoji = ""; title = "Bạn thua!"; detail = `${winnerName} giỏi hơn lần này!`;
         }
 
         document.getElementById("result-emoji").textContent = emoji;
@@ -495,9 +495,9 @@
         document.getElementById("battle-card").style.display = "none";
         document.getElementById("loading-card").innerHTML = `
         <p class="text-danger fw-bold">${message}</p>
-        <p class="text-muted small">Không mở lại link phòng cũ. Hãy quay lại Battle và tạo trận mới.</p>
-        <a href="/Battle" class="btn btn-primary mt-2">Quay lại Battle</a>
-        `;
+<p class="text-muted small">Không mở lại link phòng cũ. Hãy quay lại Battle và tạo trận mới.</p>
+<a href="/Battle" class="btn btn-primary mt-2">Quay lại Battle</a>
+`;
         }
     </script>
 }

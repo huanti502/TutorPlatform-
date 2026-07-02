@@ -106,7 +106,7 @@ public class BattleController : Controller
         }
         catch (Exception ex)
         {
-            // ✅ AI lỗi/quá tải/đổi model → KHÔNG để trận chết.
+            //  AI lỗi/quá tải/đổi model → KHÔNG để trận chết.
             // Trả về bộ câu hỏi dự phòng để cả 2 người chơi vẫn vào trận được.
             Console.WriteLine("AI Error (dùng câu hỏi dự phòng): " + ex.Message);
             return Json(new { success = true, data = new { questions = FallbackQuestions(subject.Name) } });

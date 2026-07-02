@@ -3,7 +3,7 @@
 }
 
 <style>
-    .voice-wrap { max-width: 640px; margin: 0 auto; }
+.voice-wrap { max-width: 640px; margin: 0 auto; }
     .mic-btn {
         width: 96px; height: 96px; border-radius: 50%; border: none;
         background: #7c3aed; color: #fff; font-size: 2.2rem;
@@ -27,27 +27,27 @@
 </style>
 
 <div class="container py-4 voice-wrap">
-    <div class="text-center mb-3">
-        <h3 class="mb-1">🎙️ Trợ lý giọng nói AI</h3>
-        <p class="text-muted mb-0">Bấm micro và hỏi bằng giọng nói — AI trả lời và đọc cho bạn nghe.</p>
-        <p class="text-muted small">Ví dụ: "Tìm gia sư Toán giá dưới 200 nghìn", "Gia sư nào được đánh giá cao nhất?"</p>
-    </div>
+<div class="text-center mb-3">
+<h3 class="mb-1"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg> Trợ lý giọng nói AI</h3>
+<p class="text-muted mb-0">Bấm micro và hỏi bằng giọng nói — AI trả lời và đọc cho bạn nghe.</p>
+<p class="text-muted small">Ví dụ: "Tìm gia sư Toán giá dưới 200 nghìn", "Gia sư nào được đánh giá cao nhất?"</p>
+</div>
 
     <div id="chatLog" class="d-flex flex-column gap-2 mb-3 p-3 bg-white border rounded-4 shadow-sm"
          style="min-height:240px;max-height:380px;overflow-y:auto;"></div>
 
     <div class="text-center">
-        <div id="voiceStatus" class="small text-muted mb-2">Sẵn sàng — bấm micro để nói</div>
-        <button id="micBtn" class="mic-btn" title="Nói">🎙️</button>
-        <div class="mt-2">
-            <button id="stopSpeak" class="btn btn-sm btn-outline-secondary" style="display:none;">⏹ Dừng đọc</button>
-        </div>
-    </div>
+<div id="voiceStatus" class="small text-muted mb-2">Sẵn sàng — bấm micro để nói</div>
+<button id="micBtn" class="mic-btn" title="Nói"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg></button>
+<div class="mt-2">
+<button id="stopSpeak" class="btn btn-sm btn-outline-secondary" style="display:none;">⏹ Dừng đọc</button>
+</div>
+</div>
 </div>
 
 @section Scripts {
 <script>
-    const micBtn = document.getElementById('micBtn');
+const micBtn = document.getElementById('micBtn');
     const statusEl = document.getElementById('voiceStatus');
     const log = document.getElementById('chatLog');
     const stopBtn = document.getElementById('stopSpeak');
@@ -146,7 +146,7 @@
         gttsAudio = new Audio(url);
         gttsAudio.onended = playGttsQueue;
         gttsAudio.onerror = () => {
-            statusEl.textContent = '⚠️ Không phát được giọng đọc. Câu trả lời hiển thị ở trên.';
+            statusEl.textContent = ' Không phát được giọng đọc. Câu trả lời hiển thị ở trên.';
             stopGtts();
         };
         gttsAudio.play().catch(() => stopGtts());
@@ -211,8 +211,8 @@
             try { recog.start(); } catch { }
         });
 
-        recog.onstart = () => { listening = true; micBtn.classList.add('listening'); statusEl.textContent = '🎧 Đang nghe… hãy nói câu hỏi'; };
-        recog.onend = () => { listening = false; micBtn.classList.remove('listening'); if (statusEl.textContent.startsWith('🎧')) statusEl.textContent = 'Sẵn sàng — bấm micro để nói'; };
+        recog.onstart = () => { listening = true; micBtn.classList.add('listening'); statusEl.textContent = ' Đang nghe… hãy nói câu hỏi'; };
+        recog.onend = () => { listening = false; micBtn.classList.remove('listening'); if (statusEl.textContent.startsWith('')) statusEl.textContent = 'Sẵn sàng — bấm micro để nói'; };
         recog.onerror = e => {
             listening = false; micBtn.classList.remove('listening');
             statusEl.textContent = e.error === 'not-allowed'

@@ -4,22 +4,22 @@
 }
 
 <div class="container py-4" style="max-width:560px;">
-    <h3 class="mb-2">✅ Đã bật xác thực 2 lớp</h3>
-    <div class="alert alert-warning">
-        <b>Hãy lưu lại các mã khôi phục sau.</b> Nếu mất điện thoại, bạn dùng một trong các mã này để đăng nhập.
+<h3 class="mb-2"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg> Đã bật xác thực 2 lớp</h3>
+<div class="alert alert-warning">
+<b>Hãy lưu lại các mã khôi phục sau.</b> Nếu mất điện thoại, bạn dùng một trong các mã này để đăng nhập.
         Mỗi mã chỉ dùng được một lần.
     </div>
 
     <div class="card border-0 shadow-sm mb-3">
-        <div class="card-body">
-            <div class="row">
-                @foreach (var c in codes)
+<div class="card-body">
+<div class="row">
+@foreach (var c in codes)
                 {
                     <div class="col-6 mb-2"><code style="font-size:1rem;">@c</code></div>
-                }
+}
             </div>
-        </div>
-    </div>
+</div>
+</div>
 
     <a asp-action="TwoFactorAuthentication" class="btn text-white fw-bold" style="background:#7c3aed;border:none;">Hoàn tất</a>
 </div>

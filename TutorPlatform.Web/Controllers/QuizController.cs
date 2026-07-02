@@ -100,7 +100,7 @@ public class QuizController : Controller
         var user = await _userManager.GetUserAsync(User);
         if (user == null) return Unauthorized();
 
-        // ✅ Chặn dữ liệu bịa từ client: Total phải hợp lệ, Score phải trong [0..Total]
+        //  Chặn dữ liệu bịa từ client: Total phải hợp lệ, Score phải trong [0..Total]
         if (req.Total <= 0)
             return Json(new { success = false, error = "Số câu hỏi không hợp lệ." });
 
@@ -111,14 +111,14 @@ public class QuizController : Controller
             UserId = user.Id,
             SubjectId = req.SubjectId,
             Level = req.Level,
-            Score = safeScore,          // ✅ dùng điểm đã kẹp
+            Score = safeScore,          //  dùng điểm đã kẹp
             TotalQuestions = req.Total
         };
 
         _db.QuizAttempts.Add(attempt);
         await _db.SaveChangesAsync();
 
-        // ✅ Cộng XP dựa trên điểm ĐÃ KẸP
+        //  Cộng XP dựa trên điểm ĐÃ KẸP
         if (safeScore == req.Total)
         {
             await _xpService.AwardXpAsync(user.Id, "quiz_perfect");
@@ -131,10 +131,10 @@ public class QuizController : Controller
         var percent = (double)safeScore / req.Total * 100;
         string badge = percent switch
         {
-            >= 90 => "🏆 Xuất sắc",
-            >= 70 => "⭐ Khá giỏi",
-            >= 50 => "📚 Trung bình",
-            _ => "💪 Cần cố gắng thêm"
+            >= 90 => "Xuất sắc",
+            >= 70 => "Khá giỏi",
+            >= 50 => "Trung bình",
+            _ => "Cần cố gắng thêm"
         };
 
         return Json(new { success = true, badge, percent = (int)percent });

@@ -2,72 +2,72 @@
 @{
     ViewData["Title"] = "Quản lý bài tập";
     var bookings = ViewBag.Bookings as List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>
-                   ?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
+?? new List<Microsoft.AspNetCore.Mvc.Rendering.SelectListItem>();
 }
 
 <div class="container py-4" style="max-width:900px;">
-    <h3 class="mb-3">Bài tập đã giao</h3>
+<h3 class="mb-3">Bài tập đã giao</h3>
 
     @if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
     @if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
 
     <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body">
-            <h6 class="fw-bold mb-3">Giao bài tập mới</h6>
-            @if (!bookings.Any())
+<div class="card-body">
+<h6 class="fw-bold mb-3">Giao bài tập mới</h6>
+@if (!bookings.Any())
             {
                 <p class="text-muted mb-0">Bạn chưa có buổi học nào (Confirmed/Completed) để giao bài.</p>
-            }
+}
             else
             {
                 <form asp-action="Create" method="post" class="row g-3">
-                    @Html.AntiForgeryToken()
+@Html.AntiForgeryToken()
                     <div class="col-md-6">
-                        <label class="form-label">Buổi học</label>
-                        <select name="bookingId" class="form-select" required>
-                            @foreach (var b in bookings)
+<label class="form-label">Buổi học</label>
+<select name="bookingId" class="form-select" required>
+@foreach (var b in bookings)
                             {
                                 <option value="@b.Value">@b.Text</option>
-                            }
+}
                         </select>
-                    </div>
-                    <div class="col-md-6">
-                        <label class="form-label">Tiêu đề</label>
-                        <input name="title" class="form-control" placeholder="VD: Bài tập về nhà chương 2" required />
-                    </div>
-                    <div class="col-md-8">
-                        <label class="form-label">Mô tả / yêu cầu</label>
-                        <textarea name="description" class="form-control" rows="2"></textarea>
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Hạn nộp (tuỳ chọn)</label>
-                        <input name="dueDate" type="datetime-local" class="form-control" />
-                    </div>
-                    <div class="col-12">
-                        <button class="btn btn-primary" style="background:#7c3aed;border:none;">Giao bài</button>
-                    </div>
-                </form>
-            }
+</div>
+<div class="col-md-6">
+<label class="form-label">Tiêu đề</label>
+<input name="title" class="form-control" placeholder="VD: Bài tập về nhà chương 2" required />
+</div>
+<div class="col-md-8">
+<label class="form-label">Mô tả / yêu cầu</label>
+<textarea name="description" class="form-control" rows="2"></textarea>
+</div>
+<div class="col-md-4">
+<label class="form-label">Hạn nộp (tuỳ chọn)</label>
+<input name="dueDate" type="datetime-local" class="form-control" />
+</div>
+<div class="col-12">
+<button class="btn btn-primary" style="background:#7c3aed;border:none;">Giao bài</button>
+</div>
+</form>
+}
         </div>
-    </div>
+</div>
 
     @if (!Model.Any())
     {
         <p class="text-muted">Chưa giao bài tập nào.</p>
-    }
+}
     @foreach (var a in Model)
     {
         <div class="card border-0 shadow-sm mb-3">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-start">
-                    <div>
-                        <h6 class="fw-bold mb-1">@a.Title</h6>
-                        <div class="small text-muted">
-                            HV: @a.Booking?.Student?.FullName · @a.Booking?.Subject?.Name
+<div class="card-body">
+<div class="d-flex justify-content-between align-items-start">
+<div>
+<h6 class="fw-bold mb-1">@a.Title</h6>
+<div class="small text-muted">
+HV: @a.Booking?.Student?.FullName · @a.Booking?.Subject?.Name
                             @if (a.DueDate.HasValue) { <text> · Hạn: @a.DueDate.Value.AddHours(7).ToString("HH:mm dd/MM")</text> }
                         </div>
-                    </div>
-                    @switch (a.Status)
+</div>
+@switch (a.Status)
                     {
                         case "Assigned": <span class="badge bg-secondary">Chờ nộp</span> break;
                         case "Submitted": <span class="badge bg-warning text-dark">Đã nộp, chờ chấm</span> break;
@@ -78,43 +78,43 @@
                 @if (!string.IsNullOrEmpty(a.Description))
                 {
                     <p class="mt-2 mb-2 small">@a.Description</p>
-                }
+}
 
                 @if (a.Status == "Submitted" || a.Status == "Graded")
                 {
                     <div class="border rounded p-2 my-2 bg-light">
-                        <div class="small text-muted mb-1">Bài nộp (@a.SubmittedAt?.AddHours(7).ToString("HH:mm dd/MM")):</div>
-                        @if (!string.IsNullOrEmpty(a.SubmissionText)) { <div class="small">@a.SubmissionText</div> }
+<div class="small text-muted mb-1">Bài nộp (@a.SubmittedAt?.AddHours(7).ToString("HH:mm dd/MM")):</div>
+@if (!string.IsNullOrEmpty(a.SubmissionText)) { <div class="small">@a.SubmissionText</div> }
                         @if (!string.IsNullOrEmpty(a.SubmissionFileUrl))
                         {
-                            <a class="small" asp-action="Download" asp-route-id="@a.Id" target="_blank">📎 Tải file bài nộp</a>
-                        }
+                            <a class="small" asp-action="Download" asp-route-id="@a.Id" target="_blank"><svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg> Tải file bài nộp</a>
+}
                     </div>
-                }
+}
 
                 @if (a.Status == "Submitted")
                 {
                     <form asp-action="Grade" method="post" class="row g-2 align-items-end mt-1">
-                        @Html.AntiForgeryToken()
+@Html.AntiForgeryToken()
                         <input type="hidden" name="id" value="@a.Id" />
-                        <div class="col-auto">
-                            <label class="form-label small mb-0">Điểm</label>
-                            <input name="grade" class="form-control form-control-sm" placeholder="8/10" style="width:90px;" required />
-                        </div>
-                        <div class="col">
-                            <label class="form-label small mb-0">Nhận xét</label>
-                            <input name="feedback" class="form-control form-control-sm" />
-                        </div>
-                        <div class="col-auto">
-                            <button class="btn btn-sm btn-success">Chấm điểm</button>
-                        </div>
-                    </form>
-                }
+<div class="col-auto">
+<label class="form-label small mb-0">Điểm</label>
+<input name="grade" class="form-control form-control-sm" placeholder="8/10" style="width:90px;" required />
+</div>
+<div class="col">
+<label class="form-label small mb-0">Nhận xét</label>
+<input name="feedback" class="form-control form-control-sm" />
+</div>
+<div class="col-auto">
+<button class="btn btn-sm btn-success">Chấm điểm</button>
+</div>
+</form>
+}
                 else if (a.Status == "Graded")
                 {
                     <div class="small text-success mt-1">Nhận xét: @a.Feedback</div>
-                }
+}
             </div>
-        </div>
-    }
+</div>
+}
 </div>
