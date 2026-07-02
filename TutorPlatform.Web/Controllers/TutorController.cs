@@ -31,40 +31,18 @@ public class TutorController : Controller
     }
 
     [Authorize(Roles = "Admin")]
-    public async Task<IActionResult> Index(string? keyword, int? subjectId, string? area, decimal? maxRate)
+    // /Tutor giờ chuyển hướng sang trang tìm kiếm đầy đủ (filter + phân trang),
+    // hợp nhất 2 trang trùng chức năng và vô hiệu hoá view Index cũ.
+    public IActionResult Index(string? keyword, int? subjectId, string? area, decimal? maxRate)
     {
-        var query = _db.TutorProfiles
-            .AsNoTracking() //  Tối ưu
-            .AsSplitQuery() //  Tối ưu
-            .Include(t => t.User)
-            .Include(t => t.TutorSubjects).ThenInclude(ts => ts.Subject)
-            .Include(t => t.ReceivedReviews)
-            .Where(t => t.IsApproved && !t.User.IsLocked)
-            .AsQueryable();
-
-        if (!string.IsNullOrEmpty(keyword))
-            query = query.Where(t =>
-                t.User.FullName.Contains(keyword) ||
-                t.TutorSubjects.Any(ts => ts.Subject.Name.Contains(keyword)));
-
-        if (subjectId.HasValue)
-            query = query.Where(t => t.TutorSubjects.Any(ts => ts.SubjectId == subjectId));
-
-        if (!string.IsNullOrEmpty(area))
-            query = query.Where(t => t.TeachingArea.Contains(area));
-
-        if (maxRate.HasValue)
-            query = query.Where(t => t.HourlyRate <= maxRate);
-
-        var tutors = await query.ToListAsync();
-        var subjects = await _db.Subjects.Where(s => s.IsActive).ToListAsync();
-
-        ViewBag.Subjects = subjects;
-        ViewBag.Keyword = keyword;
-        ViewBag.SubjectId = subjectId;
-
-        return View(tutors);
+        return RedirectToAction("Search", "TutorSearch", new
+        {
+            keyword,
+            subjectId,
+            maxPrice = maxRate ?? 1_000_000
+        });
     }
+
 
     public async Task<IActionResult> Detail(int id)
     {
