@@ -213,7 +213,9 @@ public class TutorController : Controller
             TeachingMode = profile.TeachingMode,
             Bio = profile.Bio,
             SelectedSubjectIds = profile.TutorSubjects.Select(ts => ts.SubjectId).ToList(),
-            AvatarUrl = user!.AvatarUrl
+            AvatarUrl = user!.AvatarUrl,
+            Latitude = profile.Latitude,
+            Longitude = profile.Longitude
         });
     }
 
@@ -259,6 +261,8 @@ public class TutorController : Controller
         profile.HourlyRate = model.HourlyRate;
         profile.TeachingMode = model.TeachingMode;
         profile.Bio = model.Bio;
+        profile.Latitude = model.Latitude;
+        profile.Longitude = model.Longitude;
 
         _db.TutorSubjects.RemoveRange(profile.TutorSubjects);
         foreach (var id in model.SelectedSubjectIds)
@@ -463,6 +467,46 @@ public class TutorController : Controller
                 ? "Khuôn mặt khớp — xác thực thành công."
                 : "Khuôn mặt KHÔNG khớp với hồ sơ gốc. Có thể không phải chính chủ."
         });
+    }
+
+    // ==========================================
+    // BẢN ĐỒ "GIA SƯ GẦN BẠN"
+    // ==========================================
+
+    [AllowAnonymous]
+    [HttpGet]
+    public IActionResult Map()
+    {
+        return View();
+    }
+
+    [AllowAnonymous]
+    [HttpGet]
+    public async Task<IActionResult> MapData()
+    {
+        var tutors = await _db.TutorProfiles
+            .Include(t => t.User)
+            .Include(t => t.TutorSubjects).ThenInclude(ts => ts.Subject)
+            .Include(t => t.ReceivedReviews)
+            .Where(t => t.IsApproved && t.Latitude != null && t.Longitude != null)
+            .ToListAsync();
+
+        var data = tutors.Select(t => new
+        {
+            id = t.Id,
+            name = t.User?.FullName ?? "Gia sư",
+            lat = t.Latitude,
+            lng = t.Longitude,
+            hourlyRate = t.HourlyRate,
+            teachingArea = t.TeachingArea,
+            faceVerified = t.FaceVerified,
+            rating = t.ReceivedReviews.Any() ? Math.Round(t.ReceivedReviews.Average(r => r.Rating), 1) : 0,
+            reviewCount = t.ReceivedReviews.Count,
+            subjects = t.TutorSubjects.Select(ts => ts.Subject!.Name).Take(3).ToList(),
+            avatarUrl = t.User?.AvatarUrl
+        });
+
+        return Json(data);
     }
 
     public class FaceScanDto

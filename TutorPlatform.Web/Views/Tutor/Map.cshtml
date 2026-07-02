@@ -1,0 +1,143 @@
+@{
+    ViewData["Title"] = "Bản đồ gia sư";
+}
+
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-2 mb-3">
+        <div>
+            <h3 class="mb-1">🗺️ Gia sư gần bạn</h3>
+            <p class="text-muted mb-0">Bấm "Vị trí của tôi" rồi chọn bán kính để tìm gia sư quanh bạn.</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <select id="radius" class="form-select" style="width:auto;">
+                <option value="0">Tất cả</option>
+                <option value="3">Trong 3 km</option>
+                <option value="5" selected>Trong 5 km</option>
+                <option value="10">Trong 10 km</option>
+                <option value="20">Trong 20 km</option>
+            </select>
+            <button id="locateBtn" class="btn text-white fw-bold" style="background:#7c3aed;border:none;white-space:nowrap;">
+                📍 Vị trí của tôi
+            </button>
+        </div>
+    </div>
+
+    <div id="mapStatus" class="alert alert-light border small py-2 mb-2">Đang tải danh sách gia sư…</div>
+
+    <div class="row g-3">
+        <div class="col-lg-8">
+            <div id="map" class="shadow-sm" style="height:520px;border-radius:14px;"></div>
+        </div>
+        <div class="col-lg-4">
+            <div id="tutorList" class="d-flex flex-column gap-2" style="max-height:520px;overflow-y:auto;"></div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+    const statusEl = document.getElementById('mapStatus');
+    const listEl = document.getElementById('tutorList');
+    const radiusSel = document.getElementById('radius');
+
+    // Mặc định: TP.HCM
+    const map = L.map('map').setView([10.7769, 106.7009], 12);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap'
+    }).addTo(map);
+
+    let tutors = [];
+    let markers = [];
+    let userPos = null;
+    let userMarker = null;
+    let radiusCircle = null;
+
+    // Khoảng cách Haversine (km)
+    function distKm(lat1, lng1, lat2, lng2) {
+        const R = 6371, rad = Math.PI / 180;
+        const dLat = (lat2 - lat1) * rad, dLng = (lng2 - lng1) * rad;
+        const a = Math.sin(dLat/2)**2 + Math.cos(lat1*rad) * Math.cos(lat2*rad) * Math.sin(dLng/2)**2;
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    function fmtMoney(v) { return new Intl.NumberFormat('vi-VN').format(v) + 'đ/giờ'; }
+
+    function render() {
+        markers.forEach(m => map.removeLayer(m));
+        markers = [];
+        listEl.innerHTML = '';
+        if (radiusCircle) { map.removeLayer(radiusCircle); radiusCircle = null; }
+
+        const r = parseFloat(radiusSel.value);
+        let shown = tutors.map(t => ({
+            ...t,
+            dist: userPos ? distKm(userPos.lat, userPos.lng, t.lat, t.lng) : null
+        }));
+
+        if (userPos && r > 0) shown = shown.filter(t => t.dist <= r);
+        if (userPos) shown.sort((a, b) => a.dist - b.dist);
+
+        if (userPos && r > 0) {
+            radiusCircle = L.circle([userPos.lat, userPos.lng], {
+                radius: r * 1000, color: '#7c3aed', fillColor: '#7c3aed', fillOpacity: .06, weight: 1.5
+            }).addTo(map);
+        }
+
+        shown.forEach(t => {
+            const badge = t.faceVerified ? ' <span style="color:#15803d;">✓</span>' : '';
+            const distTxt = t.dist != null ? ` · cách ${t.dist.toFixed(1)} km` : '';
+            const m = L.marker([t.lat, t.lng]).addTo(map).bindPopup(
+                `<b>${t.name}</b>${badge}<br>` +
+                `${t.subjects.join(', ')}<br>` +
+                `⭐ ${t.rating || '—'} (${t.reviewCount}) · ${fmtMoney(t.hourlyRate)}<br>` +
+                `<a href="/Tutor/Detail/${t.id}">Xem hồ sơ →</a>`
+            );
+            markers.push(m);
+
+            const card = document.createElement('a');
+            card.href = '/Tutor/Detail/' + t.id;
+            card.className = 'text-decoration-none';
+            card.innerHTML =
+                `<div class="card border-0 shadow-sm"><div class="card-body py-2 px-3">
+                    <div class="fw-bold" style="color:#1e293b;">${t.name}${badge}</div>
+                    <div class="small text-muted">${t.subjects.join(', ') || t.teachingArea}</div>
+                    <div class="small"><span style="color:#f59e0b;">⭐ ${t.rating || '—'}</span>
+                        <span class="text-muted">(${t.reviewCount})</span> ·
+                        <b style="color:#7c3aed;">${fmtMoney(t.hourlyRate)}</b>${distTxt}</div>
+                </div></div>`;
+            card.addEventListener('mouseenter', () => m.openPopup());
+            listEl.appendChild(card);
+        });
+
+        statusEl.textContent = userPos
+            ? `Tìm thấy ${shown.length} gia sư` + (r > 0 ? ` trong bán kính ${r} km.` : '.')
+            : `Hiển thị ${shown.length} gia sư có ghim vị trí. Bấm "Vị trí của tôi" để lọc theo khoảng cách.`;
+
+        if (shown.length && !userPos) {
+            map.fitBounds(L.featureGroup(markers).getBounds().pad(0.2));
+        }
+    }
+
+    document.getElementById('locateBtn').addEventListener('click', () => {
+        statusEl.textContent = 'Đang lấy vị trí của bạn…';
+        navigator.geolocation.getCurrentPosition(pos => {
+            userPos = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+            if (userMarker) map.removeLayer(userMarker);
+            userMarker = L.circleMarker([userPos.lat, userPos.lng], {
+                radius: 8, color: '#fff', weight: 2, fillColor: '#2563eb', fillOpacity: 1
+            }).addTo(map).bindPopup('Bạn đang ở đây');
+            map.setView([userPos.lat, userPos.lng], 13);
+            render();
+        }, () => { statusEl.textContent = 'Không lấy được vị trí. Hãy cấp quyền định vị cho trang web.'; });
+    });
+
+    radiusSel.addEventListener('change', render);
+
+    fetch('@Url.Action("MapData", "Tutor")')
+        .then(r => r.json())
+        .then(data => { tutors = data; render(); })
+        .catch(() => { statusEl.textContent = 'Không tải được dữ liệu gia sư.'; });
+</script>
+}

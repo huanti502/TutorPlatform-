@@ -70,6 +70,10 @@ public class TutorProfileFormViewModel
     // Avatar
     public string? AvatarUrl { get; set; }
     public IFormFile? AvatarFile { get; set; }
+
+    // Vị trí dạy trên bản đồ
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
 }
 public class TwoFactorLoginViewModel
 {

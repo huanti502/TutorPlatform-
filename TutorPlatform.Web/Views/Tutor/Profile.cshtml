@@ -367,6 +367,20 @@
                                           class="text-danger"
                                           style="font-size:0.78rem;"></span>
                                 </div>
+
+                                <!-- Ghim vị trí dạy trên bản đồ -->
+                                <div class="mb-3">
+                                    <label class="form-label">Vị trí dạy trên bản đồ <span class="text-muted fw-normal">(để xuất hiện trong "Gia sư gần bạn")</span></label>
+                                    <div id="pickMap" style="height:260px;border-radius:12px;overflow:hidden;border:1px solid #e2e8f0;"></div>
+                                    <div class="d-flex align-items-center gap-2 mt-2">
+                                        <button type="button" id="useMyLocation" class="btn btn-sm btn-outline-secondary">📍 Dùng vị trí hiện tại</button>
+                                        <span id="pickStatus" class="small text-muted">
+                                            @(Model.Latitude != null ? "Đã ghim vị trí." : "Chưa ghim — bấm lên bản đồ để chọn.")
+                                        </span>
+                                    </div>
+                                    <input type="hidden" asp-for="Latitude" id="latInput" />
+                                    <input type="hidden" asp-for="Longitude" id="lngInput" />
+                                </div>
                                 <!-- Teaching mode cards -->
                                 <label class="form-label">Hình thức dạy</label>
                                 <div class="row g-2" id="modeCards">
@@ -503,6 +517,47 @@
 
 @section Scripts {
     @await Html.PartialAsync("_ValidationScriptsPartial")
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // ===== Ghim vị trí dạy =====
+        (function () {
+            const latInput = document.getElementById('latInput');
+            const lngInput = document.getElementById('lngInput');
+            const statusEl = document.getElementById('pickStatus');
+            if (!document.getElementById('pickMap')) return;
+
+            const hasPos = latInput.value && lngInput.value;
+            const start = hasPos ? [parseFloat(latInput.value), parseFloat(lngInput.value)] : [10.7769, 106.7009];
+            const pickMap = L.map('pickMap').setView(start, hasPos ? 14 : 11);
+            L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(pickMap);
+
+            let marker = hasPos ? L.marker(start, { draggable: true }).addTo(pickMap) : null;
+
+            function setPos(lat, lng) {
+                latInput.value = lat.toFixed(6);
+                lngInput.value = lng.toFixed(6);
+                statusEl.textContent = 'Đã ghim: ' + lat.toFixed(4) + ', ' + lng.toFixed(4);
+                if (!marker) {
+                    marker = L.marker([lat, lng], { draggable: true }).addTo(pickMap);
+                    marker.on('dragend', () => { const p = marker.getLatLng(); setPos(p.lat, p.lng); });
+                } else marker.setLatLng([lat, lng]);
+            }
+            if (marker) marker.on('dragend', () => { const p = marker.getLatLng(); setPos(p.lat, p.lng); });
+
+            pickMap.on('click', e => setPos(e.latlng.lat, e.latlng.lng));
+
+            document.getElementById('useMyLocation').addEventListener('click', () => {
+                statusEl.textContent = 'Đang lấy vị trí…';
+                navigator.geolocation.getCurrentPosition(
+                    p => { setPos(p.coords.latitude, p.coords.longitude); pickMap.setView([p.coords.latitude, p.coords.longitude], 14); },
+                    () => { statusEl.textContent = 'Không lấy được vị trí — hãy bấm trực tiếp lên bản đồ.'; });
+            });
+
+            // Bản đồ trong tab/card ẩn lúc load có thể vỡ kích thước
+            setTimeout(() => pickMap.invalidateSize(), 400);
+        })();
+    </script>
     <script>
         // Avatar hover overlay
         const wrap = document.querySelector('.avatar-upload-wrap');

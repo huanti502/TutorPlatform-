@@ -185,6 +185,12 @@ using (var scope = app.Services.CreateScope())
         await db.Database.ExecuteSqlRawAsync(
             "ALTER TABLE \"TutorProfiles\" ADD COLUMN IF NOT EXISTS \"FaceVerifiedAt\" timestamp with time zone NULL;");
 
+        // Vị trí gia sư cho bản đồ "gia sư gần bạn" — PHẢI trước seed
+        await db.Database.ExecuteSqlRawAsync(
+            "ALTER TABLE \"TutorProfiles\" ADD COLUMN IF NOT EXISTS \"Latitude\" double precision NULL;");
+        await db.Database.ExecuteSqlRawAsync(
+            "ALTER TABLE \"TutorProfiles\" ADD COLUMN IF NOT EXISTS \"Longitude\" double precision NULL;");
+
         await SeedData.SeedAllAsync(db, userManager, roleManager);
 
         await db.Database.ExecuteSqlRawAsync(

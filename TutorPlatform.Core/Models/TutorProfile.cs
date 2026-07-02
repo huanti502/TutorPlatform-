@@ -29,6 +29,10 @@ public class TutorProfile
     public bool FaceVerified { get; set; } = false;    // đã xác thực khớp chưa
     public DateTime? FaceVerifiedAt { get; set; }      // lần xác thực gần nhất
 
+    // Vị trí dạy (bản đồ "gia sư gần bạn")
+    public double? Latitude { get; set; }
+    public double? Longitude { get; set; }
+
     // Các danh sách liên kết (Navigation properties)
     public ICollection<TutorSubject> TutorSubjects { get; set; } = new List<TutorSubject>();
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();
