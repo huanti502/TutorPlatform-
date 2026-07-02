@@ -1,0 +1,120 @@
+@{
+    ViewData["Title"] = "Xác thực khuôn mặt";
+    bool hasRef = ViewBag.HasReference ?? false;
+    bool verified = ViewBag.FaceVerified ?? false;
+    DateTime? verifiedAt = ViewBag.FaceVerifiedAt;
+}
+
+<div class="container py-4" style="max-width:560px;">
+    <a asp-action="Dashboard" class="small text-muted text-decoration-none">← Về Dashboard</a>
+    <h3 class="mt-2 mb-1">Xác thực khuôn mặt</h3>
+    <p class="text-muted">
+        @(hasRef
+            ? "Quét khuôn mặt để xác minh bạn đúng là chủ hồ sơ (chống giả mạo / dạy hộ)."
+            : "Lần đầu: quét khuôn mặt để ghi danh làm mẫu gốc cho hồ sơ của bạn.")
+    </p>
+
+    @Html.AntiForgeryToken()
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="badge @(verified ? "bg-success" : "bg-secondary")">
+                    @(verified ? "✓ Đã xác thực" : "Chưa xác thực")
+                </span>
+                @if (verifiedAt.HasValue)
+                {
+                    <span class="small text-muted">Lần gần nhất: @verifiedAt.Value.AddHours(7).ToString("HH:mm dd/MM/yyyy")</span>
+                }
+            </div>
+
+            <div style="position:relative;border-radius:12px;overflow:hidden;background:#000;aspect-ratio:4/3;">
+                <video id="cam" autoplay muted playsinline style="width:100%;height:100%;object-fit:cover;"></video>
+            </div>
+
+            <div id="status" class="alert alert-light border mt-3 mb-3 small">Đang tải mô hình nhận diện…</div>
+
+            <button id="scanBtn" class="btn w-100 text-white fw-bold" style="background:#7c3aed;border:none;" disabled>
+                @(hasRef ? "Quét & xác thực" : "Quét & ghi danh")
+            </button>
+        </div>
+    </div>
+
+    <p class="text-muted small mt-3">
+        Dữ liệu khuôn mặt được xử lý ngay trên trình duyệt; hệ thống chỉ lưu một chuỗi số đặc trưng để so khớp, không dùng cho mục đích khác.
+    </p>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/dist/face-api.js"></script>
+<script>
+    const MODEL_URL = "https://cdn.jsdelivr.net/npm/@@vladmandic/face-api/model/";
+    const statusEl = document.getElementById('status');
+    const scanBtn = document.getElementById('scanBtn');
+    const video = document.getElementById('cam');
+    const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+    function setStatus(msg, type) {
+        statusEl.className = 'alert mt-3 mb-3 small border alert-' + (type || 'light');
+        statusEl.innerHTML = msg;
+    }
+
+    async function init() {
+        try {
+            await faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL);
+            await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+            await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+            const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' } });
+            video.srcObject = stream;
+            setStatus('Sẵn sàng. Đưa khuôn mặt vào khung rồi bấm nút bên dưới.', 'light');
+            scanBtn.disabled = false;
+        } catch (e) {
+            setStatus('Không truy cập được camera hoặc mô hình. Hãy cấp quyền camera và thử lại.', 'danger');
+        }
+    }
+
+    async function scan() {
+        scanBtn.disabled = true;
+        setStatus('Đang phân tích khuôn mặt…', 'light');
+        try {
+            const det = await faceapi
+                .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+                .withFaceLandmarks()
+                .withFaceDescriptor();
+
+            if (!det) {
+                setStatus('Không thấy khuôn mặt rõ ràng. Hãy nhìn thẳng, đủ sáng rồi thử lại.', 'warning');
+                scanBtn.disabled = false;
+                return;
+            }
+
+            const descriptor = Array.from(det.descriptor);
+            const res = await fetch('@Url.Action("VerifyFace", "Tutor")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': token },
+                body: JSON.stringify({ descriptor })
+            });
+            const data = await res.json();
+
+            if (!data.ok) {
+                setStatus('❌ ' + (data.message || 'Có lỗi xảy ra.'), 'danger');
+            } else if (data.enrolled) {
+                setStatus('✅ ' + data.message, 'success');
+                setTimeout(() => location.reload(), 1200);
+            } else if (data.match) {
+                setStatus('✅ ' + data.message + ' (độ lệch ' + data.distance + ')', 'success');
+                setTimeout(() => location.reload(), 1200);
+            } else {
+                setStatus('⚠️ ' + data.message + ' (độ lệch ' + data.distance + ')', 'danger');
+            }
+        } catch (e) {
+            setStatus('Có lỗi khi xử lý. Vui lòng thử lại.', 'danger');
+        } finally {
+            scanBtn.disabled = false;
+        }
+    }
+
+    scanBtn.addEventListener('click', scan);
+    init();
+</script>
+}

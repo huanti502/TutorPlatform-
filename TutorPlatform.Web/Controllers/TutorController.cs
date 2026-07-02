@@ -393,4 +393,80 @@ public class TutorController : Controller
 
         return View(profile);
     }
+
+    // ==========================================
+    // XÁC THỰC KHUÔN MẶT GIA SƯ (chống giả mạo)
+    // ==========================================
+
+    [Authorize(Roles = "Tutor")]
+    [HttpGet]
+    public async Task<IActionResult> VerifyFace()
+    {
+        var uid = _userManager.GetUserId(User);
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(t => t.UserId == uid);
+        if (profile == null) return RedirectToAction("Dashboard");
+
+        ViewBag.HasReference = !string.IsNullOrEmpty(profile.FaceDescriptor);
+        ViewBag.FaceVerified = profile.FaceVerified;
+        ViewBag.FaceVerifiedAt = profile.FaceVerifiedAt;
+        return View();
+    }
+
+    [Authorize(Roles = "Tutor")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> VerifyFace([FromBody] FaceScanDto dto)
+    {
+        var uid = _userManager.GetUserId(User);
+        var profile = await _db.TutorProfiles.FirstOrDefaultAsync(t => t.UserId == uid);
+        if (profile == null) return Json(new { ok = false, message = "Không tìm thấy hồ sơ." });
+
+        var live = dto?.Descriptor;
+        if (live == null || live.Length < 64)
+            return Json(new { ok = false, message = "Không nhận được dữ liệu khuôn mặt hợp lệ." });
+
+        // Lần đầu: ghi danh khuôn mặt gốc.
+        if (string.IsNullOrEmpty(profile.FaceDescriptor))
+        {
+            profile.FaceDescriptor = System.Text.Json.JsonSerializer.Serialize(live);
+            profile.FaceVerified = true;
+            profile.FaceVerifiedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+            return Json(new { ok = true, enrolled = true, message = "Đã ghi danh khuôn mặt và xác thực thành công." });
+        }
+
+        // Các lần sau: so khớp với khuôn mặt gốc (khoảng cách Euclid).
+        var reference = System.Text.Json.JsonSerializer.Deserialize<float[]>(profile.FaceDescriptor);
+        if (reference == null || reference.Length != live.Length)
+            return Json(new { ok = false, message = "Dữ liệu khuôn mặt gốc lỗi." });
+
+        double sum = 0;
+        for (int i = 0; i < reference.Length; i++)
+        {
+            double d = reference[i] - live[i];
+            sum += d * d;
+        }
+        double distance = Math.Sqrt(sum);
+        const double threshold = 0.5; // face-api: <0.6 là cùng người; 0.5 chặt hơn
+
+        bool match = distance < threshold;
+        profile.FaceVerified = match;
+        if (match) profile.FaceVerifiedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        return Json(new
+        {
+            ok = true,
+            match,
+            distance = Math.Round(distance, 3),
+            message = match
+                ? "Khuôn mặt khớp — xác thực thành công."
+                : "Khuôn mặt KHÔNG khớp với hồ sơ gốc. Có thể không phải chính chủ."
+        });
+    }
+
+    public class FaceScanDto
+    {
+        public float[]? Descriptor { get; set; }
+    }
 }

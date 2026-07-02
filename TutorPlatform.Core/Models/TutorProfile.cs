@@ -24,6 +24,11 @@ public class TutorProfile
     public string? Bio { get; set; }
     public bool IsApproved { get; set; } = false;
 
+    // Xác thực khuôn mặt (chống giả mạo gia sư)
+    public string? FaceDescriptor { get; set; }        // "vân" khuôn mặt gốc (128 số, JSON)
+    public bool FaceVerified { get; set; } = false;    // đã xác thực khớp chưa
+    public DateTime? FaceVerifiedAt { get; set; }      // lần xác thực gần nhất
+
     // Các danh sách liên kết (Navigation properties)
     public ICollection<TutorSubject> TutorSubjects { get; set; } = new List<TutorSubject>();
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();

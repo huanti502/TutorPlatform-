@@ -177,6 +177,14 @@ using (var scope = app.Services.CreateScope())
         await db.Database.ExecuteSqlRawAsync(
             "ALTER TABLE \"AspNetUsers\" ADD COLUMN IF NOT EXISTS \"HasBeenReferred\" boolean NOT NULL DEFAULT false;");
 
+        // Cột xác thực khuôn mặt cho TutorProfiles — PHẢI trước seed (seed có tạo TutorProfiles)
+        await db.Database.ExecuteSqlRawAsync(
+            "ALTER TABLE \"TutorProfiles\" ADD COLUMN IF NOT EXISTS \"FaceDescriptor\" text NULL;");
+        await db.Database.ExecuteSqlRawAsync(
+            "ALTER TABLE \"TutorProfiles\" ADD COLUMN IF NOT EXISTS \"FaceVerified\" boolean NOT NULL DEFAULT false;");
+        await db.Database.ExecuteSqlRawAsync(
+            "ALTER TABLE \"TutorProfiles\" ADD COLUMN IF NOT EXISTS \"FaceVerifiedAt\" timestamp with time zone NULL;");
+
         await SeedData.SeedAllAsync(db, userManager, roleManager);
 
         await db.Database.ExecuteSqlRawAsync(
