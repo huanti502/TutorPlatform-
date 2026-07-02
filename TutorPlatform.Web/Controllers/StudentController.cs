@@ -199,4 +199,122 @@ public class StudentController : Controller
 
         return View();
     }
+
+    // ==========================================
+    // HỌC BẠ ĐIỆN TỬ + MỤC TIÊU HỌC TẬP (#1, #21)
+    // ==========================================
+
+    [HttpGet]
+    public async Task<IActionResult> Progress()
+    {
+        var uid = _userManager.GetUserId(User)!;
+        var now = DateTime.UtcNow;
+
+        var bookings = await _db.Bookings
+            .Include(b => b.Subject)
+            .Where(b => b.StudentId == uid)
+            .ToListAsync();
+        var completed = bookings.Where(b => b.Status == "Completed").ToList();
+
+        // Thẻ tổng quan
+        ViewBag.TotalSessions = completed.Count;
+        ViewBag.TotalHours = Math.Round(completed.Sum(b => (b.EndTime - b.StartTime).TotalHours), 1);
+        ViewBag.SubjectCount = completed.Select(b => b.SubjectId).Distinct().Count();
+        ViewBag.Upcoming = bookings.Count(b => (b.Status == "Confirmed" || b.Status == "Pending") && b.StartTime > now);
+
+        // Số buổi theo 12 tuần gần nhất
+        var wkLabels = new List<string>(); var wkData = new List<int>();
+        var monday = now.Date.AddDays(-(int)(now.DayOfWeek == DayOfWeek.Sunday ? 6 : now.DayOfWeek - DayOfWeek.Monday));
+        for (int i = 11; i >= 0; i--)
+        {
+            var ws = monday.AddDays(-7 * i);
+            wkLabels.Add(ws.AddHours(7).ToString("dd/MM"));
+            wkData.Add(completed.Count(b => b.StartTime >= ws && b.StartTime < ws.AddDays(7)));
+        }
+
+        // Phân bổ môn học
+        var bySub = completed.Where(b => b.Subject != null)
+            .GroupBy(b => b.Subject!.Name)
+            .Select(g => new { g.Key, N = g.Count() })
+            .OrderByDescending(x => x.N).Take(6).ToList();
+
+        // Lịch streak 120 ngày (kiểu GitHub)
+        var days = new List<object>();
+        int streak = 0;
+        for (int i = 119; i >= 0; i--)
+        {
+            var d = now.Date.AddDays(-i);
+            int c = completed.Count(b => b.StartTime.Date == d);
+            days.Add(new { date = d.AddHours(7).ToString("dd/MM"), level = c == 0 ? 0 : Math.Min(c, 3) });
+        }
+        for (int i = 0; ; i++)
+        {
+            var d = now.Date.AddDays(-i);
+            if (completed.Any(b => b.StartTime.Date == d)) streak++;
+            else if (i == 0) continue; // hôm nay chưa học vẫn giữ streak
+            else break;
+            if (i > 365) break;
+        }
+        ViewBag.Streak = streak;
+
+        // Điểm quiz theo thời gian
+        var quiz = await _db.QuizAttempts
+            .Where(q => q.UserId == uid)
+            .OrderBy(q => q.CreatedAt)
+            .Select(q => new { q.CreatedAt, q.Score })
+            .ToListAsync();
+
+        static string J(object o) => System.Text.Json.JsonSerializer.Serialize(o);
+        ViewBag.WkLabels = J(wkLabels);
+        ViewBag.WkData = J(wkData);
+        ViewBag.SubLabels = J(bySub.Select(x => x.Key).ToList());
+        ViewBag.SubData = J(bySub.Select(x => x.N).ToList());
+        ViewBag.Days = J(days);
+        ViewBag.QuizLabels = J(quiz.Select(q => q.CreatedAt.AddHours(7).ToString("dd/MM")).ToList());
+        ViewBag.QuizData = J(quiz.Select(q => q.Score).ToList());
+
+        var goals = await _db.LearningGoals
+            .Where(g => g.StudentId == uid)
+            .OrderByDescending(g => g.CreatedAt)
+            .ToListAsync();
+        return View(goals);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CreateGoal(string title, DateTime? targetDate)
+    {
+        var uid = _userManager.GetUserId(User)!;
+        if (!string.IsNullOrWhiteSpace(title))
+        {
+            _db.LearningGoals.Add(new LearningGoal { StudentId = uid, Title = title.Trim(), TargetDate = targetDate?.ToUniversalTime() });
+            await _db.SaveChangesAsync();
+        }
+        return RedirectToAction("Progress");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> UpdateGoal(int id, int progress)
+    {
+        var uid = _userManager.GetUserId(User)!;
+        var g = await _db.LearningGoals.FirstOrDefaultAsync(x => x.Id == id && x.StudentId == uid);
+        if (g != null)
+        {
+            g.Progress = Math.Clamp(progress, 0, 100);
+            g.UpdatedAt = DateTime.UtcNow;
+            await _db.SaveChangesAsync();
+        }
+        return RedirectToAction("Progress");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteGoal(int id)
+    {
+        var uid = _userManager.GetUserId(User)!;
+        var g = await _db.LearningGoals.FirstOrDefaultAsync(x => x.Id == id && x.StudentId == uid);
+        if (g != null) { _db.LearningGoals.Remove(g); await _db.SaveChangesAsync(); }
+        return RedirectToAction("Progress");
+    }
 }

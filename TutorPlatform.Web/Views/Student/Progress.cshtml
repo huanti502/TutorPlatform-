@@ -1,0 +1,153 @@
+@model List<TutorPlatform.Core.Models.LearningGoal>
+@{
+    ViewData["Title"] = "Tiến độ học tập";
+}
+
+<style>
+    .streak-grid { display: grid; grid-template-columns: repeat(30, 1fr); gap: 3px; }
+    .streak-cell { aspect-ratio: 1; border-radius: 3px; background: var(--bg-subtle, #eef0f4); }
+    .streak-cell.l1 { background: #c4b5fd; }
+    .streak-cell.l2 { background: #8b5cf6; }
+    .streak-cell.l3 { background: #6d28d9; }
+    .goal-bar { height: 8px; border-radius: 99px; background: var(--bg-subtle, #eef0f4); overflow: hidden; }
+    .goal-bar > div { height: 100%; background: linear-gradient(90deg, #7c3aed, #a78bfa); border-radius: 99px; }
+</style>
+
+<div class="container py-4">
+    <h3 class="mb-1">Tiến độ học tập</h3>
+    <p class="text-muted mb-4">Học bạ điện tử của bạn — cập nhật theo từng buổi học.</p>
+
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3"><div class="card border-0 shadow-sm h-100"><div class="card-body">
+            <div class="text-muted small">Buổi đã học</div><div class="fs-3 fw-bold" style="color:#7c3aed;">@ViewBag.TotalSessions</div>
+        </div></div></div>
+        <div class="col-6 col-lg-3"><div class="card border-0 shadow-sm h-100"><div class="card-body">
+            <div class="text-muted small">Tổng giờ học</div><div class="fs-3 fw-bold">@ViewBag.TotalHours h</div>
+        </div></div></div>
+        <div class="col-6 col-lg-3"><div class="card border-0 shadow-sm h-100"><div class="card-body">
+            <div class="text-muted small">Chuỗi ngày học</div><div class="fs-3 fw-bold text-success">@ViewBag.Streak ngày</div>
+        </div></div></div>
+        <div class="col-6 col-lg-3"><div class="card border-0 shadow-sm h-100"><div class="card-body">
+            <div class="text-muted small">Buổi sắp tới</div><div class="fs-3 fw-bold">@ViewBag.Upcoming</div>
+        </div></div></div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <h6 class="fw-bold mb-3">Số buổi học theo tuần (12 tuần)</h6>
+                <canvas id="wkChart" height="130"></canvas>
+            </div></div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card border-0 shadow-sm h-100"><div class="card-body">
+                <h6 class="fw-bold mb-3">Phân bổ môn học</h6>
+                <canvas id="subChart" height="160"></canvas>
+            </div></div>
+        </div>
+        <div class="col-12">
+            <div class="card border-0 shadow-sm"><div class="card-body">
+                <h6 class="fw-bold mb-1">Lịch học 120 ngày</h6>
+                <p class="text-muted small mb-3">Ô càng đậm = học càng nhiều buổi trong ngày đó.</p>
+                <div class="streak-grid" id="streakGrid"></div>
+            </div></div>
+        </div>
+        <div class="col-12">
+            <div class="card border-0 shadow-sm"><div class="card-body">
+                <h6 class="fw-bold mb-3">Điểm quiz theo thời gian</h6>
+                <canvas id="quizChart" height="90"></canvas>
+            </div></div>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h6 class="fw-bold mb-3">Mục tiêu học tập</h6>
+
+            <form asp-action="CreateGoal" method="post" class="d-flex gap-2 flex-wrap mb-4">
+                @Html.AntiForgeryToken()
+                <input type="text" name="title" class="form-control" style="max-width:340px;"
+                       placeholder="VD: Đạt 8 điểm Toán giữa kỳ" required />
+                <input type="date" name="targetDate" class="form-control" style="max-width:180px;" />
+                <button class="btn text-white fw-bold" style="background:#7c3aed;border:none;">Thêm mục tiêu</button>
+            </form>
+
+            @if (Model.Count == 0)
+            {
+                <p class="text-muted small mb-0">Chưa có mục tiêu nào — hãy đặt mục tiêu đầu tiên của bạn!</p>
+            }
+            @foreach (var g in Model)
+            {
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <div>
+                            <span class="fw-semibold">@g.Title</span>
+                            @if (g.TargetDate.HasValue)
+                            {
+                                <span class="text-muted small">· hạn @g.TargetDate.Value.AddHours(7).ToString("dd/MM/yyyy")</span>
+                            }
+                            @if (g.Progress >= 100)
+                            {
+                                <span class="badge bg-success ms-1">Hoàn thành</span>
+                            }
+                        </div>
+                        <span class="fw-bold" style="color:#7c3aed;">@g.Progress%</span>
+                    </div>
+                    <div class="goal-bar mb-2"><div style="width:@(g.Progress)%;"></div></div>
+                    <div class="d-flex gap-2 align-items-center">
+                        <form asp-action="UpdateGoal" method="post" class="d-flex gap-2 align-items-center">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@g.Id" />
+                            <input type="range" name="progress" min="0" max="100" step="5" value="@g.Progress"
+                                   class="form-range" style="width:160px;"
+                                   oninput="this.nextElementSibling.textContent=this.value+'%'" />
+                            <span class="small text-muted" style="width:38px;">@g.Progress%</span>
+                            <button class="btn btn-sm btn-outline-secondary">Cập nhật</button>
+                        </form>
+                        <form asp-action="DeleteGoal" method="post">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@g.Id" />
+                            <button class="btn btn-sm btn-outline-danger" onclick="return confirm('Xoá mục tiêu này?')">Xoá</button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script>
+    const purple = '#7c3aed';
+    new Chart(document.getElementById('wkChart'), {
+        type: 'bar',
+        data: { labels: @Html.Raw(ViewBag.WkLabels), datasets: [{ label: 'Buổi học', data: @Html.Raw(ViewBag.WkData), backgroundColor: purple, borderRadius: 6 }] },
+        options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+    });
+    new Chart(document.getElementById('subChart'), {
+        type: 'doughnut',
+        data: { labels: @Html.Raw(ViewBag.SubLabels), datasets: [{ data: @Html.Raw(ViewBag.SubData), backgroundColor: ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#14b8a6'] }] },
+        options: { plugins: { legend: { position: 'bottom' } } }
+    });
+    const days = @Html.Raw(ViewBag.Days);
+    const grid = document.getElementById('streakGrid');
+    days.forEach(d => {
+        const c = document.createElement('div');
+        c.className = 'streak-cell' + (d.level > 0 ? ' l' + d.level : '');
+        c.title = d.date + (d.level > 0 ? ' — ' + d.level + ' buổi' : '');
+        grid.appendChild(c);
+    });
+    const qLabels = @Html.Raw(ViewBag.QuizLabels);
+    if (qLabels.length) {
+        new Chart(document.getElementById('quizChart'), {
+            type: 'line',
+            data: { labels: qLabels, datasets: [{ label: 'Số câu đúng', data: @Html.Raw(ViewBag.QuizData), borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,.12)', fill: true, tension: .3 }] },
+            options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, ticks: { precision: 0 } } } }
+        });
+    } else {
+        document.getElementById('quizChart').closest('.card').querySelector('.card-body').innerHTML +=
+            '<p class="text-muted small mb-0">Chưa có bài quiz nào — thử Quiz Battle hoặc luyện tập để thấy biểu đồ.</p>';
+    }
+</script>
+}

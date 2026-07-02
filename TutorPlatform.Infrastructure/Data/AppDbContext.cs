@@ -30,6 +30,7 @@ public class AppDbContext : IdentityDbContext<AppUser>, IDataProtectionKeyContex
     public DbSet<Badge> Badges => Set<Badge>();
     public DbSet<TutorBadge> TutorBadges => Set<TutorBadge>();
     public DbSet<QuizAttempt> QuizAttempts => Set<QuizAttempt>();
+    public DbSet<LearningGoal> LearningGoals => Set<LearningGoal>();
     public DbSet<BattleRoomEntity> BattleRooms => Set<BattleRoomEntity>();
 
     // ── Bảng thêm sau ────────────────────────
