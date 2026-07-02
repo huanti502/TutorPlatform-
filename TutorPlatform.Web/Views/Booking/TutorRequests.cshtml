@@ -382,6 +382,15 @@
                                        style="background:#1e3a5f;color:white;border-radius:8px;">
                                         🎨 Bảng Trắng
                                     </a>
+                                    <form asp-action="TutorCancel" method="post" class="mt-2">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="id" value="@b.Id" />
+                                        <button type="submit" class="btn btn-sm btn-outline-danger w-100"
+                                                style="border-radius:8px;"
+                                                onclick="return confirm('Huỷ buổi học này? Học viên sẽ được hoàn tiền/buổi (nếu đã thanh toán).')">
+                                            ✕ Huỷ buổi (việc đột xuất)
+                                        </button>
+                                    </form>
                                 }
                                 @if (b.Status == "Confirmed" || b.Status == "Completed")
                                 {

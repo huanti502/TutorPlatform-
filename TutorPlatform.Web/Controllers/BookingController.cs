@@ -62,6 +62,14 @@ public class BookingController : Controller
     {
         var user = await _userManager.GetUserAsync(User);
 
+        // ✅ Chỉ cho đặt lịch với gia sư đã được duyệt
+        var approvedTutor = await _db.TutorProfiles.FindAsync(tutorProfileId);
+        if (approvedTutor == null || !approvedTutor.IsApproved)
+        {
+            TempData["Error"] = "Gia sư này chưa được duyệt hoặc không tồn tại.";
+            return RedirectToAction("Search", "TutorSearch");
+        }
+
         // 🛠️ SỬA LỖI POSTGRESQL: Chuyển thời gian sang UTC trước khi xử lý
         var startUtc = startTime.ToUniversalTime();
         var endUtc = endTime.ToUniversalTime();
@@ -388,11 +396,71 @@ public class BookingController : Controller
         return RedirectToAction("MyBookings");
     }
 
+    // ✅ Gia sư huỷ buổi học (việc đột xuất) — hoàn tiền/buổi cho học viên
+    [Authorize(Roles = "Tutor")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> TutorCancel(int id, string? reason)
+    {
+        var uid = _userManager.GetUserId(User);
+        var booking = await _db.Bookings
+            .Include(b => b.TutorProfile)
+            .FirstOrDefaultAsync(b => b.Id == id);
+        if (booking == null) return NotFound();
+
+        if (booking.TutorProfile?.UserId != uid) return Forbid();
+
+        if (booking.Status != "Pending" && booking.Status != "Confirmed")
+        {
+            TempData["Error"] = "Chỉ huỷ được buổi đang chờ hoặc đã xác nhận.";
+            return RedirectToAction("TutorRequests");
+        }
+        if (booking.StartTime <= DateTime.UtcNow)
+        {
+            TempData["Error"] = "Không thể huỷ buổi học đã bắt đầu.";
+            return RedirectToAction("TutorRequests");
+        }
+
+        booking.Status = "Cancelled";
+
+        // Hoàn tiền/buổi cho HỌC VIÊN nếu đã thanh toán
+        if (booking.IsPaid)
+        {
+            if (booking.PaidByPackagePurchaseId.HasValue)
+            {
+                var purchase = await _db.PackagePurchases.FindAsync(booking.PaidByPackagePurchaseId.Value);
+                if (purchase != null)
+                {
+                    purchase.RemainingSessions++;
+                    if (purchase.Status == "Used") purchase.Status = "Active";
+                }
+                booking.PaidByPackagePurchaseId = null;
+            }
+            else
+            {
+                var payment = await _db.Payments
+                    .Where(p => p.BookingId == booking.Id && p.Status == "Paid")
+                    .OrderByDescending(p => p.PaidAt)
+                    .FirstOrDefaultAsync();
+                if (payment != null) payment.Status = "Refunded";
+            }
+            booking.IsPaid = false;
+        }
+
+        await _db.SaveChangesAsync();
+
+        var reasonTxt = string.IsNullOrWhiteSpace(reason) ? "" : $" Lý do: {reason}";
+        await _notif.NotifyAsync(booking.StudentId, "❌ Gia sư đã huỷ buổi học",
+            $"Gia sư đã huỷ một buổi học của bạn.{reasonTxt} Tiền/buổi trong gói (nếu có) đã được hoàn.",
+            "/Booking/MyBookings");
+
+        TempData["Success"] = "Đã huỷ buổi học và hoàn tiền/buổi cho học viên (nếu có).";
+        return RedirectToAction("TutorRequests");
+    }
+
     // Trang lịch
     [Authorize]
-    public IActionResult Calendar() => View();
-
-    // API trả JSON cho FullCalendar
+    public IActionResult Calendar() => View();    // API trả JSON cho FullCalendar
     [HttpGet, Authorize]
     public async Task<IActionResult> GetCalendarEvents(DateTime start, DateTime end)
     {
