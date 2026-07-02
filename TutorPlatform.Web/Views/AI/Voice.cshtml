@@ -142,7 +142,7 @@
             return;
         }
         const part = gttsQueue.shift();
-        const url = 'https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q=' + encodeURIComponent(part);
+        const url = '/AI/Tts?text=' + encodeURIComponent(part); // proxy qua server, không bị chặn
         gttsAudio = new Audio(url);
         gttsAudio.onended = playGttsQueue;
         gttsAudio.onerror = () => {

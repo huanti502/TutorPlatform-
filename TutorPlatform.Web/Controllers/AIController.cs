@@ -32,6 +32,33 @@ public class AIController : Controller
     // Trợ lý giọng nói (Web Speech API + Groq)
     public IActionResult Voice() => View();
 
+    // Proxy giọng đọc tiếng Việt: server tải audio từ Google Translate TTS
+    // rồi trả về cùng domain -> không bị trình duyệt chặn (CORS/tracking prevention).
+    private static readonly HttpClient _ttsClient = new HttpClient();
+
+    [HttpGet]
+    public async Task<IActionResult> Tts(string text)
+    {
+        if (string.IsNullOrWhiteSpace(text)) return BadRequest();
+        if (text.Length > 200) text = text.Substring(0, 200);
+
+        var url = "https://translate.google.com/translate_tts?ie=UTF-8&tl=vi&client=tw-ob&q="
+                  + Uri.EscapeDataString(text);
+        try
+        {
+            using var req = new HttpRequestMessage(HttpMethod.Get, url);
+            req.Headers.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+            var res = await _ttsClient.SendAsync(req);
+            if (!res.IsSuccessStatusCode) return StatusCode(502);
+            var bytes = await res.Content.ReadAsByteArrayAsync();
+            return File(bytes, "audio/mpeg");
+        }
+        catch
+        {
+            return StatusCode(502);
+        }
+    }
+
     [HttpPost]
     public async Task<IActionResult> SendMessage([FromBody] ChatRequest request)
     {
