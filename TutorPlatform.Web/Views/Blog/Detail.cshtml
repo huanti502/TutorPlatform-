@@ -2,6 +2,8 @@
 @model TutorPlatform.Core.Models.Post
 @{
     ViewData["Title"] = Model.Title;
+    ViewData["OgDescription"] = Model.Summary ?? "";
+    if (!string.IsNullOrEmpty(Model.ImageUrl)) { ViewData["OgImage"] = Model.ImageUrl; }
     var initial = Model.Author?.FullName?.FirstOrDefault().ToString().ToUpper() ?? "U";
     var currentUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 }

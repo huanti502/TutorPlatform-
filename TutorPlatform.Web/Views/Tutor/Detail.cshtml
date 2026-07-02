@@ -1,6 +1,8 @@
 ﻿@model TutorPlatform.Core.Models.TutorProfile
 @{
     ViewData["Title"] = Model.User?.FullName ?? "Chi tiết gia sư";
+    ViewData["OgDescription"] = $"Gia sư {Model.User?.FullName} — {Model.TeachingArea} · {Model.HourlyRate:N0}đ/giờ · {Model.ExperienceYears} năm kinh nghiệm.";
+    if (!string.IsNullOrEmpty(Model.User?.AvatarUrl)) { ViewData["OgImage"] = Model.User.AvatarUrl; }
     var avgRating = Model.ReceivedReviews != null && Model.ReceivedReviews.Any()
         ? Model.ReceivedReviews.Average(r => r.Rating) : 0;
 
@@ -22,6 +24,10 @@
             </a>
 @if (User.Identity?.IsAuthenticated == true && currentUserId != Model.UserId)
             {
+<button type="button" class="btn btn-outline-secondary btn-sm me-2" data-bs-toggle="modal" data-bs-target="#qrModal">
+<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="vertical-align:-2px;"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM21 14v3M14 21h3M21 21h.01"/></svg>
+Mã QR
+</button>
                 <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#reportModal">
 Báo cáo
                 </button>
@@ -447,3 +453,31 @@ else
 </div>
 </div>
 </section>
+
+<!-- Modal mã QR chia sẻ hồ sơ (#5) -->
+<div class="modal fade" id="qrModal" tabindex="-1" aria-hidden="true">
+<div class="modal-dialog modal-dialog-centered" style="max-width:340px;">
+<div class="modal-content" style="border-radius:16px;">
+<div class="modal-body text-center p-4">
+<h6 class="fw-bold mb-1">Quét để mở hồ sơ</h6>
+<p class="text-muted small mb-3">@Model.User?.FullName — Gia Sư Việt</p>
+<div id="qrBox" class="d-inline-block bg-white p-3" style="border-radius:12px;"></div>
+<p class="text-muted small mt-3 mb-0">Dùng camera điện thoại quét mã để mở trang này.</p>
+</div>
+</div>
+</div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+    (function () {
+        var made = false;
+        document.getElementById('qrModal').addEventListener('shown.bs.modal', function () {
+            if (made) return;
+            new QRCode(document.getElementById('qrBox'), {
+                text: window.location.href, width: 200, height: 200,
+                colorDark: '#1e1b2e', colorLight: '#ffffff'
+            });
+            made = true;
+        });
+    })();
+</script>

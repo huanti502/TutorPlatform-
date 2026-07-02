@@ -18,6 +18,15 @@
 <meta name="theme-color" content="#7c3aed" />
 <link rel="apple-touch-icon" href="~/icons/icon-192.png" />
 <meta name="mobile-web-app-capable" content="yes" />
+<script>
+    (function () { try { if (localStorage.getItem('theme') === 'dark') document.documentElement.setAttribute('data-theme', 'dark'); } catch (e) { } })();
+</script>
+<meta property="og:site_name" content="Gia Sư Việt" />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="@(ViewData["Title"] ?? "Gia Sư Việt") - Gia Sư Việt" />
+<meta property="og:description" content="@(ViewData["OgDescription"] ?? "Kết nối học sinh với gia sư chất lượng cao. Học online hoặc trực tiếp.")" />
+<meta property="og:image" content="@(ViewData["OgImage"] ?? Url.Content("~/icons/icon-512.png"))" />
+<meta name="twitter:card" content="summary_large_image" />
 <title>@ViewData["Title"] - Gia Sư Việt</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -249,6 +258,12 @@ Blog
 
                     @if (User.Identity!.IsAuthenticated)
                     {
+                        <li class="nav-item">
+<button type="button" id="themeToggle" class="theme-toggle" title="Chế độ sáng / tối" aria-label="Chuyển chế độ sáng tối">
+<svg class="icon-moon" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" /></svg>
+<svg class="icon-sun" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41" /></svg>
+</button>
+                        </li>
                         <li class="nav-item">
 <a class="nav-icon-btn"
                                asp-area="" asp-controller="Message" asp-action="Index"
@@ -639,6 +654,19 @@ function updateCountdowns() {
                 navigator.serviceWorker.register('/sw.js').catch(function () { });
             });
         }
+
+        // Dark mode toggle (#14)
+        (function () {
+            var btn = document.getElementById('themeToggle');
+            if (!btn) return;
+            btn.addEventListener('click', function () {
+                var root = document.documentElement;
+                var dark = root.getAttribute('data-theme') === 'dark';
+                if (dark) { root.removeAttribute('data-theme'); }
+                else { root.setAttribute('data-theme', 'dark'); }
+                try { localStorage.setItem('theme', dark ? 'light' : 'dark'); } catch (e) { }
+            });
+        })();
     </script>
 </body>
 </html>
