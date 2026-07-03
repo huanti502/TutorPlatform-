@@ -1,0 +1,151 @@
+@model List<TutorPlatform.Core.Models.ClassRequest>
+@{
+    ViewData["Title"] = "Lớp cần gia sư";
+    var subjects = ViewBag.Subjects as List<TutorPlatform.Core.Models.Subject> ?? new();
+    var appliedIds = ViewBag.AppliedIds as List<int> ?? new();
+    bool isTutor = User.Identity?.IsAuthenticated == true && User.IsInRole("Tutor");
+    bool isStudent = User.Identity?.IsAuthenticated == true && User.IsInRole("Student");
+
+    string ModeText(string m) => m switch { "Online" => "Trực tuyến", "Offline" => "Tại nhà", _ => "Linh hoạt" };
+}
+
+<div class="container py-5">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-1">
+        <h1 class="fw-bold mb-0" style="font-size:1.6rem;letter-spacing:-0.02em;">Danh sách lớp cần gia sư</h1>
+        @if (isStudent)
+        {
+            <div class="d-flex gap-2">
+                <a asp-action="My" class="btn btn-outline-primary btn-sm px-3">Lớp của tôi</a>
+                <a asp-action="Create" class="btn btn-primary btn-sm px-3">+ Đăng lớp mới</a>
+            </div>
+        }
+    </div>
+    <p class="text-muted mb-4">Có <b>@Model.Count</b> lớp đang mở — gia sư có thể gửi đề nghị dạy trực tiếp.</p>
+
+    <form method="get" class="card border-0 shadow-sm mb-4">
+        <div class="card-body d-flex flex-wrap gap-2 align-items-center">
+            <select name="subjectId" class="form-select" style="max-width:190px;">
+                <option value="">Chọn môn học</option>
+                @foreach (var s in subjects)
+                {
+                    <option value="@s.Id" selected="@(ViewBag.SubjectId == s.Id)">@s.Name</option>
+                }
+            </select>
+            <select name="mode" class="form-select" style="max-width:170px;">
+                @{ var m = ViewBag.Mode as string ?? ""; }
+                <option value="">Hình thức dạy</option>
+                <option value="Online" selected="@(m == "Online")">Trực tuyến</option>
+                <option value="Offline" selected="@(m == "Offline")">Tại nhà</option>
+                <option value="Both" selected="@(m == "Both")">Linh hoạt</option>
+            </select>
+            <input type="text" name="keyword" class="form-control" style="max-width:280px;flex:1;"
+                   value="@ViewBag.Keyword" placeholder="Từ khoá, khu vực..." />
+            <button type="submit" class="btn btn-primary px-4">Tìm kiếm</button>
+            <a asp-action="Index" class="btn btn-outline-secondary">Xoá lọc</a>
+        </div>
+    </form>
+
+    @if (!Model.Any())
+    {
+        <div class="card border-0 shadow-sm"><div class="card-body text-center text-muted py-5">
+            Chưa có lớp nào phù hợp bộ lọc.
+            @if (isStudent) { <div class="mt-2"><a asp-action="Create" class="btn btn-primary btn-sm">Đăng lớp đầu tiên</a></div> }
+        </div></div>
+    }
+
+    @foreach (var c in Model)
+    {
+        <div class="card border-0 shadow-sm mb-3 class-card">
+            <div class="card-body p-4">
+                <div class="row g-3 align-items-center">
+                    <div class="col-lg-2 col-md-3 text-md-center">
+                        <div class="fw-bold" style="color:var(--primary);font-size:1.05rem;">LH@(c.Id.ToString("D4"))</div>
+                        <div class="text-muted small">@c.CreatedAt.ToLocalTime().ToString("dd-MM-yyyy")</div>
+                        <span class="badge mt-1 @(c.Mode == "Online" ? "bg-info text-dark" : c.Mode == "Offline" ? "bg-success" : "bg-secondary")">@ModeText(c.Mode)</span>
+                    </div>
+                    <div class="col-lg-6 col-md-9">
+                        <h5 class="fw-bold mb-2" style="font-size:1.02rem;">@c.Title</h5>
+                        <p class="text-muted small mb-2" style="white-space:pre-line;">@c.Description</p>
+                        <div class="text-muted small mb-2">
+                            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:-2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                            @c.Schedule — @c.SessionsPerWeek buổi/tuần
+                        </div>
+                        <div class="d-flex flex-wrap gap-2">
+                            @if (c.Subject != null) { <span class="badge bg-light text-dark border">@c.Subject.Name</span> }
+                            @if (!string.IsNullOrEmpty(c.Location))
+                            {
+                                <span class="badge bg-light text-dark border">
+                                    <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:-1px;"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                    @c.Location
+                                </span>
+                            }
+                        </div>
+                    </div>
+                    <div class="col-lg-2 col-md-6 text-lg-center">
+                        <div class="fw-bold" style="font-size:1.05rem;">@c.BudgetPerSession.ToString("N0")đ<span class="text-muted fw-normal small">/buổi</span></div>
+                        <div class="text-muted small">@c.Applications.Count đề nghị</div>
+                    </div>
+                    <div class="col-lg-2 col-md-6 text-lg-end">
+                        @if (isTutor)
+                        {
+                            @if (appliedIds.Contains(c.Id))
+                            {
+                                <button class="btn btn-outline-success btn-sm px-3" disabled>Đã gửi đề nghị</button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-primary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#applyModal"
+                                        data-id="@c.Id" data-title="@c.Title" data-budget="@c.BudgetPerSession">
+                                    Đề nghị dạy
+                                </button>
+                            }
+                        }
+                        else if (!User.Identity!.IsAuthenticated)
+                        {
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-outline-primary btn-sm px-3">Đăng nhập để nhận lớp</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (isTutor)
+{
+    <div class="modal fade" id="applyModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form class="modal-content" method="post" asp-action="Apply">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="classRequestId" id="applyRequestId" />
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">Đề nghị dạy</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-muted small mb-3" id="applyClassTitle"></div>
+                    <label class="form-label small fw-semibold">Lời nhắn tới học viên</label>
+                    <textarea name="message" class="form-control mb-3" rows="3" maxlength="1000"
+                              placeholder="Giới thiệu kinh nghiệm và cách bạn sẽ giúp học viên tiến bộ..."></textarea>
+                    <label class="form-label small fw-semibold">Học phí đề xuất / buổi (để trống nếu đồng ý mức của lớp)</label>
+                    <input type="number" name="proposedRate" class="form-control" min="0" step="10000" id="applyRate" />
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Huỷ</button>
+                    <button type="submit" class="btn btn-primary px-4">Gửi đề nghị</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @section Scripts {
+        <script>
+            document.getElementById('applyModal')?.addEventListener('show.bs.modal', function (ev) {
+                const btn = ev.relatedTarget;
+                document.getElementById('applyRequestId').value = btn.dataset.id;
+                document.getElementById('applyClassTitle').textContent = 'Lớp: ' + btn.dataset.title;
+                document.getElementById('applyRate').placeholder = 'VD: ' + Number(btn.dataset.budget).toLocaleString('vi-VN') + 'đ';
+            });
+        </script>
+    }
+}

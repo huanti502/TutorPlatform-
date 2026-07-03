@@ -49,6 +49,8 @@ public class AppDbContext : IdentityDbContext<AppUser>, IDataProtectionKeyContex
     public DbSet<Referral> Referrals => Set<Referral>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<SupportTicket> SupportTickets => Set<SupportTicket>();
+    public DbSet<ClassRequest> ClassRequests => Set<ClassRequest>();
+    public DbSet<ClassApplication> ClassApplications => Set<ClassApplication>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

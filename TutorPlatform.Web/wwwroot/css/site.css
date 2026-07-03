@@ -1450,3 +1450,54 @@ p {
 .notif-empty { padding:24px 14px; text-align:center; color:#999; font-size:.85rem; }
 .notif-foot { display:block; text-align:center; padding:10px; font-size:.84rem; color:#7c3aed; text-decoration:none; border-top:1px solid #eee; }
 .notif-foot:hover { background:#f7f5ff; }
+
+/* =============================================
+   HOMEPAGE: REVEAL ON SCROLL + TESTIMONIALS
+   ============================================= */
+@media (prefers-reduced-motion: no-preference) {
+    .reveal {
+        opacity: 0;
+        transform: translateY(22px);
+        transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .reveal-visible {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.lift-card {
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+    .lift-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 16px 32px rgba(49,46,129,0.12) !important;
+    }
+
+.testimonial-card {
+    background: #fff;
+    border: 1px solid #FDE9C8;
+    border-radius: 18px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 14px rgba(245,158,11,0.06);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+    .testimonial-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 14px 28px rgba(245,158,11,0.14);
+    }
+
+.class-card {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    border-radius: 16px;
+}
+
+    .class-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 12px 24px rgba(49,46,129,0.1) !important;
+    }

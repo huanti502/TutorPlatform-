@@ -98,6 +98,40 @@ namespace TutorPlatform.Web.Controllers
                 ViewBag.FeaturedTutors = new List<FeaturedTutorVM>();
             }
 
+            // ── Phản hồi thực tế (testimonials), bài viết mới, lớp đang mở ──
+            try
+            {
+                ViewBag.TopReviews = await _db.Reviews
+                    .Include(r => r.Student)
+                    .Include(r => r.TutorProfile).ThenInclude(t => t.User)
+                    .Where(r => r.Rating >= 4 && r.Comment != null && r.Comment.Length >= 30)
+                    .OrderByDescending(r => r.Rating)
+                    .ThenByDescending(r => r.CreatedAt)
+                    .Take(6)
+                    .ToListAsync();
+
+                ViewBag.LatestPosts = await _db.Posts
+                    .Where(p => p.IsPublished)
+                    .OrderByDescending(p => p.CreatedAt)
+                    .Take(3)
+                    .ToListAsync();
+
+                ViewBag.OpenClassCount = await _db.ClassRequests.CountAsync(c => c.Status == "Open");
+                ViewBag.LatestClasses = await _db.ClassRequests
+                    .Include(c => c.Subject)
+                    .Where(c => c.Status == "Open")
+                    .OrderByDescending(c => c.CreatedAt)
+                    .Take(3)
+                    .ToListAsync();
+            }
+            catch
+            {
+                ViewBag.TopReviews = new List<Review>();
+                ViewBag.LatestPosts = new List<Post>();
+                ViewBag.OpenClassCount = 0;
+                ViewBag.LatestClasses = new List<ClassRequest>();
+            }
+
             return View();
         }
 

@@ -81,6 +81,17 @@ Tìm gia sư
 
                     <li class="nav-item">
 <a class="nav-link d-flex align-items-center gap-1"
+                           asp-area="" asp-controller="ClassRequest" asp-action="Index">
+<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+<path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+</svg>
+Nhận lớp dạy
+                        </a>
+</li>
+
+                    <li class="nav-item">
+<a class="nav-link d-flex align-items-center gap-1"
                            asp-area="" asp-controller="Tutor" asp-action="Map">
 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
 <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0Z" />
@@ -483,6 +494,7 @@ Giới thiệu bạn bè
 <h6 class="footer-heading">Khám phá</h6>
 <ul class="footer-links">
 <li><a asp-controller="TutorSearch" asp-action="Index">Tìm gia sư</a></li>
+<li><a asp-controller="ClassRequest" asp-action="Index">Lớp cần gia sư</a></li>
 <li><a asp-controller="Blog" asp-action="Index">Blog</a></li>
 <li><a asp-controller="Leaderboard" asp-action="Index">Bảng xếp hạng</a></li>
 <li><a asp-controller="Account" asp-action="Register">Trở thành gia sư</a></li>
