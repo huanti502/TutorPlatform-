@@ -10,6 +10,8 @@ namespace TutorPlatform.Web.Hubs;
 [Authorize]
 public class ChatHub : Hub
 {
+    private readonly TutorPlatform.Web.Services.ModerationService _moderation;
+
     // #11: theo dõi online (userId -> số kết nối)
     private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> _online = new();
     public static bool IsUserOnline(string userId) => _online.TryGetValue(userId, out var n) && n > 0;
@@ -43,8 +45,9 @@ public class ChatHub : Hub
     private readonly AppDbContext _db;
     private readonly UserManager<AppUser> _userManager;
 
-    public ChatHub(AppDbContext db, UserManager<AppUser> userManager)
+    public ChatHub(AppDbContext db, UserManager<AppUser> userManager, TutorPlatform.Web.Services.ModerationService moderation)
     {
+        _moderation = moderation;
         _db = db;
         _userManager = userManager;
     }
@@ -53,7 +56,7 @@ public class ChatHub : Hub
     public async Task SendMessage(string receiverId, string content)
     {
         // #18: kiểm duyệt nhanh (regex) — chặn SĐT/chuyển khoản/giao dịch ngoài/tục tĩu
-        var mod = new TutorPlatform.Web.Services.ModerationService(null!).QuickCheck(content);
+        var mod = _moderation.QuickCheck(content);
         if (!mod.Ok)
         {
             await Clients.Caller.SendAsync("MessageBlocked", mod.Reason);

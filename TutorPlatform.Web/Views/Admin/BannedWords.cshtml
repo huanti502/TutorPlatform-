@@ -1,0 +1,62 @@
+@model List<TutorPlatform.Core.Models.BannedWord>
+@{
+    ViewData["Title"] = "Từ cấm";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container-fluid py-4 px-4">
+    <div class="d-flex justify-content-between align-items-center mb-1">
+        <h4 class="fw-bold mb-0">Quản lý từ cấm</h4>
+        <span class="badge bg-secondary">@Model.Count từ</span>
+    </div>
+    <p class="text-muted small mb-4">
+        Tin nhắn chat, đánh giá và bình luận blog chứa các từ này sẽ bị chặn tự động.
+        Hệ thống còn tự chặn <b>số điện thoại</b>, <b>chuyển khoản/STK</b> và <b>gợi ý giao dịch ngoài nền tảng</b> (không cần thêm ở đây).
+        Thay đổi có hiệu lực trong tối đa 60 giây.
+    </p>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success py-2">@TempData["Success"]</div>
+    }
+
+    <div class="card border-0 shadow-sm mb-4" style="max-width:640px;">
+        <div class="card-body">
+            <form asp-action="AddBannedWord" method="post" class="d-flex gap-2">
+                @Html.AntiForgeryToken()
+                <input name="word" class="form-control" placeholder="Nhập từ hoặc cụm từ cấm (tối thiểu 2 ký tự)..." required minlength="2" />
+                <button class="btn text-white fw-bold" style="background:#7c3aed;border:none;white-space:nowrap;">+ Thêm từ</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm" style="max-width:640px;">
+        <div class="card-body">
+            @if (Model.Count == 0)
+            {
+                <p class="text-muted small mb-0">Chưa có từ cấm nào.</p>
+            }
+            else
+            {
+                <div class="d-flex flex-wrap gap-2">
+                    @foreach (var w in Model)
+                    {
+                        <form asp-action="DeleteBannedWord" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@w.Id" />
+                            <span class="d-inline-flex align-items-center gap-2"
+                                  style="background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;border-radius:99px;padding:4px 6px 4px 12px;font-size:.85rem;font-weight:600;">
+                                @w.Word
+                                <button type="submit" title="Xoá từ này"
+                                        onclick="return confirm('Xoá từ cấm: @w.Word ?')"
+                                        style="background:none;border:none;padding:0;line-height:0;color:#b91c1c;cursor:pointer;">
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" /><path d="m15 9-6 6M9 9l6 6" /></svg>
+                                </button>
+                            </span>
+                        </form>
+                    }
+                </div>
+            }
+        </div>
+    </div>
+</div>

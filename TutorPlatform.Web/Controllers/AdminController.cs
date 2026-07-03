@@ -730,6 +730,47 @@ public class AdminController : Controller
     }
 
     // ==========================================
+    // #18: QUẢN LÝ TỪ CẤM (KIỂM DUYỆT)
+    // ==========================================
+
+    [HttpGet]
+    public async Task<IActionResult> BannedWords()
+    {
+        var words = await _db.BannedWords.OrderBy(w => w.Word).ToListAsync();
+        return View(words);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddBannedWord(string word)
+    {
+        word = (word ?? "").Trim().ToLowerInvariant();
+        if (word.Length >= 2 && !await _db.BannedWords.AnyAsync(w => w.Word == word))
+        {
+            _db.BannedWords.Add(new BannedWord { Word = word });
+            await _db.SaveChangesAsync();
+            TutorPlatform.Web.Services.ModerationService.InvalidateCache();
+            TempData["Success"] = $"Đã thêm từ cấm: {word}";
+        }
+        return RedirectToAction("BannedWords");
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteBannedWord(int id)
+    {
+        var w = await _db.BannedWords.FindAsync(id);
+        if (w != null)
+        {
+            _db.BannedWords.Remove(w);
+            await _db.SaveChangesAsync();
+            TutorPlatform.Web.Services.ModerationService.InvalidateCache();
+            TempData["Success"] = "Đã xoá từ cấm.";
+        }
+        return RedirectToAction("BannedWords");
+    }
+
+    // ==========================================
     // NHẬT KÝ HOẠT ĐỘNG (AUDIT LOG)
     // ==========================================
 
