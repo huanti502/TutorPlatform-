@@ -14,13 +14,15 @@ public class BlogController : Controller
     private readonly UserManager<AppUser> _userManager;
     private readonly IWebHostEnvironment _env; // Cần thiết để lưu file
     private readonly CloudinaryService _cloudinary;
+    private readonly ModerationService _moderation;
 
-    public BlogController(AppDbContext db, UserManager<AppUser> userManager, IWebHostEnvironment env, CloudinaryService cloudinary)
+    public BlogController(AppDbContext db, UserManager<AppUser> userManager, IWebHostEnvironment env, CloudinaryService cloudinary, ModerationService moderation)
     {
         _db = db;
         _userManager = userManager;
         _env = env; // Đừng quên gán biến này nhé!
         _cloudinary = cloudinary;
+        _moderation = moderation;
     }
 
     // Xem danh sách bài viết (Đã sửa - thêm search, sort và bài nổi bật)
@@ -126,6 +128,14 @@ public class BlogController : Controller
     [HttpPost]
     public async Task<IActionResult> AddComment(int postId, string content)
     {
+        // #18: kiểm duyệt bình luận blog (regex + AI)
+        var mod = await _moderation.DeepCheckAsync(content);
+        if (!mod.Ok)
+        {
+            TempData["Error"] = mod.Reason;
+            return RedirectToAction("Detail", new { id = postId });
+        }
+
         if (string.IsNullOrWhiteSpace(content)) return RedirectToAction("Detail", new { id = postId });
 
         var user = await _userManager.GetUserAsync(User);
