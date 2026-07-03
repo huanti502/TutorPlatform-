@@ -95,14 +95,41 @@ Tìm gia sư ngay
 }
         else
         {
+            var nowUtc = DateTime.UtcNow;
+                string GroupOf(TutorPlatform.Core.Models.Booking x) =>
+                    (x.Status == "Cancelled" || x.Status == "Rejected") ? "off"
+                    : x.Status == "Completed" ? "done"
+                    : x.StartTime > nowUtc
+                        ? (x.Status == "Pending" ? "pend" : "up")
+                        : "done";
+                var sorted = Model
+                    .Select(x => new { B = x, G = GroupOf(x) })
+                    .OrderBy(x => x.G == "up" ? 0 : x.G == "pend" ? 1 : x.G == "done" ? 2 : 3)
+                    .ThenBy(x => (x.G == "up" || x.G == "pend") ? x.B.StartTime.Ticks : long.MaxValue - x.B.StartTime.Ticks)
+                    .ToList();
+                int nUp = sorted.Count(x => x.G == "up");
+                int nPend = sorted.Count(x => x.G == "pend");
+                int nDone = sorted.Count(x => x.G == "done");
+                int nOff = sorted.Count(x => x.G == "off");
+
+            <div class="d-flex gap-2 flex-wrap mb-3" id="bkTabs">
+<button type="button" class="btn btn-sm bk-tab active" data-tab="up">Sắp tới <span class="badge rounded-pill" style="background:#7c3aed;">@nUp</span></button>
+<button type="button" class="btn btn-sm bk-tab" data-tab="pend">Chờ xác nhận <span class="badge rounded-pill bg-warning text-dark">@nPend</span></button>
+<button type="button" class="btn btn-sm bk-tab" data-tab="done">Đã diễn ra <span class="badge rounded-pill bg-success">@nDone</span></button>
+<button type="button" class="btn btn-sm bk-tab" data-tab="off">Đã huỷ / Từ chối <span class="badge rounded-pill bg-secondary">@nOff</span></button>
+<button type="button" class="btn btn-sm bk-tab" data-tab="all">Tất cả <span class="badge rounded-pill bg-light text-dark border">@Model.Count()</span></button>
+            </div>
+            <div id="bkEmpty" class="text-center text-muted py-5" style="display:none;">Không có buổi học nào trong mục này.</div>
+
             <div class="row g-3">
-@foreach (var b in Model)
+@foreach (var item in sorted)
                 {
+                    var b = item.B;
                     var (bg, color, label) = statusMap.GetValueOrDefault(
                         b.Status, ("#F1F5F9", "#64748B", b.Status));
                     var tutorInitial = b.TutorProfile.User.FullName
                                         .FirstOrDefault().ToString().ToUpper();
-                    <div class="col-md-6 col-xl-4">
+                    <div class="col-md-6 col-xl-4 bk-item" data-tab="@item.G">
 <div class="card h-100" style="border-radius:16px;">
 <div class="card-body p-4">
 
@@ -267,3 +294,32 @@ Vào lớp học
 }
     </div>
 </section>
+
+
+<style>
+    .bk-tab { border: 1px solid var(--border, #e2e8f0); border-radius: 99px; color: var(--text-secondary, #475569); background: var(--bg, #fff); font-weight: 600; }
+    .bk-tab .badge { font-size: .68rem; }
+    .bk-tab.active { background: #f5f3ff; border-color: #7c3aed; color: #6d28d9; }
+</style>
+<script>
+    (function () {
+        const tabs = document.querySelectorAll('.bk-tab');
+        const items = document.querySelectorAll('.bk-item');
+        const empty = document.getElementById('bkEmpty');
+        function apply(tab) {
+            let shown = 0;
+            items.forEach(it => {
+                const ok = tab === 'all' || it.dataset.tab === tab;
+                it.style.display = ok ? '' : 'none';
+                if (ok) shown++;
+            });
+            empty.style.display = shown === 0 ? 'block' : 'none';
+            tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+            try { sessionStorage.setItem('bkTab', tab); } catch (e) { }
+        }
+        tabs.forEach(t => t.addEventListener('click', () => apply(t.dataset.tab)));
+        let saved = 'up';
+        try { saved = sessionStorage.getItem('bkTab') || 'up'; } catch (e) { }
+        apply(saved);
+    })();
+</script>
