@@ -14,7 +14,10 @@
         </a>
         <div class="avatar avatar-sm">@partner?.FullName?.FirstOrDefault()</div>
         <div>
-            <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">@partner?.FullName</div>
+            <div style="font-weight:700;font-size:0.9rem;color:var(--text-primary);">@partner?.FullName
+<span id="presenceDot" style="display:@((ViewBag.PartnerOnline ?? false) ? "inline-block" : "none");width:9px;height:9px;border-radius:50%;background:#22c55e;margin-left:6px;vertical-align:1px;" title="Đang hoạt động"></span>
+</div>
+<div id="typingLine" class="small text-muted" style="display:none;">đang gõ…</div>
             <div style="font-size:0.75rem;color:var(--success);display:flex;align-items:center;gap:4px;">
                 <span style="width:7px;height:7px;border-radius:50%;background:var(--success);display:inline-block;"></span>
                 Đang hoạt động
@@ -49,7 +52,10 @@
             <input id="msgInput" type="text" class="form-control"
                    placeholder="Nhập tin nhắn..." autocomplete="off"
                    style="border-radius:var(--radius-full);padding:10px 16px;" />
-            <button id="sendBtn" class="btn btn-primary" style="border-radius:var(--radius-full);width:44px;height:44px;padding:0;flex-shrink:0;" aria-label="Gửi tin nhắn">
+            <button id="micBtn" type="button" class="btn btn-outline-secondary" style="border-radius:var(--radius-full);width:44px;height:44px;padding:0;flex-shrink:0;" aria-label="Tin nhắn thoại" title="Ghi âm tin nhắn thoại">
+<svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></svg>
+</button>
+<button id="sendBtn" class="btn btn-primary" style="border-radius:var(--radius-full);width:44px;height:44px;padding:0;flex-shrink:0;" aria-label="Gửi tin nhắn">
                 <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             </button>
         </div>
@@ -57,7 +63,8 @@
 </div>
 
 @section Scripts {
-    <script>
+    @Html.AntiForgeryToken()
+<script>
         const ME = "@currentUserId";
         const PARTNER = "@partner?.Id";
         const body = document.getElementById("chatBody");
@@ -81,7 +88,7 @@
         div.innerHTML = `
         <div class="px-3 py-2 shadow-sm ${isOwn ? "bg-primary text-white" : "bg-white"}"
         style="max-width:65%;border-radius:18px;word-break:break-word;">
-        <div>${esc(msg.content)}</div>
+        <div>${render(msg.content)}</div>
         <small class="${isOwn ? "text-white-50" : "text-muted"} d-block text-end mt-1"
         style="font-size:11px">${msg.sentAt}</small>
         </div>`;
@@ -101,6 +108,69 @@
 
         document.getElementById("sendBtn").onclick = send;
         input.onkeydown = e => { if (e.key === "Enter") { e.preventDefault(); send(); } };
+
+        // render nội dung: hỗ trợ tin nhắn thoại "[voice]url|transcript"
+        function render(c) {
+        if (c && c.startsWith("[voice]")) {
+        const rest = c.slice(7); const p = rest.indexOf("|");
+        const url = p >= 0 ? rest.slice(0, p) : rest;
+        const tr = p >= 0 ? rest.slice(p + 1) : "";
+        return `<audio controls src="${esc(url)}" style="max-width:220px;height:36px;"></audio>` +
+        (tr ? `<div class="small mt-1" style="opacity:.85;">${esc(tr)}</div>` : "");
+        }
+        return esc(c);
+        }
+        // vẽ lại các tin voice đã render sẵn phía server
+        document.querySelectorAll('#chatBody [data-raw]').forEach(el => { el.innerHTML = render(el.dataset.raw); });
+
+        // #11: đang gõ + online
+        let typingTimer = null, lastSent = 0;
+        input.addEventListener('input', () => {
+        const now = Date.now();
+        if (now - lastSent > 1500) { lastSent = now; conn.invoke('Typing', PARTNER).catch(() => { }); }
+        });
+        conn.on('Typing', uid => {
+        if (uid !== PARTNER) return;
+        const t = document.getElementById('typingLine');
+        t.style.display = 'block';
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => t.style.display = 'none', 2500);
+        });
+        conn.on('PresenceChanged', (uid, online) => {
+        if (uid === PARTNER) document.getElementById('presenceDot').style.display = online ? 'inline-block' : 'none';
+        });
+
+        // #12: ghi âm tin nhắn thoại -> upload + Whisper -> gửi qua hub
+        const micBtn = document.getElementById('micBtn');
+        let rec = null, chunks = [];
+        micBtn.addEventListener('click', async () => {
+        if (rec && rec.state === 'recording') { rec.stop(); return; }
+        try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        chunks = [];
+        rec = new MediaRecorder(stream);
+        rec.ondataavailable = e => { if (e.data.size) chunks.push(e.data); };
+        rec.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        micBtn.style.color = '';
+        micBtn.disabled = true;
+        const fd = new FormData();
+        fd.append('receiverId', PARTNER);
+        fd.append('audioFile', new Blob(chunks, { type: 'audio/webm' }), 'voice.webm');
+        fd.append('__RequestVerificationToken', document.querySelector('input[name="__RequestVerificationToken"]').value);
+        try {
+        const res = await fetch('/Message/SendVoice', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.ok) conn.invoke('SendMessage', PARTNER, '[voice]' + data.url + '|' + data.transcript);
+        else alert(data.message || 'Không gửi được tin thoại.');
+        } catch { alert('Lỗi mạng khi gửi tin thoại.'); }
+        micBtn.disabled = false;
+        };
+        rec.start();
+        micBtn.style.color = '#dc2626';
+        setTimeout(() => { if (rec && rec.state === 'recording') rec.stop(); }, 60000);
+        } catch { alert('Hãy cấp quyền micro.'); }
+        });
 
         // Tự cuộn xuống cuối
         body.scrollTop = body.scrollHeight;

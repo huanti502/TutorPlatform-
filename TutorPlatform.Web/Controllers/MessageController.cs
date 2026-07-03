@@ -12,11 +12,15 @@ public class MessageController : Controller
 {
     private readonly AppDbContext _db;
     private readonly UserManager<AppUser> _userManager;
+    private readonly TutorPlatform.Web.Services.CloudinaryService _cloudinary;
+    private readonly TutorPlatform.Web.Services.AIService _ai;
 
-    public MessageController(AppDbContext db, UserManager<AppUser> userManager)
+    public MessageController(AppDbContext db, UserManager<AppUser> userManager, TutorPlatform.Web.Services.CloudinaryService cloudinary, TutorPlatform.Web.Services.AIService ai)
     {
         _db = db;
         _userManager = userManager;
+        _cloudinary = cloudinary;
+        _ai = ai;
     }
 
     // Hiển thị danh sách các cuộc trò chuyện
@@ -77,6 +81,7 @@ public class MessageController : Controller
         ViewBag.Partner = partner;
         ViewBag.CurrentUserId = currentUserId;
 
+        ViewBag.PartnerOnline = TutorPlatform.Web.Hubs.ChatHub.IsUserOnline(id);
         return View(messages);
     }
 
@@ -102,5 +107,29 @@ public class MessageController : Controller
         await _db.SaveChangesAsync();
 
         return RedirectToAction("Chat", new { id = receiverId });
+    }
+
+    // #12: gửi tin nhắn thoại — upload Cloudinary + Whisper gỡ băng
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [RequestSizeLimit(10_000_000)]
+    public async Task<IActionResult> SendVoice(string receiverId, IFormFile? audioFile)
+    {
+        if (audioFile == null || audioFile.Length == 0 || string.IsNullOrEmpty(receiverId))
+            return Json(new { ok = false, message = "Thiếu dữ liệu." });
+        try
+        {
+            var url = await _cloudinary.UploadFileAsync(audioFile, "voice-messages");
+            if (string.IsNullOrEmpty(url)) return Json(new { ok = false, message = "Không tải được file ghi âm." });
+            string transcript = "";
+            try
+            {
+                using var stream = audioFile.OpenReadStream();
+                transcript = await _ai.TranscribeAsync(stream, audioFile.FileName ?? "voice.webm");
+            }
+            catch { transcript = "(không gỡ băng được)"; }
+            return Json(new { ok = true, url, transcript });
+        }
+        catch { return Json(new { ok = false, message = "Lỗi xử lý âm thanh." }); }
     }
 }

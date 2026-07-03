@@ -10,6 +10,36 @@ namespace TutorPlatform.Web.Hubs;
 [Authorize]
 public class ChatHub : Hub
 {
+    // #11: theo dõi online (userId -> số kết nối)
+    private static readonly System.Collections.Concurrent.ConcurrentDictionary<string, int> _online = new();
+    public static bool IsUserOnline(string userId) => _online.TryGetValue(userId, out var n) && n > 0;
+
+    public override async Task OnConnectedAsync()
+    {
+        var uid = Context.UserIdentifier;
+        if (uid != null)
+        {
+            _online.AddOrUpdate(uid, 1, (_, n) => n + 1);
+            await Clients.All.SendAsync("PresenceChanged", uid, true);
+        }
+        await base.OnConnectedAsync();
+    }
+
+    public override async Task OnDisconnectedAsync(Exception? exception)
+    {
+        var uid = Context.UserIdentifier;
+        if (uid != null)
+        {
+            var n = _online.AddOrUpdate(uid, 0, (_, x) => Math.Max(0, x - 1));
+            if (n == 0) await Clients.All.SendAsync("PresenceChanged", uid, false);
+        }
+        await base.OnDisconnectedAsync(exception);
+    }
+
+    // #11: báo "đang gõ..." cho người nhận
+    public Task Typing(string receiverId)
+        => Clients.User(receiverId).SendAsync("Typing", Context.UserIdentifier);
+
     private readonly AppDbContext _db;
     private readonly UserManager<AppUser> _userManager;
 
