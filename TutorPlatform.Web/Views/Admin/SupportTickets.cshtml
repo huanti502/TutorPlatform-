@@ -1,0 +1,90 @@
+@model List<TutorPlatform.Core.Models.SupportTicket>
+@{
+    ViewData["Title"] = "Hỗ trợ / Liên hệ";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    var current = ViewBag.CurrentStatus as string ?? "";
+
+    string BadgeClass(string s) => s switch
+    {
+        "Open" => "bg-warning text-dark",
+        "InProgress" => "bg-info text-dark",
+        "Resolved" => "bg-success",
+        _ => "bg-secondary"
+    };
+    string StatusText(string s) => s switch
+    {
+        "Open" => "Đang chờ",
+        "InProgress" => "Đang xử lý",
+        "Resolved" => "Đã phản hồi",
+        _ => "Đã đóng"
+    };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Yêu cầu hỗ trợ / Liên hệ</h3>
+    <span class="badge bg-danger">@ViewBag.OpenCount đang chờ</span>
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<ul class="nav nav-pills mb-3">
+    <li class="nav-item"><a class="nav-link @(current == "" ? "active" : "")" href="/Admin/SupportTickets">Tất cả</a></li>
+    <li class="nav-item"><a class="nav-link @(current == "Open" ? "active" : "")" href="/Admin/SupportTickets?status=Open">Đang chờ</a></li>
+    <li class="nav-item"><a class="nav-link @(current == "Resolved" ? "active" : "")" href="/Admin/SupportTickets?status=Resolved">Đã phản hồi</a></li>
+    <li class="nav-item"><a class="nav-link @(current == "Closed" ? "active" : "")" href="/Admin/SupportTickets?status=Closed">Đã đóng</a></li>
+</ul>
+
+@if (!Model.Any())
+{
+    <div class="card border-0 shadow-sm"><div class="card-body text-center text-muted py-4">Không có yêu cầu nào.</div></div>
+}
+else
+{
+    foreach (var t in Model)
+    {
+        <div class="card border-0 shadow-sm mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
+                    <div>
+                        <span class="badge bg-light text-dark border me-1">@t.Category</span>
+                        <span class="badge @BadgeClass(t.Status) me-2">@StatusText(t.Status)</span>
+                        <span class="fw-semibold">@t.Subject</span>
+                        <div class="text-muted small mt-1">
+                            @t.FullName — <a href="mailto:@t.Email">@t.Email</a>
+                            @if (!string.IsNullOrEmpty(t.Phone)) { <text> — @t.Phone</text> }
+                            @if (t.User != null) { <span class="badge bg-primary ms-1">Thành viên</span> }
+                            else { <span class="badge bg-secondary ms-1">Khách</span> }
+                        </div>
+                    </div>
+                    <div class="text-muted small">@t.CreatedAt.ToLocalTime().ToString("HH:mm dd/MM/yyyy")</div>
+                </div>
+
+                <p class="mt-2 mb-2 small" style="white-space:pre-line;">@t.Content</p>
+
+                @if (!string.IsNullOrEmpty(t.AdminReply))
+                {
+                    <div class="p-2 rounded bg-light small mb-2">
+                        <strong>Đã phản hồi:</strong> <span style="white-space:pre-line;">@t.AdminReply</span>
+                    </div>
+                }
+
+                @if (t.Status == "Open" || t.Status == "InProgress")
+                {
+                    <form method="post" asp-action="ReplyTicket" class="mt-2">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@t.Id" />
+                        <textarea name="adminReply" class="form-control form-control-sm mb-2" rows="2" required
+                                  placeholder="Nội dung phản hồi cho người dùng..."></textarea>
+                        <div class="d-flex gap-2">
+                            <button type="submit" name="action" value="resolve" class="btn btn-sm btn-success">Phản hồi & Giải quyết</button>
+                            <button type="submit" name="action" value="close" class="btn btn-sm btn-outline-secondary">Phản hồi & Đóng</button>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    }
+}

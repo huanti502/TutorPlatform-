@@ -487,6 +487,53 @@ public class AdminController : Controller
     }
 
     // ==========================================
+    // YÊU CẦU HỖ TRỢ / LIÊN HỆ (SUPPORT TICKET)
+    // ==========================================
+
+    [HttpGet]
+    public async Task<IActionResult> SupportTickets(string? status)
+    {
+        var query = _db.SupportTickets
+            .Include(t => t.User)
+            .OrderByDescending(t => t.CreatedAt)
+            .AsQueryable();
+
+        if (!string.IsNullOrEmpty(status))
+            query = query.Where(t => t.Status == status);
+
+        ViewBag.CurrentStatus = status ?? "";
+        ViewBag.OpenCount = await _db.SupportTickets.CountAsync(t => t.Status == "Open");
+        return View(await query.Take(200).ToListAsync());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ReplyTicket(int id, string adminReply, string action)
+    {
+        var t = await _db.SupportTickets.FindAsync(id);
+        if (t == null) return RedirectToAction("SupportTickets");
+
+        t.AdminReply = adminReply;
+        t.Status = action == "close" ? "Closed" : "Resolved";
+        t.HandledById = _userManager.GetUserId(User);
+        t.RepliedAt = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+
+        // Báo lại cho người gửi (nếu là user đã đăng nhập).
+        if (!string.IsNullOrEmpty(t.UserId))
+        {
+            await _notif.NotifyAsync(t.UserId, "Phản hồi yêu cầu hỗ trợ",
+                $"Yêu cầu \"{t.Subject}\" đã được phản hồi. Xem chi tiết tại trang Hỗ trợ.",
+                "/Contact/MyTickets");
+        }
+
+        TempData["Success"] = "Đã phản hồi yêu cầu hỗ trợ."
+            + (string.IsNullOrEmpty(t.UserId) ? $" Lưu ý: người gửi là khách, hãy phản hồi thêm qua email {t.Email}." : "");
+        await LogAuditAsync("Phản hồi yêu cầu hỗ trợ", "SupportTicket", t.Subject, adminReply);
+        return RedirectToAction("SupportTickets");
+    }
+
+    // ==========================================
     // DOANH THU & HOA HỒNG NỀN TẢNG
     // ==========================================
 

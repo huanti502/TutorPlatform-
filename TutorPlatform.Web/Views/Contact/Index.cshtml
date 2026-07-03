@@ -1,0 +1,185 @@
+@{
+    ViewData["Title"] = "Liên hệ & Hỗ trợ";
+}
+
+<div class="container py-5">
+    <div class="text-center mb-5">
+        <h1 class="fw-bold mb-2" style="letter-spacing:-0.02em;">Liên hệ & Hỗ trợ</h1>
+        <p class="text-muted mb-0" style="max-width:560px;margin:0 auto;">
+            Gặp lỗi hệ thống, vấn đề thanh toán hay cần trợ giúp? Gửi yêu cầu bên dưới,
+            đội ngũ quản trị sẽ phản hồi trong vòng 24 giờ.
+        </p>
+    </div>
+
+    <div class="row g-3 mb-5">
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm h-100 text-center p-3">
+                <div class="mx-auto mb-2 d-flex align-items-center justify-content-center"
+                     style="width:44px;height:44px;border-radius:12px;background:var(--primary-light);color:var(--primary);">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                </div>
+                <div class="fw-semibold small">Địa chỉ</div>
+                <div class="text-muted" style="font-size:0.8rem;">475A Điện Biên Phủ, Q. Bình Thạnh, TP.HCM</div>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm h-100 text-center p-3">
+                <div class="mx-auto mb-2 d-flex align-items-center justify-content-center"
+                     style="width:44px;height:44px;border-radius:12px;background:var(--primary-light);color:var(--primary);">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+                </div>
+                <div class="fw-semibold small">Email</div>
+                <a href="mailto:hotro@giasuviet.vn" class="text-muted text-decoration-none" style="font-size:0.8rem;">hotro@giasuviet.vn</a>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm h-100 text-center p-3">
+                <div class="mx-auto mb-2 d-flex align-items-center justify-content-center"
+                     style="width:44px;height:44px;border-radius:12px;background:var(--primary-light);color:var(--primary);">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                </div>
+                <div class="fw-semibold small">Hotline</div>
+                <a href="tel:19001234" class="text-muted text-decoration-none" style="font-size:0.8rem;">1900 1234</a>
+            </div>
+        </div>
+        <div class="col-md-3 col-6">
+            <div class="card border-0 shadow-sm h-100 text-center p-3">
+                <div class="mx-auto mb-2 d-flex align-items-center justify-content-center"
+                     style="width:44px;height:44px;border-radius:12px;background:var(--primary-light);color:var(--primary);">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                </div>
+                <div class="fw-semibold small">Giờ hỗ trợ</div>
+                <div class="text-muted" style="font-size:0.8rem;">8:00 – 22:00 (T2 – CN)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-1">Gửi yêu cầu hỗ trợ</h5>
+                    <p class="text-muted small mb-4">Không cần đăng nhập — nếu bạn không truy cập được tài khoản vẫn có thể liên hệ tại đây.</p>
+
+                    <form asp-controller="Contact" asp-action="Send" method="post">
+                        @Html.AntiForgeryToken()
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Họ và tên <span class="text-danger">*</span></label>
+                                <input type="text" name="fullName" class="form-control" required maxlength="100"
+                                       value="@ViewBag.FullName" placeholder="Nguyễn Văn A" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Email <span class="text-danger">*</span></label>
+                                <input type="email" name="email" class="form-control" required maxlength="150"
+                                       value="@ViewBag.Email" placeholder="ban@email.com" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Số điện thoại</label>
+                                <input type="tel" name="phone" class="form-control" maxlength="15"
+                                       value="@ViewBag.Phone" placeholder="09xx xxx xxx" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label small fw-semibold">Loại vấn đề <span class="text-danger">*</span></label>
+                                <select name="category" class="form-select" required>
+                                    <option value="Lỗi hệ thống">Lỗi hệ thống / kỹ thuật</option>
+                                    <option value="Thanh toán">Thanh toán / Ví / Hoàn tiền</option>
+                                    <option value="Tài khoản">Tài khoản / Đăng nhập</option>
+                                    <option value="Khiếu nại">Khiếu nại gia sư / học viên</option>
+                                    <option value="Góp ý">Góp ý cải thiện</option>
+                                    <option value="Khác">Khác</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">Tiêu đề <span class="text-danger">*</span></label>
+                                <input type="text" name="subject" class="form-control" required maxlength="200"
+                                       placeholder="Tóm tắt ngắn gọn vấn đề của bạn" />
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small fw-semibold">Nội dung chi tiết <span class="text-danger">*</span></label>
+                                <textarea name="content" class="form-control" rows="5" required maxlength="3000"
+                                          placeholder="Mô tả chi tiết vấn đề: bạn đang làm gì, lỗi hiện ra thế nào, thời điểm xảy ra..."></textarea>
+                            </div>
+                            <div class="col-12 d-flex align-items-center justify-content-between">
+                                <button type="submit" class="btn btn-primary px-4">
+                                    <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" class="me-1"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                                    Gửi yêu cầu
+                                </button>
+                                @if (User.Identity?.IsAuthenticated == true)
+                                {
+                                    <a asp-action="MyTickets" class="small text-decoration-none">Xem yêu cầu đã gửi →</a>
+                                }
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-5" id="faq">
+            <h5 class="fw-bold mb-3">Câu hỏi thường gặp</h5>
+            <div class="accordion" id="faqAccordion">
+                <div class="accordion-item border-0 shadow-sm mb-2 rounded-3 overflow-hidden">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed small fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                            Tôi thanh toán rồi nhưng buổi học chưa được xác nhận?
+                        </button>
+                    </h2>
+                    <div id="faq1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body small text-muted">
+                            Tiền của bạn đang được giữ an toàn trong ví tạm giữ (escrow) và chỉ chuyển cho gia sư sau khi buổi học hoàn tất. Nếu gia sư không xác nhận trong 24h, hệ thống sẽ tự hoàn tiền. Nếu quá thời gian này, hãy gửi yêu cầu hỗ trợ mục "Thanh toán".
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item border-0 shadow-sm mb-2 rounded-3 overflow-hidden">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed small fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                            Tôi quên mật khẩu / không đăng nhập được?
+                        </button>
+                    </h2>
+                    <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body small text-muted">
+                            Dùng chức năng "Quên mật khẩu" ở trang đăng nhập để nhận email đặt lại. Nếu không nhận được email (kiểm tra cả mục Spam), hãy gửi yêu cầu hỗ trợ mục "Tài khoản" kèm email đăng ký.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item border-0 shadow-sm mb-2 rounded-3 overflow-hidden">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed small fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                            Làm sao báo cáo một gia sư / học viên vi phạm?
+                        </button>
+                    </h2>
+                    <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body small text-muted">
+                            Trên trang hồ sơ gia sư hoặc trong chi tiết buổi học có nút "Báo cáo". Bạn cũng có thể gửi yêu cầu hỗ trợ mục "Khiếu nại" tại trang này kèm mô tả chi tiết.
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item border-0 shadow-sm mb-2 rounded-3 overflow-hidden">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed small fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                            Bao lâu tôi nhận được phản hồi?
+                        </button>
+                    </h2>
+                    <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body small text-muted">
+                            Thông thường trong vòng 24 giờ làm việc. Nếu bạn đã đăng nhập, phản hồi sẽ được gửi qua thông báo trong hệ thống và có thể xem tại mục "Yêu cầu đã gửi".
+                        </div>
+                    </div>
+                </div>
+                <div class="accordion-item border-0 shadow-sm rounded-3 overflow-hidden">
+                    <h2 class="accordion-header">
+                        <button class="accordion-button collapsed small fw-semibold" type="button" data-bs-toggle="collapse" data-bs-target="#faq5">
+                            Chi phí trở thành gia sư trên nền tảng?
+                        </button>
+                    </h2>
+                    <div id="faq5" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                        <div class="accordion-body small text-muted">
+                            Đăng ký gia sư hoàn toàn miễn phí. Nền tảng chỉ thu một khoản hoa hồng nhỏ trên mỗi buổi học hoàn tất — xem chi tiết tại Điều khoản sử dụng.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

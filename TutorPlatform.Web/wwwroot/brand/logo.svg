@@ -1,0 +1,32 @@
+<svg width="240" height="56" viewBox="0 0 240 56" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gsvBg" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#6366F1"/>
+      <stop offset="0.55" stop-color="#7C3AED"/>
+      <stop offset="1" stop-color="#06B6D4"/>
+    </linearGradient>
+    <linearGradient id="gsvText" x1="60" y1="16" x2="200" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4F46E5"/>
+      <stop offset="1" stop-color="#7C3AED"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Mark -->
+  <rect x="4" y="4" width="48" height="48" rx="14" fill="url(#gsvBg)"/>
+  <rect x="4" y="4" width="48" height="48" rx="14" fill="white" fill-opacity="0.06"/>
+  <!-- Open book -->
+  <path d="M13 33.5c4.2-2.1 8-2.1 12 0v-9.5c-4-2.1-7.8-2.1-12 0v9.5z" fill="white" fill-opacity="0.92"/>
+  <path d="M43 33.5c-4.2-2.1-8-2.1-12 0v-9.5c4-2.1 7.8-2.1 12 0v9.5z" fill="white" fill-opacity="0.78"/>
+  <path d="M28 24v9.5" stroke="#4F46E5" stroke-opacity="0.35" stroke-width="1.4" stroke-linecap="round"/>
+  <!-- Graduation cap -->
+  <path d="M28 12l13 5-13 5-13-5 13-5z" fill="white"/>
+  <path d="M21.5 19.6v3.4c0 1.8 2.9 3.2 6.5 3.2s6.5-1.4 6.5-3.2v-3.4l-6.5 2.5-6.5-2.5z" fill="white" fill-opacity="0.85"/>
+  <path d="M40 17.6v6.2" stroke="#FBBF24" stroke-width="1.8" stroke-linecap="round"/>
+  <circle cx="40" cy="25" r="1.7" fill="#FBBF24"/>
+  <!-- Sparkle -->
+  <path d="M44 9.5l.8 1.9 1.9.8-1.9.8-.8 1.9-.8-1.9-1.9-.8 1.9-.8.8-1.9z" fill="#FBBF24"/>
+
+  <!-- Wordmark -->
+  <text x="62" y="31" font-family="'Plus Jakarta Sans','Segoe UI',sans-serif" font-size="21" font-weight="800" letter-spacing="-0.5" fill="url(#gsvText)">Gia Sư Việt</text>
+  <text x="62" y="45" font-family="'Plus Jakarta Sans','Segoe UI',sans-serif" font-size="9.5" font-weight="600" letter-spacing="2.6" fill="#64748B">NỀN TẢNG GIA SƯ</text>
+</svg>
