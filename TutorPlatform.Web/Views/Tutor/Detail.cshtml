@@ -48,6 +48,14 @@ Báo cáo
 <h5 class="modal-title">Báo cáo gia sư @Model.User?.FullName</h5>
 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
 </div>
+
+@if (!string.IsNullOrEmpty(Model.IntroVideoUrl))
+{
+<div class="card border-0 shadow-sm mb-4"><div class="card-body">
+<h6 class="fw-bold mb-2" style="letter-spacing:.05em;color:var(--text-muted);">VIDEO GIỚI THIỆU</h6>
+<video src="@Model.IntroVideoUrl" controls preload="metadata" class="w-100" style="max-height:380px;border-radius:12px;background:#000;"></video>
+</div></div>
+}
 <div class="modal-body">
 <div class="mb-3">
 <label class="form-label">Lý do</label>

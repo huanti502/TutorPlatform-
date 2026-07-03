@@ -52,6 +52,14 @@ public class ChatHub : Hub
     // Client gọi: connection.invoke("SendMessage", receiverId, content)
     public async Task SendMessage(string receiverId, string content)
     {
+        // #18: kiểm duyệt nhanh (regex) — chặn SĐT/chuyển khoản/giao dịch ngoài/tục tĩu
+        var mod = new TutorPlatform.Web.Services.ModerationService(null!).QuickCheck(content);
+        if (!mod.Ok)
+        {
+            await Clients.Caller.SendAsync("MessageBlocked", mod.Reason);
+            return;
+        }
+
         if (string.IsNullOrWhiteSpace(content)) return;
 
         var sender = await _userManager.GetUserAsync(Context.User!);

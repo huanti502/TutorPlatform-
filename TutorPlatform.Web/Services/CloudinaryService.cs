@@ -47,6 +47,23 @@ public class CloudinaryService
     /// Upload tài liệu hoặc chứng chỉ (PDF, JPG, PNG...)
     /// Không cắt xén, giữ nguyên bản gốc
     /// </summary>
+    // #16: upload video giới thiệu
+    public async Task<string?> UploadVideoAsync(IFormFile file, string folder)
+    {
+        try
+        {
+            await using var stream = file.OpenReadStream();
+            var uploadParams = new VideoUploadParams
+            {
+                File = new FileDescription(file.FileName, stream),
+                Folder = folder
+            };
+            var result = await _cloudinary.UploadAsync(uploadParams);
+            return result?.SecureUrl?.ToString();
+        }
+        catch { return null; }
+    }
+
     public async Task<string?> UploadFileAsync(IFormFile file, string folder)
     {
         if (file == null || file.Length == 0) return null;

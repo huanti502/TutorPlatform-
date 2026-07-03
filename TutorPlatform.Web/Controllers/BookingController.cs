@@ -23,6 +23,7 @@ public class BookingController : Controller
     private readonly IHubContext<ChatHub> _hubContext;
     private readonly XpService _xpService; //  Khai báo XpService
     private readonly NotificationService _notif;
+    private readonly IConfiguration _config;
 
     public BookingController(
         AppDbContext db,
@@ -30,7 +31,7 @@ public class BookingController : Controller
         BadgeService badgeService,
         IHubContext<ChatHub> hubContext,
         XpService xpService, //  Inject XpService
-        NotificationService notif)
+        NotificationService notif, IConfiguration config)
     {
         _db = db;
         _userManager = userManager;
@@ -38,6 +39,7 @@ public class BookingController : Controller
         _hubContext = hubContext;
         _xpService = xpService; //  Gán XpService
         _notif = notif;
+        _config = config;
     }
 
     [Authorize(Roles = "Student")]
@@ -322,6 +324,8 @@ public class BookingController : Controller
             return RedirectToAction("TutorRequests");
         }
 
+        // #8: nếu buổi này thanh toán qua ví -> chuyển tiền (đã trừ hoa hồng) cho gia sư
+        await WalletController.ReleaseToTutorAsync(_db, _config, booking);
         booking.Status = "Completed";
         _db.Notifications.Add(new Notification
         {
@@ -386,7 +390,10 @@ public class BookingController : Controller
         var hoursLeft = (booking.StartTime - DateTime.UtcNow).TotalHours;
         double refundRate = hoursLeft >= 24 ? 1.0 : (hoursLeft >= 6 ? 0.5 : 0.0);
 
-        if (booking.IsPaid)
+        // #8: hoàn về ví nếu thanh toán bằng ví
+        bool walletHandled = await WalletController.RefundToStudentAsync(_db, booking, refundRate);
+
+        if (!walletHandled && booking.IsPaid)
         {
             if (booking.PaidByPackagePurchaseId.HasValue)
             {
@@ -456,7 +463,8 @@ public class BookingController : Controller
         booking.Status = "Cancelled";
 
         // Hoàn tiền/buổi cho HỌC VIÊN nếu đã thanh toán
-        if (booking.IsPaid)
+        bool walletHandled = await WalletController.RefundToStudentAsync(_db, booking, 1.0);
+        if (!walletHandled && booking.IsPaid)
         {
             if (booking.PaidByPackagePurchaseId.HasValue)
             {

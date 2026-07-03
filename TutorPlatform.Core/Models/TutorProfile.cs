@@ -33,6 +33,9 @@ public class TutorProfile
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
 
+    // #16: video giới thiệu
+    public string? IntroVideoUrl { get; set; }
+
     // Các danh sách liên kết (Navigation properties)
     public ICollection<TutorSubject> TutorSubjects { get; set; } = new List<TutorSubject>();
     public ICollection<Booking> Bookings { get; set; } = new List<Booking>();

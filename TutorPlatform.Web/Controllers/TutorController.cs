@@ -193,7 +193,8 @@ public class TutorController : Controller
             SelectedSubjectIds = profile.TutorSubjects.Select(ts => ts.SubjectId).ToList(),
             AvatarUrl = user!.AvatarUrl,
             Latitude = profile.Latitude,
-            Longitude = profile.Longitude
+            Longitude = profile.Longitude,
+            IntroVideoUrl = profile.IntroVideoUrl
         });
     }
 
@@ -241,6 +242,21 @@ public class TutorController : Controller
         profile.Bio = model.Bio;
         profile.Latitude = model.Latitude;
         profile.Longitude = model.Longitude;
+
+        // #16: upload video giới thiệu (tối đa ~40MB)
+        if (model.IntroVideoFile != null && model.IntroVideoFile.Length > 0)
+        {
+            if (model.IntroVideoFile.Length > 40_000_000)
+            {
+                TempData["Error"] = "Video giới thiệu tối đa 40MB.";
+            }
+            else
+            {
+                var vUrl = await _cloudinary.UploadVideoAsync(model.IntroVideoFile, "intro-videos");
+                if (!string.IsNullOrEmpty(vUrl)) profile.IntroVideoUrl = vUrl;
+                else TempData["Error"] = "Không tải được video, thử lại sau.";
+            }
+        }
 
         _db.TutorSubjects.RemoveRange(profile.TutorSubjects);
         foreach (var id in model.SelectedSubjectIds)

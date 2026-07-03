@@ -15,6 +15,7 @@ namespace TutorPlatform.Web.Controllers;
 public class ReviewController : Controller
 {
     private readonly AppDbContext _db;
+    private readonly TutorPlatform.Web.Services.ModerationService _moderation;
     private readonly UserManager<AppUser> _userManager;
     private readonly XpService _xpService; //  Khai báo XpService
     private readonly NotificationService _notif;
@@ -23,8 +24,9 @@ public class ReviewController : Controller
         AppDbContext db,
         UserManager<AppUser> userManager,
         XpService xpService, //  Inject XpService
-        NotificationService notif)
+        NotificationService notif, TutorPlatform.Web.Services.ModerationService moderation)
     {
+        _moderation = moderation;
         _db = db;
         _userManager = userManager;
         _xpService = xpService; //  Gán XpService
@@ -88,6 +90,14 @@ public class ReviewController : Controller
 
         //  Giới hạn số sao hợp lệ trong khoảng 1–5
         rating = Math.Clamp(rating, 1, 5);
+
+        // #18: AI kiểm duyệt bình luận đánh giá
+        var modCheck = await _moderation.DeepCheckAsync(comment);
+        if (!modCheck.Ok)
+        {
+            TempData["Error"] = modCheck.Reason;
+            return RedirectToAction("Create", new { bookingId });
+        }
 
         _db.Reviews.Add(new Review
         {

@@ -1,0 +1,67 @@
+@model List<TutorPlatform.Core.Models.WalletTransaction>
+@{ ViewData["Title"] = "Ví của tôi"; decimal bal = ViewBag.Balance ?? 0m; }
+
+<div class="container py-4" style="max-width:760px;">
+    <h3 class="mb-3">Ví của tôi</h3>
+
+    @if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+    @if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+
+    <div class="card border-0 shadow-sm mb-4" style="background:linear-gradient(135deg,#7c3aed,#a855f7);">
+        <div class="card-body p-4 d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <div class="text-white-50 small">Số dư khả dụng</div>
+                <div class="text-white fw-bold" style="font-size:2rem;">@bal.ToString("N0")đ</div>
+                <div class="text-white-50 small">Tiền buổi học được giữ an toàn (escrow) tới khi hoàn thành.</div>
+            </div>
+            <form asp-action="Deposit" method="post" class="d-flex gap-2">
+                @Html.AntiForgeryToken()
+                <select name="amount" class="form-select" style="width:auto;">
+                    <option value="100000">100.000đ</option>
+                    <option value="200000" selected>200.000đ</option>
+                    <option value="500000">500.000đ</option>
+                    <option value="1000000">1.000.000đ</option>
+                </select>
+                <button class="btn fw-bold" style="background:#fff;color:#7c3aed;border:none;">+ Nạp ví</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">
+            <h6 class="fw-bold mb-3">Lịch sử giao dịch</h6>
+            @if (Model.Count == 0)
+            {
+                <p class="text-muted small mb-0">Chưa có giao dịch nào. Nạp ví để bắt đầu.</p>
+            }
+            else
+            {
+                <table class="table table-sm align-middle">
+                    <tbody>
+                        @foreach (var t in Model)
+                        {
+                            var plus = t.Amount >= 0;
+                            var (tag, tagBg) = t.Type switch
+                            {
+                                "Deposit" => ("Nạp ví", "bg-primary"),
+                                "Hold" => ("Giữ tiền", "bg-warning text-dark"),
+                                "Release" => ("Nhận tiền", "bg-success"),
+                                "Refund" => ("Hoàn tiền", "bg-info text-dark"),
+                                _ => (t.Type, "bg-secondary")
+                            };
+                            <tr>
+                                <td style="width:92px;"><span class="badge @tagBg">@tag</span></td>
+                                <td class="small">@t.Description
+                                    <div class="text-muted" style="font-size:.72rem;">@t.CreatedAt.AddHours(7).ToString("HH:mm dd/MM/yyyy")</div>
+                                </td>
+                                <td class="text-end fw-bold @(plus ? "text-success" : "text-danger")" style="white-space:nowrap;">
+                                    @(plus ? "+" : "")@t.Amount.ToString("N0")đ
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+        </div>
+    </div>
+</div>

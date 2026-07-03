@@ -381,6 +381,15 @@ Khu vực & Hình thức dạy
 <input type="hidden" asp-for="Latitude" id="latInput" />
 <input type="hidden" asp-for="Longitude" id="lngInput" />
 </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Video giới thiệu <span class="text-muted fw-normal">(30–60 giây, tối đa 40MB)</span></label>
+                                    <input type="file" asp-for="IntroVideoFile" class="form-control" accept="video/mp4,video/webm" />
+                                    @if (!string.IsNullOrEmpty(Model.IntroVideoUrl))
+                                    {
+                                        <video src="@Model.IntroVideoUrl" controls class="mt-2 w-100" style="max-height:240px;border-radius:12px;background:#000;"></video>
+                                    }
+                                </div>
 <!-- Teaching mode cards -->
 <label class="form-label">Hình thức dạy</label>
 <div class="row g-2" id="modeCards">

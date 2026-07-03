@@ -136,6 +136,7 @@
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => t.style.display = 'none', 2500);
         });
+        conn.on('MessageBlocked', reason => { alert(reason || 'Tin nhắn vi phạm quy định và đã bị chặn.'); });
         conn.on('PresenceChanged', (uid, online) => {
         if (uid === PARTNER) document.getElementById('presenceDot').style.display = online ? 'inline-block' : 'none';
         });

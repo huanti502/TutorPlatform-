@@ -231,6 +231,12 @@ Vào lớp học
                                         <div class="d-flex gap-2 mt-2">
 <a asp-controller="Payment" asp-action="Checkout" asp-route-bookingId="@b.Id"
                                                class="bk-primary" style="background:var(--primary);color:#fff;flex:1;"> Thanh toán</a>
+                                            <form asp-controller="Wallet" asp-action="PayBooking" method="post" style="flex:1;display:flex;">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="bookingId" value="@b.Id" />
+                                                <button type="submit" class="bk-primary" style="background:#0ea5e9;color:#fff;width:100%;border:none;"
+                                                        onclick="return confirm('Thanh toán buổi học này bằng số dư ví? Tiền sẽ được giữ tới khi buổi học hoàn thành.')">Ví</button>
+                                            </form>
 <form asp-controller="Package" asp-action="UseForBooking" method="post" style="flex:1;margin:0;">
 @Html.AntiForgeryToken()
                                                 <input type="hidden" name="bookingId" value="@b.Id" />

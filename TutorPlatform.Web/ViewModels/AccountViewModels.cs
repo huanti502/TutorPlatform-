@@ -74,6 +74,10 @@ public class TutorProfileFormViewModel
     // Vị trí dạy trên bản đồ
     public double? Latitude { get; set; }
     public double? Longitude { get; set; }
+
+    // Video giới thiệu
+    public string? IntroVideoUrl { get; set; }
+    public IFormFile? IntroVideoFile { get; set; }
 }
 public class TwoFactorLoginViewModel
 {
