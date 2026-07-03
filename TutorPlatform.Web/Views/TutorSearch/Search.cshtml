@@ -120,8 +120,9 @@
                                         var isFav = favIds.Contains(t.Id);
                                         var currentUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
                                     }
-                                    <label class="position-absolute d-flex align-items-center gap-1 small" style="top:14px;left:14px;z-index:2;cursor:pointer;color:var(--text-muted);">
-<input type="checkbox" class="form-check-input cmp-check" value="@t.Id" style="margin-top:0;" /> So sánh
+                                    <label class="position-absolute d-flex align-items-center gap-1 cmp-pill" title="Chọn để so sánh"
+       style="top:14px;right:52px;z-index:2;cursor:pointer;font-size:.72rem;font-weight:600;color:var(--text-muted);background:var(--bg-subtle,#f1f5f9);border:1px solid var(--border,#e2e8f0);border-radius:99px;padding:3px 10px 3px 7px;line-height:1;user-select:none;">
+<input type="checkbox" class="form-check-input cmp-check" value="@t.Id" style="margin:0;width:13px;height:13px;" /> So sánh
 </label>
                                     @if (User.Identity?.IsAuthenticated == true)
                                     {
