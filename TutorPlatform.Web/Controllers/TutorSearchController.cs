@@ -9,7 +9,8 @@ namespace TutorPlatform.Web.Controllers;
 public class TutorSearchController : Controller
 {
     private readonly AppDbContext _db;
-    public TutorSearchController(AppDbContext db) => _db = db;
+    private readonly TutorPlatform.Web.Services.AIService _ai;
+    public TutorSearchController(AppDbContext db, TutorPlatform.Web.Services.AIService ai) { _db = db; _ai = ai; }
 
     public class SearchResult
     {
@@ -111,5 +112,172 @@ public class TutorSearchController : Controller
         ViewBag.FavoriteIds = favoriteIds;
 
         return View(results.Skip((page - 1) * pageSize).Take(pageSize).ToList());
+    }
+
+    // ==========================================
+    // #6 SO SÁNH GIA SƯ
+    // ==========================================
+    [HttpGet]
+    public async Task<IActionResult> Compare(string ids)
+    {
+        var idList = (ids ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries)
+            .Select(x => int.TryParse(x.Trim(), out var v) ? v : 0)
+            .Where(v => v > 0).Distinct().Take(3).ToList();
+        if (idList.Count < 2)
+        {
+            TempData["Error"] = "Hãy chọn 2-3 gia sư để so sánh.";
+            return RedirectToAction("Search");
+        }
+        var tutors = await _db.TutorProfiles
+            .Include(t => t.User)
+            .Include(t => t.TutorSubjects).ThenInclude(ts => ts.Subject)
+            .Include(t => t.ReceivedReviews)
+            .Include(t => t.Bookings)
+            .Where(t => idList.Contains(t.Id) && t.IsApproved)
+            .ToListAsync();
+        var results = tutors.Select(t => new SearchResult
+        {
+            Profile = t,
+            AvgRating = t.ReceivedReviews.Any() ? Math.Round(t.ReceivedReviews.Average(r => r.Rating), 1) : 0,
+            ReviewCount = t.ReceivedReviews.Count,
+            CompletedCount = t.Bookings.Count(b => b.Status == "Completed")
+        }).OrderBy(r => idList.IndexOf(r.Profile.Id)).ToList();
+        return View(results);
+    }
+
+    // ==========================================
+    // #7 WIZARD "TÌM GIA SƯ CHO TÔI"
+    // ==========================================
+    [HttpGet]
+    public async Task<IActionResult> Wizard()
+    {
+        ViewBag.Subjects = await _db.Subjects.Where(x => x.IsActive).ToListAsync();
+        return View(new List<SearchResult>());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Wizard(int subjectId, string? goal, decimal budget, string? mode, string? area)
+    {
+        ViewBag.Subjects = await _db.Subjects.Where(x => x.IsActive).ToListAsync();
+
+        var tutors = await _db.TutorProfiles
+            .Include(t => t.User)
+            .Include(t => t.TutorSubjects).ThenInclude(ts => ts.Subject)
+            .Include(t => t.ReceivedReviews)
+            .Include(t => t.Bookings)
+            .Where(t => t.IsApproved)
+            .ToListAsync();
+
+        var scored = tutors.Select(t =>
+        {
+            double score = 0;
+            var avg = t.ReceivedReviews.Any() ? t.ReceivedReviews.Average(r => r.Rating) : 0;
+            if (t.TutorSubjects.Any(ts => ts.SubjectId == subjectId)) score += 50; else score -= 100;
+            if (budget > 0) score += t.HourlyRate <= budget ? 20 : -25;
+            score += avg * 8;
+            if (t.FaceVerified) score += 8;
+            if (!string.IsNullOrWhiteSpace(mode) && mode != "Any" &&
+                (t.TeachingMode == mode || t.TeachingMode == "Both")) score += 10;
+            if (!string.IsNullOrWhiteSpace(area) &&
+                (t.TeachingArea ?? "").ToLower().Contains(area.Trim().ToLower())) score += 12;
+            score += Math.Min(t.Bookings.Count(b => b.Status == "Completed"), 20) * 0.5;
+            return (Tutor: t, Score: score, Avg: avg);
+        })
+        .Where(x => x.Score > 0)
+        .OrderByDescending(x => x.Score)
+        .Take(3)
+        .ToList();
+
+        var results = scored.Select(x => new SearchResult
+        {
+            Profile = x.Tutor,
+            AvgRating = Math.Round(x.Avg, 1),
+            ReviewCount = x.Tutor.ReceivedReviews.Count,
+            CompletedCount = x.Tutor.Bookings.Count(b => b.Status == "Completed")
+        }).ToList();
+
+        // AI viết 1 câu lý do đề xuất cho mỗi gia sư (lỗi thì dùng lý do rule-based)
+        var reasons = new Dictionary<int, string>();
+        if (results.Count > 0)
+        {
+            try
+            {
+                var subjName = (await _db.Subjects.FindAsync(subjectId))?.Name ?? "";
+                var listTxt = string.Join("\n", results.Select(r =>
+                    $"{r.Profile.Id}|{r.Profile.User?.FullName}|{subjName}|{r.Profile.HourlyRate:N0}đ/h|rating {r.AvgRating}|{r.Profile.ExperienceYears} năm KN|{r.Profile.TeachingArea}"));
+                var raw = await _ai.ChatAsync(
+                    "Bạn là tư vấn viên giáo dục. Với mỗi dòng 'id|tên|môn|giá|rating|kinh nghiệm|khu vực', viết MỘT câu tiếng Việt (dưới 25 từ) lý do nên chọn gia sư này cho mục tiêu của học viên. CHỈ trả về JSON array thuần: [{\"id\":1,\"reason\":\"...\"}]",
+                    $"Mục tiêu học viên: {goal}\nDanh sách:\n{listTxt}", 800);
+                raw = raw.Replace("```json", "").Replace("```", "").Trim();
+                int a = raw.IndexOf('['); int b = raw.LastIndexOf(']');
+                if (a >= 0 && b > a)
+                {
+                    var parsed = System.Text.Json.JsonSerializer.Deserialize<List<WizReason>>(raw.Substring(a, b - a + 1),
+                        new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+                    if (parsed != null)
+                        foreach (var r in parsed) reasons[r.Id] = r.Reason ?? "";
+                }
+            }
+            catch { }
+            foreach (var r in results)
+                if (!reasons.ContainsKey(r.Profile.Id) || string.IsNullOrWhiteSpace(reasons[r.Profile.Id]))
+                    reasons[r.Profile.Id] = $"Phù hợp môn bạn chọn, rating {r.AvgRating}/5 với {r.CompletedCount} buổi đã dạy.";
+        }
+        ViewBag.Reasons = reasons;
+        ViewBag.Searched = true;
+        ViewBag.Goal = goal; ViewBag.SubjectId = subjectId; ViewBag.Budget = budget; ViewBag.Mode = mode; ViewBag.Area = area;
+        return View(results);
+    }
+
+    public class WizReason { public int Id { get; set; } public string? Reason { get; set; } }
+
+    // ==========================================
+    // #19 TÌM KIẾM NGÔN NGỮ TỰ NHIÊN
+    // ==========================================
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ParseQuery([FromBody] NlReq req)
+    {
+        if (string.IsNullOrWhiteSpace(req?.Query))
+            return Json(new { ok = false, message = "Hãy nhập câu tìm kiếm." });
+        try
+        {
+            var subjects = await _db.Subjects.Where(x => x.IsActive).Select(x => new { x.Id, x.Name }).ToListAsync();
+            var subjList = string.Join(", ", subjects.Select(x => $"{x.Id}={x.Name}"));
+            var raw = await _ai.ChatAsync(
+                "Bạn là bộ phân tích câu tìm kiếm gia sư tiếng Việt. CHỈ trả về JSON object thuần, không markdown, dạng: " +
+                "{\"keyword\":\"\",\"subjectId\":null,\"mode\":null,\"minPrice\":0,\"maxPrice\":1000000,\"minRating\":0}. " +
+                $"subjectId chọn từ danh sách: {subjList} (null nếu không rõ). mode: Online/Offline/null. " +
+                "Giá tiền: 'dưới 200k' nghĩa là maxPrice=200000. keyword là tên người hoặc khu vực nếu có, ngược lại để rỗng.",
+                req.Query, 400);
+            raw = raw.Replace("```json", "").Replace("```", "").Trim();
+            int a = raw.IndexOf('{'); int b = raw.LastIndexOf('}');
+            if (a < 0 || b <= a) return Json(new { ok = false, message = "AI không hiểu câu này, thử diễn đạt khác." });
+            var f = System.Text.Json.JsonSerializer.Deserialize<NlFilter>(raw.Substring(a, b - a + 1),
+                new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            if (f == null) return Json(new { ok = false, message = "AI không hiểu câu này." });
+
+            var qs = new List<string>();
+            if (!string.IsNullOrWhiteSpace(f.Keyword)) qs.Add("keyword=" + Uri.EscapeDataString(f.Keyword));
+            if (f.SubjectId is > 0) qs.Add("subjectId=" + f.SubjectId);
+            if (!string.IsNullOrWhiteSpace(f.Mode)) qs.Add("mode=" + f.Mode);
+            if (f.MinPrice > 0) qs.Add("minPrice=" + (long)f.MinPrice);
+            if (f.MaxPrice > 0 && f.MaxPrice < 1_000_000) qs.Add("maxPrice=" + (long)f.MaxPrice);
+            if (f.MinRating > 0) qs.Add("minRating=" + f.MinRating);
+            return Json(new { ok = true, url = "/TutorSearch/Search" + (qs.Count > 0 ? "?" + string.Join("&", qs) : "") });
+        }
+        catch { return Json(new { ok = false, message = "AI đang bận, thử lại sau." }); }
+    }
+
+    public class NlReq { public string? Query { get; set; } }
+    public class NlFilter
+    {
+        public string? Keyword { get; set; }
+        public int? SubjectId { get; set; }
+        public string? Mode { get; set; }
+        public decimal MinPrice { get; set; }
+        public decimal MaxPrice { get; set; }
+        public double MinRating { get; set; }
     }
 }

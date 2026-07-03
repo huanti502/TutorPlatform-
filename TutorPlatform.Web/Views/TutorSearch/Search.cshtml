@@ -85,6 +85,15 @@
 
         @* Kết quả *@
         <div class="col-lg-9">
+<div class="card border-0 shadow-sm mb-3"><div class="card-body py-3">
+<div class="d-flex gap-2 flex-wrap align-items-center">
+<svg width="18" height="18" fill="none" stroke="#7c3aed" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true" style="flex-shrink:0;"><path d="M12 3v2M12 19v2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M3 12h2M19 12h2M5.6 18.4 7 17M17 7l1.4-1.4"/><circle cx="12" cy="12" r="3"/></svg>
+<input id="nlQuery" class="form-control" style="flex:1;min-width:240px;" placeholder='Tìm bằng câu tự nhiên: "gia sư Toán online dưới 200k rating cao"...' />
+<button id="nlBtn" class="btn text-white fw-bold" style="background:#7c3aed;border:none;">Tìm bằng AI</button>
+<a asp-action="Wizard" class="btn btn-outline-secondary">Tìm giúp tôi</a>
+</div>
+<div id="nlStatus" class="small text-muted mt-1"></div>
+</div></div>
 <h5 class="fw-bold mb-3">Tìm thấy <span class="text-primary">@ViewBag.TotalCount</span> gia sư</h5>
 
             @if (!Model.Any())
@@ -111,6 +120,9 @@
                                         var isFav = favIds.Contains(t.Id);
                                         var currentUrl = $"{Context.Request.Path}{Context.Request.QueryString}";
                                     }
+                                    <label class="position-absolute d-flex align-items-center gap-1 small" style="top:14px;left:14px;z-index:2;cursor:pointer;color:var(--text-muted);">
+<input type="checkbox" class="form-check-input cmp-check" value="@t.Id" style="margin-top:0;" /> So sánh
+</label>
                                     @if (User.Identity?.IsAuthenticated == true)
                                     {
                                         <form asp-controller="Favorite" asp-action="Toggle" method="post"
@@ -216,3 +228,64 @@
         </div>
 </div>
 </div>
+
+
+<!-- #6: thanh so sánh nổi -->
+<div id="cmpBar" class="position-fixed bottom-0 start-50 translate-middle-x mb-3 shadow-lg align-items-center gap-3"
+     style="display:none;background:var(--bg,#fff);border:1px solid var(--border,#e2e8f0);border-radius:99px;padding:.6rem 1.2rem;z-index:1050;">
+<span class="fw-semibold small">Đã chọn <b id="cmpCount">0</b>/3 gia sư</span>
+<button id="cmpGo" class="btn btn-sm text-white fw-bold" style="background:#7c3aed;border:none;border-radius:99px;">So sánh ngay</button>
+<button id="cmpClear" class="btn btn-sm btn-outline-secondary" style="border-radius:99px;">Bỏ chọn</button>
+</div>
+
+@Html.AntiForgeryToken()
+<script>
+    // #6: chọn so sánh
+    (function () {
+        const bar = document.getElementById('cmpBar');
+        function ids() { return [...document.querySelectorAll('.cmp-check:checked')].map(c => c.value); }
+        function refresh() {
+            const n = ids().length;
+            document.getElementById('cmpCount').textContent = n;
+            bar.style.display = n >= 1 ? 'flex' : 'none';
+        }
+        document.addEventListener('change', e => {
+            if (!e.target.classList.contains('cmp-check')) return;
+            if (ids().length > 3) { e.target.checked = false; alert('Chỉ so sánh tối đa 3 gia sư.'); }
+            refresh();
+        });
+        document.getElementById('cmpGo').addEventListener('click', () => {
+            const v = ids();
+            if (v.length < 2) { alert('Chọn ít nhất 2 gia sư để so sánh.'); return; }
+            location.href = '/TutorSearch/Compare?ids=' + v.join(',');
+        });
+        document.getElementById('cmpClear').addEventListener('click', () => {
+            document.querySelectorAll('.cmp-check:checked').forEach(c => c.checked = false);
+            refresh();
+        });
+    })();
+
+    // #19: tìm kiếm ngôn ngữ tự nhiên
+    (function () {
+        const btn = document.getElementById('nlBtn');
+        const input = document.getElementById('nlQuery');
+        const st = document.getElementById('nlStatus');
+        async function go() {
+            const q = input.value.trim();
+            if (!q) return;
+            st.textContent = 'AI đang phân tích câu tìm kiếm…';
+            try {
+                const res = await fetch('/TutorSearch/ParseQuery', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]').value },
+                    body: JSON.stringify({ query: q })
+                });
+                const data = await res.json();
+                if (data.ok) location.href = data.url;
+                else st.textContent = data.message || 'Không phân tích được.';
+            } catch { st.textContent = 'Lỗi mạng, thử lại nhé.'; }
+        }
+        btn.addEventListener('click', go);
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); go(); } });
+    })();
+</script>

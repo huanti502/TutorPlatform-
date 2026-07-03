@@ -1,0 +1,76 @@
+@model List<TutorPlatform.Web.Controllers.TutorSearchController.SearchResult>
+@{ ViewData["Title"] = "So sánh gia sư"; }
+
+<div class="container py-4">
+    <a asp-action="Search" class="small text-muted text-decoration-none">← Quay lại tìm kiếm</a>
+    <h3 class="mt-2 mb-4">So sánh gia sư</h3>
+
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0" style="min-width:640px;">
+                <thead>
+                    <tr>
+                        <th style="width:170px;"></th>
+                        @foreach (var r in Model)
+                        {
+                            var t = r.Profile;
+                            <th class="text-center py-3">
+                                <div class="avatar avatar-lg mx-auto mb-2" style="overflow:hidden;width:64px;height:64px;border-radius:50%;background:#7c3aed;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;">
+                                    @if (!string.IsNullOrEmpty(t.User?.AvatarUrl))
+                                    {
+                                        <img src="@t.User.AvatarUrl" style="width:100%;height:100%;object-fit:cover;" alt="@t.User?.FullName" />
+                                    }
+                                    else
+                                    {
+                                        @(t.User?.FullName?.FirstOrDefault())
+                                    }
+                                </div>
+                                <div class="fw-bold">@t.User?.FullName</div>
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td class="text-muted">Học phí / giờ</td>
+                        @foreach (var r in Model) { <td class="text-center fw-bold" style="color:#7c3aed;">@r.Profile.HourlyRate.ToString("N0")đ</td> }
+                    </tr>
+                    <tr><td class="text-muted">Đánh giá</td>
+                        @foreach (var r in Model) { <td class="text-center"><span style="color:#f59e0b;">★</span> <b>@(r.AvgRating > 0 ? r.AvgRating.ToString("0.#") : "—")</b> <span class="text-muted small">(@r.ReviewCount)</span></td> }
+                    </tr>
+                    <tr><td class="text-muted">Buổi đã dạy</td>
+                        @foreach (var r in Model) { <td class="text-center">@r.CompletedCount</td> }
+                    </tr>
+                    <tr><td class="text-muted">Kinh nghiệm</td>
+                        @foreach (var r in Model) { <td class="text-center">@r.Profile.ExperienceYears năm</td> }
+                    </tr>
+                    <tr><td class="text-muted">Môn dạy</td>
+                        @foreach (var r in Model) { <td class="text-center small">@string.Join(", ", r.Profile.TutorSubjects.Select(ts => ts.Subject?.Name))</td> }
+                    </tr>
+                    <tr><td class="text-muted">Hình thức</td>
+                        @foreach (var r in Model) { <td class="text-center">@(r.Profile.TeachingMode == "Both" ? "Online & Trực tiếp" : (r.Profile.TeachingMode == "Online" ? "Online" : "Trực tiếp"))</td> }
+                    </tr>
+                    <tr><td class="text-muted">Khu vực</td>
+                        @foreach (var r in Model) { <td class="text-center small">@r.Profile.TeachingArea</td> }
+                    </tr>
+                    <tr><td class="text-muted">Xác thực khuôn mặt</td>
+                        @foreach (var r in Model)
+                        {
+                            <td class="text-center">
+                                @if (r.Profile.FaceVerified) { <span class="badge" style="background:#dcfce7;color:#15803d;">✓ Đã xác thực</span> }
+                                else { <span class="text-muted small">Chưa</span> }
+                            </td>
+                        }
+                    </tr>
+                    <tr><td></td>
+                        @foreach (var r in Model)
+                        {
+                            <td class="text-center py-3">
+                                <a href="/Tutor/Detail/@r.Profile.Id" class="btn btn-sm text-white fw-bold" style="background:#7c3aed;border:none;">Xem hồ sơ</a>
+                            </td>
+                        }
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

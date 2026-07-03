@@ -1,0 +1,100 @@
+@model List<TutorPlatform.Web.Controllers.TutorSearchController.SearchResult>
+@using TutorPlatform.Core.Models
+@{
+    ViewData["Title"] = "Tìm gia sư cho tôi";
+    bool searched = ViewBag.Searched ?? false;
+    var reasons = ViewBag.Reasons as Dictionary<int, string> ?? new();
+}
+
+<div class="container py-4" style="max-width:860px;">
+    <h3 class="mb-1">Tìm gia sư cho tôi</h3>
+    <p class="text-muted mb-4">Trả lời 4 câu hỏi — hệ thống chấm điểm và AI gợi ý 3 gia sư phù hợp nhất.</p>
+
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body p-4">
+            <form asp-action="Wizard" method="post" class="row g-3">
+                @Html.AntiForgeryToken()
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">1. Bạn muốn học môn gì?</label>
+                    <select name="subjectId" class="form-select" required>
+                        @foreach (var s in (ViewBag.Subjects as List<Subject> ?? new()))
+                        {
+                            <option value="@s.Id" selected="@(ViewBag.SubjectId != null && (int)ViewBag.SubjectId == s.Id)">@s.Name</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">2. Mục tiêu của bạn?</label>
+                    <input name="goal" class="form-control" placeholder="VD: đạt 8 điểm thi giữa kỳ, IELTS 6.5..." value="@ViewBag.Goal" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">3. Ngân sách tối đa / giờ</label>
+                    <select name="budget" class="form-select">
+                        <option value="150000" selected="@(ViewBag.Budget != null && (decimal)ViewBag.Budget == 150000)">Dưới 150.000đ</option>
+                        <option value="200000" selected="@(ViewBag.Budget != null && (decimal)ViewBag.Budget == 200000)">Dưới 200.000đ</option>
+                        <option value="300000" selected="@(ViewBag.Budget != null && (decimal)ViewBag.Budget == 300000)">Dưới 300.000đ</option>
+                        <option value="0">Không giới hạn</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">4. Hình thức học</label>
+                    <select name="mode" class="form-select">
+                        <option value="Any">Sao cũng được</option>
+                        <option value="Online" selected="@(ViewBag.Mode as string == "Online")">Online</option>
+                        <option value="Offline" selected="@(ViewBag.Mode as string == "Offline")">Trực tiếp</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label fw-semibold">Khu vực (nếu học trực tiếp)</label>
+                    <input name="area" class="form-control" placeholder="VD: Quận 7, Cầu Giấy..." value="@ViewBag.Area" />
+                </div>
+                <div class="col-12">
+                    <button class="btn text-white fw-bold px-4" style="background:#7c3aed;border:none;">Tìm gia sư phù hợp</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if (searched)
+    {
+        @if (Model.Count == 0)
+        {
+            <div class="alert alert-warning">Chưa tìm được gia sư khớp tiêu chí — thử nới ngân sách hoặc đổi hình thức học nhé.</div>
+        }
+        else
+        {
+            <h5 class="fw-bold mb-3">Gợi ý dành riêng cho bạn</h5>
+            <div class="row g-3">
+                @for (int i = 0; i < Model.Count; i++)
+                {
+                    var r = Model[i]; var t = r.Profile;
+                    <div class="col-md-4">
+                        <div class="card h-100 border-0 shadow-sm @(i == 0 ? "border border-2" : "")" style="border-radius:14px;@(i == 0 ? "border-color:#7c3aed !important;" : "")">
+                            <div class="card-body p-4 text-center">
+                                @if (i == 0)
+                                {
+                                    <span class="badge mb-2" style="background:#7c3aed;">Phù hợp nhất</span>
+                                }
+                                <div class="mx-auto mb-2" style="width:64px;height:64px;border-radius:50%;overflow:hidden;background:#7c3aed;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:1.4rem;">
+                                    @if (!string.IsNullOrEmpty(t.User?.AvatarUrl))
+                                    {
+                                        <img src="@t.User.AvatarUrl" style="width:100%;height:100%;object-fit:cover;" alt="@t.User?.FullName" />
+                                    }
+                                    else
+                                    {
+                                        @(t.User?.FullName?.FirstOrDefault())
+                                    }
+                                </div>
+                                <div class="fw-bold">@t.User?.FullName</div>
+                                <div class="small text-muted mb-1">@string.Join(", ", t.TutorSubjects.Take(2).Select(ts => ts.Subject?.Name))</div>
+                                <div class="mb-2"><span style="color:#f59e0b;">★</span> <b>@(r.AvgRating > 0 ? r.AvgRating.ToString("0.#") : "—")</b> <span class="text-muted small">(@r.ReviewCount)</span> · <b style="color:#7c3aed;">@t.HourlyRate.ToString("N0")đ/h</b></div>
+                                <p class="small text-muted" style="min-height:48px;">@(reasons.TryGetValue(t.Id, out var rs) ? rs : "")</p>
+                                <a href="/Tutor/Detail/@t.Id" class="btn btn-sm text-white fw-bold w-100" style="background:#7c3aed;border:none;">Xem hồ sơ</a>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
