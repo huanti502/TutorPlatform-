@@ -1,0 +1,131 @@
+@* Hướng dẫn nhanh cho người dùng mới — hiện 1 lần (lưu cờ ở localStorage). *@
+@{
+    bool obTutor = User.IsInRole("Tutor");
+    bool obStudent = User.IsInRole("Student");
+}
+@if (User.Identity!.IsAuthenticated && (obTutor || obStudent))
+{
+    <div class="modal fade" id="onboardingModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0" style="border-radius:18px;overflow:hidden;">
+                <div class="ob-hero text-center text-white p-4"
+                     style="background:linear-gradient(135deg,#6366f1,#7c3aed,#06b6d4);">
+                    <div style="font-size:2.4rem;line-height:1;">👋</div>
+                    <h5 class="fw-bold mt-2 mb-0">Chào mừng đến với Gia Sư Việt!</h5>
+                    <p class="mb-0 small" style="opacity:.9;">@(obTutor ? "Vài bước để bắt đầu nhận lớp" : "Vài bước để bắt đầu học tập")</p>
+                </div>
+
+                <div class="modal-body p-4">
+                    <div id="obSteps">
+                        @if (obTutor)
+                        {
+                            <div class="ob-step" data-step="1">
+                                <div class="ob-ico">📝</div>
+                                <h6 class="fw-bold">1. Hoàn thiện hồ sơ & xác thực</h6>
+                                <p class="text-muted small mb-0">Thêm bằng cấp, kinh nghiệm, môn dạy và xác thực khuôn mặt để nhận huy hiệu "Đã xác thực" — học viên tin tưởng hơn.</p>
+                            </div>
+                            <div class="ob-step" data-step="2" style="display:none;">
+                                <div class="ob-ico">🔍</div>
+                                <h6 class="fw-bold">2. Nhận lớp phù hợp</h6>
+                                <p class="text-muted small mb-0">Vào <b>Nhận lớp dạy</b> — hệ thống tự đẩy lớp khớp môn bạn dạy lên đầu. Bấm "Đề nghị dạy" để ứng tuyển.</p>
+                            </div>
+                            <div class="ob-step" data-step="3" style="display:none;">
+                                <div class="ob-ico">💰</div>
+                                <h6 class="fw-bold">3. Dạy & nhận tiền an toàn</h6>
+                                <p class="text-muted small mb-0">Tiền học viên được giữ trong ví escrow, tự chuyển cho bạn khi buổi hoàn thành. Rút về ngân hàng bất cứ lúc nào.</p>
+                            </div>
+                            <div class="ob-step" data-step="4" style="display:none;">
+                                <div class="ob-ico">⭐</div>
+                                <h6 class="fw-bold">4. Xây dựng uy tín</h6>
+                                <p class="text-muted small mb-0">Đánh giá tốt từ học viên giúp bạn lên top tìm kiếm. Bạn cũng có thể đánh giá lại học viên (đánh giá 2 chiều).</p>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="ob-step" data-step="1">
+                                <div class="ob-ico">🔍</div>
+                                <h6 class="fw-bold">1. Tìm gia sư phù hợp</h6>
+                                <p class="text-muted small mb-0">Dùng <b>Tìm gia sư</b> để lọc theo môn, khu vực, học phí. Xem hồ sơ, video giới thiệu và đánh giá thật trước khi chọn.</p>
+                            </div>
+                            <div class="ob-step" data-step="2" style="display:none;">
+                                <div class="ob-ico">📢</div>
+                                <h6 class="fw-bold">2. Hoặc đăng lớp cần gia sư</h6>
+                                <p class="text-muted small mb-0">Không muốn tự tìm? Vào <b>Nhận lớp dạy → Đăng lớp</b>, mô tả nhu cầu và để gia sư phù hợp gửi đề nghị cho bạn.</p>
+                            </div>
+                            <div class="ob-step" data-step="3" style="display:none;">
+                                <div class="ob-ico">🔒</div>
+                                <h6 class="fw-bold">3. Thanh toán an toàn</h6>
+                                <p class="text-muted small mb-0">Học phí được giữ trong ví escrow, chỉ chuyển cho gia sư khi buổi học hoàn tất. Huỷ đúng quy định được hoàn tiền.</p>
+                            </div>
+                            <div class="ob-step" data-step="4" style="display:none;">
+                                <div class="ob-ico">🏆</div>
+                                <h6 class="fw-bold">4. Học tập & tích luỹ XP</h6>
+                                <p class="text-muted small mb-0">Hoàn thành buổi học, làm quiz, thi đấu Quiz Battle để kiếm XP và leo bảng xếp hạng. XP cao giúp bạn nổi bật khi đăng lớp.</p>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="d-flex justify-content-center gap-1 mt-4" id="obDots"></div>
+                </div>
+
+                <div class="modal-footer border-0 pt-0 pb-4 px-4 d-flex justify-content-between">
+                    <button type="button" class="btn btn-link text-muted p-0" id="obSkip">Bỏ qua</button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary" id="obPrev" style="display:none;">Trước</button>
+                        <button type="button" class="btn btn-primary px-4" id="obNext">Tiếp</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .ob-ico { font-size: 2rem; margin-bottom: .5rem; }
+        .ob-step { text-align: center; min-height: 120px; }
+        .ob-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border-strong, #cbd5e1); transition: all .2s; }
+        .ob-dot.active { width: 22px; border-radius: 4px; background: var(--primary); }
+    </style>
+
+    <script>
+        (function () {
+            var KEY = 'gsv_onboarding_v1';
+            try { if (localStorage.getItem(KEY)) return; } catch (e) { return; }
+
+            var modalEl = document.getElementById('onboardingModal');
+            if (!modalEl || typeof bootstrap === 'undefined') return;
+
+            var steps = Array.prototype.slice.call(modalEl.querySelectorAll('.ob-step'));
+            var total = steps.length, cur = 0;
+            var dots = modalEl.querySelector('#obDots');
+            var btnNext = modalEl.querySelector('#obNext');
+            var btnPrev = modalEl.querySelector('#obPrev');
+            var btnSkip = modalEl.querySelector('#obSkip');
+
+            for (var i = 0; i < total; i++) {
+                var d = document.createElement('div');
+                d.className = 'ob-dot' + (i === 0 ? ' active' : '');
+                dots.appendChild(d);
+            }
+            var dotEls = dots.querySelectorAll('.ob-dot');
+
+            function render() {
+                steps.forEach(function (s, i) { s.style.display = i === cur ? 'block' : 'none'; });
+                dotEls.forEach(function (d, i) { d.classList.toggle('active', i === cur); });
+                btnPrev.style.display = cur === 0 ? 'none' : 'inline-block';
+                btnNext.textContent = cur === total - 1 ? 'Bắt đầu' : 'Tiếp';
+            }
+            function done() { try { localStorage.setItem(KEY, '1'); } catch (e) { } }
+
+            btnNext.addEventListener('click', function () {
+                if (cur < total - 1) { cur++; render(); }
+                else { done(); bootstrap.Modal.getInstance(modalEl).hide(); }
+            });
+            btnPrev.addEventListener('click', function () { if (cur > 0) { cur--; render(); } });
+            btnSkip.addEventListener('click', function () { done(); bootstrap.Modal.getInstance(modalEl).hide(); });
+            modalEl.addEventListener('hidden.bs.modal', done);
+
+            render();
+            setTimeout(function () { new bootstrap.Modal(modalEl).show(); }, 700);
+        })();
+    </script>
+}

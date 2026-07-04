@@ -317,7 +317,10 @@ Blog
 <span>Thông báo</span>
 <button type="button" id="notifMarkAll" class="notif-markall">Đánh dấu đã đọc</button>
 </div>
-<div id="notifList" class="notif-list"><div class="notif-empty">Đang tải…</div></div>
+<div id="notifList" class="notif-list"><div class="p-3">
+<div class="d-flex gap-2 mb-3"><div class="skeleton skeleton-avatar"></div><div class="flex-grow-1"><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-60"></div></div></div>
+<div class="d-flex gap-2"><div class="skeleton skeleton-avatar"></div><div class="flex-grow-1"><div class="skeleton skeleton-line w-80"></div><div class="skeleton skeleton-line w-60"></div></div></div>
+</div></div>
 <a class="notif-foot" asp-area="" asp-controller="Account" asp-action="Notifications">Xem tất cả</a>
 </div>
 @Html.AntiForgeryToken()
@@ -761,5 +764,7 @@ function updateCountdowns() {
             });
         })();
     </script>
+
+    @await Html.PartialAsync("_Onboarding")
 </body>
 </html>
