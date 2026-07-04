@@ -424,6 +424,11 @@ h1 > svg, h2 > svg, h3 > svg, h4 > svg {
 [data-theme="dark"] .btn-outline-secondary { color: var(--text-secondary); border-color: var(--border-strong); }
 [data-theme="dark"] .card[style*="background:#fefce8"],
 [data-theme="dark"] .card[style*="background:#f5f3ff"] { background: var(--bg-subtle) !important; }
+/* Các mục nền sáng tôi thêm ở tính năng mới: testimonial, thẻ XP học viên, nền kem */
+[data-theme="dark"] section[style*="#FFFBF3"] { background: var(--bg) !important; }
+[data-theme="dark"] .card[style*="#fffbeb"] { background: var(--bg-subtle) !important; }
+[data-theme="dark"] .card[style*="var(--primary-light)"] { background: var(--bg-subtle) !important; }
+[data-theme="dark"] [style*="background:var(--primary-light)"] { background: var(--bg-subtle) !important; }
 [data-theme="dark"] img { opacity: .92; }
 
 /* Nút gạt theme trong navbar */

@@ -53,9 +53,14 @@
 
     @if (!Model.Any())
     {
-        <div class="card border-0 shadow-sm"><div class="card-body text-center text-muted py-5">
-            Chưa có lớp nào phù hợp bộ lọc.
-            @if (isStudent) { <div class="mt-2"><a asp-action="Create" class="btn btn-primary btn-sm">Đăng lớp đầu tiên</a></div> }
+        <div class="card border-0 shadow-sm"><div class="card-body text-center py-5">
+            <div class="mx-auto mb-3 d-flex align-items-center justify-content-center"
+                 style="width:72px;height:72px;border-radius:50%;background:var(--primary-light);">
+                <svg width="34" height="34" fill="none" stroke="var(--primary)" stroke-width="1.6" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.3-4.3"/></svg>
+            </div>
+            <div class="fw-semibold mb-1">Chưa có lớp nào phù hợp</div>
+            <div class="text-muted small">Thử bỏ bớt bộ lọc hoặc quay lại sau nhé.</div>
+            @if (isStudent) { <div class="mt-3"><a asp-action="Create" class="btn btn-primary btn-sm px-4">Đăng lớp đầu tiên</a></div> }
         </div></div>
     }
 
@@ -79,7 +84,8 @@
                         {
                             var lv = TutorPlatform.Web.Services.XpService.GetLevel(c.Student.XpPoints);
                             <div class="d-flex align-items-center gap-2 mb-2">
-                                <span class="text-muted small">Đăng bởi @c.Student.FullName</span>
+                                <a asp-controller="StudentProfile" asp-action="Index" asp-route-id="@c.Student.Id"
+                                   class="text-muted small text-decoration-none">Đăng bởi <span class="fw-semibold" style="color:var(--primary);">@c.Student.FullName</span></a>
                                 @if (c.Student.XpPoints >= 100)
                                 {
                                     <span class="badge" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;" title="Học viên tích cực - đã tích luỹ @c.Student.XpPoints XP">
