@@ -97,6 +97,10 @@ public class AccountController : Controller
 
         if (!ModelState.IsValid) return View(model);
 
+        // BẢO MẬT: chỉ cho phép 2 vai trò công khai — chặn tự gán "Admin" qua request giả mạo.
+        if (model.Role != "Student" && model.Role != "Tutor")
+            model.Role = "Student";
+
         if (model.Role == "Tutor")
         {
             if (avatarFile == null || avatarFile.Length == 0)

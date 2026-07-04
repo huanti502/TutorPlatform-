@@ -124,6 +124,7 @@ Sửa
                         <div id="replyForm_@r.Id"
                              class="mt-3 @(r.Reply == null ? "" : "d-none")">
 <form method="post" action="/Review/Reply">
+                        @Html.AntiForgeryToken()
 <input type="hidden" name="reviewId" value="@r.Id" />
 <input type="hidden" name="tutorProfileId" value="@profile?.Id" />
 <div class="d-flex gap-2">

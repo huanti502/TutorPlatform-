@@ -487,9 +487,57 @@ public class AdminController : Controller
     }
 
     // ==========================================
-    // YÊU CẦU HỖ TRỢ / LIÊN HỆ (SUPPORT TICKET)
+    // DUYỆT RÚT TIỀN (WITHDRAWAL)
     // ==========================================
 
+    [HttpGet]
+    public async Task<IActionResult> Withdrawals(string? status)
+    {
+        var q = _db.WithdrawalRequests.Include(w => w.User).OrderByDescending(w => w.CreatedAt).AsQueryable();
+        if (!string.IsNullOrEmpty(status)) q = q.Where(w => w.Status == status);
+        ViewBag.CurrentStatus = status ?? "";
+        ViewBag.PendingCount = await _db.WithdrawalRequests.CountAsync(w => w.Status == "Pending");
+        return View(await q.Take(200).ToListAsync());
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> HandleWithdrawal(int id, string action, string? note)
+    {
+        var w = await _db.WithdrawalRequests.FirstOrDefaultAsync(x => x.Id == id && x.Status == "Pending");
+        if (w == null) { TempData["Error"] = "Yêu cầu không hợp lệ."; return RedirectToAction("Withdrawals"); }
+
+        w.HandledAt = DateTime.UtcNow;
+        w.AdminNote = note;
+
+        if (action == "approve")
+        {
+            w.Status = "Approved";
+            // Tiền đã bị trừ khi tạo yêu cầu — duyệt nghĩa là đã chuyển khoản xong.
+            await _notif.NotifyAsync(w.UserId, "Rút tiền thành công",
+                $"Yêu cầu rút {w.Amount:N0}đ đã được chuyển tới {w.BankName} ({w.BankAccount}).", "/Wallet");
+        }
+        else
+        {
+            w.Status = "Rejected";
+            // Hoàn tiền lại vào ví vì đã trừ khi tạo yêu cầu.
+            _db.WalletTransactions.Add(new WalletTransaction
+            {
+                UserId = w.UserId, Amount = w.Amount, Type = "Refund",
+                Description = $"Hoàn tiền do từ chối rút #{w.Id}" + (string.IsNullOrEmpty(note) ? "" : $": {note}")
+            });
+            await _notif.NotifyAsync(w.UserId, "Yêu cầu rút tiền bị từ chối",
+                $"{w.Amount:N0}đ đã được hoàn lại ví." + (string.IsNullOrEmpty(note) ? "" : $" Lý do: {note}"), "/Wallet");
+        }
+        await _db.SaveChangesAsync();
+        await LogAuditAsync(action == "approve" ? "Duyệt rút tiền" : "Từ chối rút tiền", "Withdrawal", $"#{w.Id}", note);
+        TempData["Success"] = "Đã xử lý yêu cầu rút tiền.";
+        return RedirectToAction("Withdrawals");
+    }
+
+    // ==========================================
+    // YÊU CẦU HỖ TRỢ / LIÊN HỆ (SUPPORT TICKET)
+    // ==========================================
     [HttpGet]
     public async Task<IActionResult> SupportTickets(string? status)
     {

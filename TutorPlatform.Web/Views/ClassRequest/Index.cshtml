@@ -40,6 +40,12 @@
             </select>
             <input type="text" name="keyword" class="form-control" style="max-width:280px;flex:1;"
                    value="@ViewBag.Keyword" placeholder="Từ khoá, khu vực..." />
+            @{ var srt = ViewBag.Sort as string ?? ""; }
+            <select name="sort" class="form-select" style="max-width:170px;">
+                <option value="" selected="@(srt == "")">Mới nhất</option>
+                <option value="price_desc" selected="@(srt == "price_desc")">Học phí cao → thấp</option>
+                <option value="price_asc" selected="@(srt == "price_asc")">Học phí thấp → cao</option>
+            </select>
             <button type="submit" class="btn btn-primary px-4">Tìm kiếm</button>
             <a asp-action="Index" class="btn btn-outline-secondary">Xoá lọc</a>
         </div>
@@ -61,6 +67,10 @@
                     <div class="col-lg-2 col-md-3 text-md-center">
                         <div class="fw-bold" style="color:var(--primary);font-size:1.05rem;">LH@(c.Id.ToString("D4"))</div>
                         <div class="text-muted small">@c.CreatedAt.ToLocalTime().ToString("dd-MM-yyyy")</div>
+                        @if ((DateTime.UtcNow - c.CreatedAt).TotalHours < 24)
+                        {
+                            <span class="badge mt-1" style="background:#ef4444;color:#fff;">Mới</span>
+                        }
                         <span class="badge mt-1 @(c.Mode == "Online" ? "bg-info text-dark" : c.Mode == "Offline" ? "bg-success" : "bg-secondary")">@ModeText(c.Mode)</span>
                     </div>
                     <div class="col-lg-6 col-md-9">
@@ -83,7 +93,7 @@
                     </div>
                     <div class="col-lg-2 col-md-6 text-lg-center">
                         <div class="fw-bold" style="font-size:1.05rem;">@c.BudgetPerSession.ToString("N0")đ<span class="text-muted fw-normal small">/buổi</span></div>
-                        <div class="text-muted small">@c.Applications.Count đề nghị</div>
+                        <div class="text-muted small"><span class="app-count" data-class-id="@c.Id">@c.Applications.Count</span> đề nghị</div>
                     </div>
                     <div class="col-lg-2 col-md-6 text-lg-end">
                         @if (isTutor)
@@ -137,15 +147,34 @@
             </form>
         </div>
     </div>
+}
 
-    @section Scripts {
-        <script>
-            document.getElementById('applyModal')?.addEventListener('show.bs.modal', function (ev) {
-                const btn = ev.relatedTarget;
-                document.getElementById('applyRequestId').value = btn.dataset.id;
-                document.getElementById('applyClassTitle').textContent = 'Lớp: ' + btn.dataset.title;
-                document.getElementById('applyRate').placeholder = 'VD: ' + Number(btn.dataset.budget).toLocaleString('vi-VN') + 'đ';
-            });
-        </script>
-    }
+@section Scripts {
+    <script>
+        // Gán dữ liệu vào modal "Đề nghị dạy" (chỉ chạy khi phần tử tồn tại — tức là gia sư).
+        document.getElementById('applyModal')?.addEventListener('show.bs.modal', function (ev) {
+            const btn = ev.relatedTarget;
+            document.getElementById('applyRequestId').value = btn.dataset.id;
+            document.getElementById('applyClassTitle').textContent = 'Lớp: ' + btn.dataset.title;
+            document.getElementById('applyRate').placeholder = 'VD: ' + Number(btn.dataset.budget).toLocaleString('vi-VN') + 'đ';
+        });
+        // Cập nhật số đề nghị mỗi 20s để trạng thái "đang tuyển" luôn mới.
+        async function refreshCounts() {
+            try {
+                const res = await fetch('/ClassRequest/LiveCounts');
+                if (!res.ok) return;
+                const data = await res.json();
+                data.items.forEach(it => {
+                    const el = document.querySelector(`.app-count[data-class-id="${it.id}"]`);
+                    if (el && el.textContent.trim() !== String(it.count)) {
+                        el.textContent = it.count;
+                        el.style.transition = 'color .3s';
+                        el.style.color = '#16a34a';
+                        setTimeout(() => el.style.color = '', 800);
+                    }
+                });
+            } catch (e) { /* im lặng */ }
+        }
+        setInterval(refreshCounts, 20000);
+    </script>
 }

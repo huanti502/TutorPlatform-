@@ -244,6 +244,7 @@ public class BookingController : Controller
 
     [Authorize(Roles = "Tutor")]
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> UpdateStatus(int id, string status)
     {
         var allowedStatuses = new[] { "Confirmed", "Rejected" };
@@ -306,6 +307,7 @@ public class BookingController : Controller
 
     [Authorize(Roles = "Tutor")]
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Complete(int id)
     {
         var currentUserId = _userManager.GetUserId(User);
@@ -362,6 +364,7 @@ public class BookingController : Controller
 
     [Authorize(Roles = "Student")]
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Cancel(int id)
     {
         var user = await _userManager.GetUserAsync(User);
@@ -834,5 +837,47 @@ public class BookingController : Controller
 
         TempData["Success"] = "Đã đổi giờ. Vui lòng chờ gia sư xác nhận lại.";
         return RedirectToAction("MyBookings");
+    }
+
+    // Xuất file .ics để thêm buổi học vào Google Calendar / Outlook / Apple Calendar.
+    [Authorize]
+    [HttpGet]
+    public async Task<IActionResult> Calendar(int id)
+    {
+        var uid = _userManager.GetUserId(User);
+        var b = await _db.Bookings
+            .Include(x => x.Subject)
+            .Include(x => x.TutorProfile).ThenInclude(t => t.User)
+            .Include(x => x.Student)
+            .FirstOrDefaultAsync(x => x.Id == id);
+        if (b == null) return NotFound();
+
+        // Chỉ học viên hoặc gia sư của buổi này mới tải được (chặn lộ lịch người khac).
+        if (b.StudentId != uid && b.TutorProfile?.UserId != uid) return Forbid();
+
+        string Esc(string? s) => (s ?? "").Replace("\\", "\\\\").Replace(",", "\\,").Replace(";", "\\;").Replace("\n", "\\n");
+        string Fmt(DateTime dt) => dt.ToUniversalTime().ToString("yyyyMMdd'T'HHmmss'Z'");
+
+        var summary = $"Học {b.Subject?.Name} với {b.TutorProfile?.User?.FullName}";
+        var loc = b.TeachingMode == "Online"
+            ? (string.IsNullOrEmpty(b.MeetingRoomId) ? "Trực tuyến" : $"https://meet.jit.si/{b.MeetingRoomId}")
+            : "Học trực tiếp";
+        var desc = $"Buổi học trên Gia Sư Việt. Học viên: {b.Student?.FullName}. Gia sư: {b.TutorProfile?.User?.FullName}.";
+
+        var ics = string.Join("\r\n",
+            "BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//GiaSuViet//Booking//VI",
+            "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "BEGIN:VEVENT",
+            $"UID:booking-{b.Id}@giasuviet",
+            $"DTSTAMP:{Fmt(DateTime.UtcNow)}",
+            $"DTSTART:{Fmt(b.StartTime)}",
+            $"DTEND:{Fmt(b.EndTime)}",
+            $"SUMMARY:{Esc(summary)}",
+            $"DESCRIPTION:{Esc(desc)}",
+            $"LOCATION:{Esc(loc)}",
+            "BEGIN:VALARM", "TRIGGER:-PT30M", "ACTION:DISPLAY",
+            $"DESCRIPTION:{Esc("Sắp tới giờ học: " + summary)}", "END:VALARM",
+            "END:VEVENT", "END:VCALENDAR");
+
+        return File(System.Text.Encoding.UTF8.GetBytes(ics), "text/calendar", $"buoi-hoc-{b.Id}.ics");
     }
 }

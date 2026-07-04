@@ -266,8 +266,50 @@ public class PaymentController : Controller
             payment.ResponseCode = responseCode;
             payment.PaidAt = DateTime.UtcNow;
 
-            var booking = await _db.Bookings.FindAsync(payment.BookingId);
-            if (booking != null) booking.IsPaid = true;
+            if (payment.Type == "WalletDeposit" && !string.IsNullOrEmpty(payment.PayerUserId))
+            {
+                // Nạp ví: cộng số dư sau khi VNPay xác nhận thành công.
+                _db.WalletTransactions.Add(new WalletTransaction
+                {
+                    UserId = payment.PayerUserId,
+                    Amount = payment.Amount,
+                    Type = "Deposit",
+                    Description = $"Nạp ví qua VNPay ({payment.Amount:N0}đ)"
+                });
+                await _db.SaveChangesAsync();
+                TempData["Success"] = $"Nạp ví thành công {payment.Amount:N0}đ!";
+                return RedirectToAction("Index", "Wallet");
+            }
+
+            var booking = await _db.Bookings
+                .Include(b => b.TutorProfile)
+                .FirstOrDefaultAsync(b => b.Id == payment.BookingId);
+            if (booking != null)
+            {
+                booking.IsPaid = true;
+
+                // Đẩy tiền VNPay vào escrow để khi hoàn thành sẽ chuyển cho gia sư —
+                // thống nhất với luồng thanh toán qua ví. Ghi cặp Deposit(+) và Hold(−)
+                // cùng số tiền: số dư ví học viên không đổi, nhưng bản ghi Hold mang đúng
+                // số tiền gốc để ReleaseToTutorAsync/RefundToStudentAsync tính hoa hồng.
+                var alreadyHeld = await _db.WalletTransactions
+                    .AnyAsync(t => t.BookingId == booking.Id && t.Type == "Hold");
+                if (!alreadyHeld)
+                {
+                    _db.WalletTransactions.Add(new WalletTransaction
+                    {
+                        UserId = booking.StudentId, Amount = payment.Amount, Type = "Deposit",
+                        BookingId = booking.Id,
+                        Description = $"Thanh toán VNPay buổi học #{booking.Id} ({payment.Amount:N0}đ)"
+                    });
+                    _db.WalletTransactions.Add(new WalletTransaction
+                    {
+                        UserId = booking.StudentId, Amount = -payment.Amount, Type = "Hold",
+                        BookingId = booking.Id,
+                        Description = $"Giữ tiền buổi học #{booking.Id} (escrow) — chuyển cho gia sư khi hoàn thành"
+                    });
+                }
+            }
 
             // Tăng lượt dùng của mã giảm giá (nếu có).
             if (!string.IsNullOrEmpty(payment.CouponCode))

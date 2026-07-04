@@ -144,7 +144,15 @@ public class TutorController : Controller
 
                 if (file == null || file.Length == 0) continue;
 
-                var ext = Path.GetExtension(file.FileName);
+                // Chỉ nhận ảnh/PDF, tối đa 10MB mỗi file — chặn upload file thực thi/lạ.
+                var ext = Path.GetExtension(file.FileName).ToLower();
+                var allowed = new[] { ".jpg", ".jpeg", ".png", ".webp", ".pdf" };
+                if (!allowed.Contains(ext) || file.Length > 10 * 1024 * 1024)
+                {
+                    ModelState.AddModelError("", $"File \"{file.FileName}\" không hợp lệ (chỉ nhận JPG/PNG/WEBP/PDF ≤ 10MB).");
+                    continue;
+                }
+
                 var certUrl = await _cloudinary.UploadFileAsync(file, "certificates");
                 if (string.IsNullOrEmpty(certUrl)) continue;
 

@@ -1,0 +1,50 @@
+@{
+    ViewData["Title"] = "Đánh giá học viên";
+    var booking = ViewBag.Booking as TutorPlatform.Core.Models.Booking;
+}
+
+<div class="container py-5" style="max-width:560px;">
+    <div class="card border-0 shadow-sm">
+        <div class="card-body p-4">
+            <h4 class="fw-bold mb-1">Đánh giá học viên</h4>
+            <p class="text-muted small mb-4">Buổi học: @booking?.Student?.FullName — @booking?.StartTime.ToLocalTime().ToString("HH:mm dd/MM/yyyy")</p>
+
+            <form method="post" asp-action="ReviewStudent">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="bookingId" value="@booking?.Id" />
+
+                <label class="form-label fw-semibold">Mức độ hài lòng</label>
+                <div class="star-input mb-3" id="starInput">
+                    @for (int i = 1; i <= 5; i++)
+                    {
+                        <span class="star" data-val="@i" style="font-size:2rem;cursor:pointer;color:#d1d5db;">★</span>
+                    }
+                    <input type="hidden" name="rating" id="ratingVal" value="5" />
+                </div>
+
+                <label class="form-label fw-semibold">Nhận xét (tuỳ chọn)</label>
+                <textarea name="comment" class="form-control mb-3" rows="4" maxlength="1000"
+                          placeholder="VD: Học viên chăm chỉ, làm bài đầy đủ, tiếp thu nhanh..."></textarea>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary px-4">Gửi đánh giá</button>
+                    <a asp-controller="Booking" asp-action="TutorRequests" class="btn btn-outline-secondary">Huỷ</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const stars = document.querySelectorAll('#starInput .star');
+        const ratingVal = document.getElementById('ratingVal');
+        function paint(v) { stars.forEach(s => s.style.color = (+s.dataset.val <= v) ? '#f59e0b' : '#d1d5db'); }
+        stars.forEach(s => {
+            s.addEventListener('mouseenter', () => paint(+s.dataset.val));
+            s.addEventListener('click', () => { ratingVal.value = s.dataset.val; paint(+s.dataset.val); });
+        });
+        document.getElementById('starInput').addEventListener('mouseleave', () => paint(+ratingVal.value));
+        paint(5);
+    </script>
+}

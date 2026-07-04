@@ -222,6 +222,11 @@ public class StudentController : Controller
         ViewBag.SubjectCount = completed.Select(b => b.SubjectId).Distinct().Count();
         ViewBag.Upcoming = bookings.Count(b => (b.Status == "Confirmed" || b.Status == "Pending") && b.StartTime > now);
 
+        // Điểm đánh giá học viên nhận được từ gia sư (đánh giá 2 chiều)
+        var myReviews = await _db.StudentReviews.Where(r => r.StudentId == uid).ToListAsync();
+        ViewBag.StudentRating = myReviews.Any() ? Math.Round(myReviews.Average(r => r.Rating), 1) : 0.0;
+        ViewBag.StudentRatingCount = myReviews.Count;
+
         // Số buổi theo 12 tuần gần nhất
         var wkLabels = new List<string>(); var wkData = new List<int>();
         var monday = now.Date.AddDays(-(int)(now.DayOfWeek == DayOfWeek.Sunday ? 6 : now.DayOfWeek - DayOfWeek.Monday));

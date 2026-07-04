@@ -29,6 +29,9 @@ public class WalletController : Controller
     {
         var uid = _userManager.GetUserId(User)!;
         ViewBag.Balance = await BalanceAsync(_db, uid);
+        ViewBag.IsTutor = User.IsInRole("Tutor");
+        ViewBag.PendingWithdrawal = await _db.WithdrawalRequests
+            .FirstOrDefaultAsync(w => w.UserId == uid && w.Status == "Pending");
         var txs = await _db.WalletTransactions
             .Where(t => t.UserId == uid)
             .OrderByDescending(t => t.CreatedAt)
@@ -36,7 +39,7 @@ public class WalletController : Controller
         return View(txs);
     }
 
-    // Nạp ví (sandbox demo — thực tế sẽ đi qua cổng VNPay)
+    // Nạp ví qua cổng VNPay thật (không cộng số dư trực tiếp — chống tạo tiền giả)
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Deposit(decimal amount)
@@ -47,13 +50,109 @@ public class WalletController : Controller
             TempData["Error"] = "Số tiền nạp phải từ 10.000đ đến 10.000.000đ.";
             return RedirectToAction("Index");
         }
-        _db.WalletTransactions.Add(new WalletTransaction
+
+        // BẢO MẬT: không cộng tiền trực tiếp nữa — nạp ví phải qua cổng VNPay thật.
+        var tmnCode = _config["Vnpay:TmnCode"];
+        var hashSecret = _config["Vnpay:HashSecret"];
+        if (string.IsNullOrWhiteSpace(tmnCode) || string.IsNullOrWhiteSpace(hashSecret))
         {
-            UserId = uid, Amount = amount, Type = "Deposit",
-            Description = "Nạp tiền vào ví (sandbox)"
+            TempData["Error"] = "Cổng thanh toán chưa được cấu hình. Vui lòng liên hệ quản trị viên.";
+            return RedirectToAction("Index");
+        }
+
+        long orderCode = DateTime.Now.Ticks;
+        _db.Payments.Add(new Payment
+        {
+            BookingId = null,
+            Type = "WalletDeposit",
+            PayerUserId = uid,
+            OrderCode = orderCode,
+            Amount = amount,
+            Status = "Pending",
+            CreatedAt = DateTime.UtcNow
         });
         await _db.SaveChangesAsync();
-        TempData["Success"] = $"Đã nạp {amount:N0}đ vào ví.";
+
+        var baseUrl = _config["Vnpay:BaseUrl"] ?? "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
+        var version = _config["Vnpay:Version"] ?? "2.1.0";
+        var createDate = DateTime.UtcNow.AddHours(7).ToString("yyyyMMddHHmmss");
+        var ipAddr = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1";
+        var returnUrl = $"{Request.Scheme}://{Request.Host}/Payment/VnPayReturn";
+
+        var vnp = new VnPayLibrary();
+        vnp.AddRequestData("vnp_Version", version);
+        vnp.AddRequestData("vnp_Command", "pay");
+        vnp.AddRequestData("vnp_TmnCode", tmnCode);
+        vnp.AddRequestData("vnp_Amount", ((long)(amount * 100)).ToString());
+        vnp.AddRequestData("vnp_CreateDate", createDate);
+        vnp.AddRequestData("vnp_CurrCode", "VND");
+        vnp.AddRequestData("vnp_IpAddr", ipAddr);
+        vnp.AddRequestData("vnp_Locale", "vn");
+        vnp.AddRequestData("vnp_OrderInfo", "Nap vi Gia Su Viet");
+        vnp.AddRequestData("vnp_OrderType", "other");
+        vnp.AddRequestData("vnp_ReturnUrl", returnUrl);
+        vnp.AddRequestData("vnp_TxnRef", orderCode.ToString());
+
+        return Redirect(vnp.CreateRequestUrl(baseUrl, hashSecret));
+    }
+
+    // ===== RÚT TIỀN (dành cho gia sư và người dùng có số dư) =====
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Withdraw(decimal amount, string bankName, string bankAccount, string accountHolder)
+    {
+        var uid = _userManager.GetUserId(User)!;
+        if (amount < 50000)
+        {
+            TempData["Error"] = "Số tiền rút tối thiểu là 50.000đ.";
+            return RedirectToAction("Index");
+        }
+        if (string.IsNullOrWhiteSpace(bankName) || string.IsNullOrWhiteSpace(bankAccount) || string.IsNullOrWhiteSpace(accountHolder))
+        {
+            TempData["Error"] = "Vui lòng điền đầy đủ thông tin ngân hàng.";
+            return RedirectToAction("Index");
+        }
+
+        // Chỉ 1 yêu cầu đang chờ tại một thời điểm.
+        if (await _db.WithdrawalRequests.AnyAsync(w => w.UserId == uid && w.Status == "Pending"))
+        {
+            TempData["Error"] = "Bạn đang có một yêu cầu rút tiền chờ xử lý.";
+            return RedirectToAction("Index");
+        }
+
+        // Transaction: kiểm tra số dư + trừ tiền nguyên tử, tránh race condition.
+        await using var tx = await _db.Database.BeginTransactionAsync();
+        var balance = await BalanceAsync(_db, uid);
+        if (balance < amount)
+        {
+            TempData["Error"] = $"Số dư không đủ (hiện có {balance:N0}đ).";
+            return RedirectToAction("Index");
+        }
+
+        var req = new WithdrawalRequest
+        {
+            UserId = uid,
+            Amount = amount,
+            BankName = bankName.Trim(),
+            BankAccount = bankAccount.Trim(),
+            AccountHolder = accountHolder.Trim(),
+            Status = "Pending"
+        };
+        _db.WithdrawalRequests.Add(req);
+        _db.WalletTransactions.Add(new WalletTransaction
+        {
+            UserId = uid, Amount = -amount, Type = "Withdraw",
+            Description = $"Yêu cầu rút {amount:N0}đ về {bankName} ({bankAccount})"
+        });
+        await _db.SaveChangesAsync();
+        await tx.CommitAsync();
+
+        var admins = await _userManager.GetUsersInRoleAsync("Admin");
+        await _notif.NotifyManyAsync(admins.Select(a => a.Id), "Yêu cầu rút tiền mới",
+            $"{accountHolder} yêu cầu rút {amount:N0}đ.", "/Admin/Withdrawals");
+
+        TempData["Success"] = "Đã gửi yêu cầu rút tiền. Admin sẽ xử lý trong 1-2 ngày làm việc.";
         return RedirectToAction("Index");
     }
 

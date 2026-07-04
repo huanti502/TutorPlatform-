@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.EntityFrameworkCore;
 using System.Text.Json;
 using TutorPlatform.Core.Models;
@@ -15,12 +16,25 @@ public class AIController : Controller
     private readonly AIService _ai;
     private readonly AppDbContext _db;
     private readonly UserManager<AppUser> _userManager;
+    private readonly IMemoryCache _cache;
 
-    public AIController(AIService ai, AppDbContext db, UserManager<AppUser> userManager)
+    public AIController(AIService ai, AppDbContext db, UserManager<AppUser> userManager, IMemoryCache cache)
     {
         _ai = ai;
         _db = db;
         _userManager = userManager;
+        _cache = cache;
+    }
+
+    // Giới hạn số lần gọi AI mỗi phút / user để tránh spam đốt quota.
+    // Trả về false nếu vượt ngưỡng.
+    private bool AllowAiCall(int maxPerMinute = 15)
+    {
+        var key = $"ai_rl_{_userManager.GetUserId(User)}_{DateTime.UtcNow:yyyyMMddHHmm}";
+        var count = _cache.GetOrCreate(key, e => { e.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1); return 0; });
+        if (count >= maxPerMinute) return false;
+        _cache.Set(key, count + 1, TimeSpan.FromMinutes(1));
+        return true;
     }
 
     // ══════════════════════════════════════════════════════
@@ -41,6 +55,7 @@ public class AIController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> PracticeGenerate([FromBody] PracticeReq req)
     {
+        if (!AllowAiCall()) return Json(new { ok = false, message = "Bạn thao tác quá nhanh, vui lòng thử lại sau ít giây." });
         if (string.IsNullOrWhiteSpace(req?.Topic))
             return Json(new { ok = false, message = "Hãy nhập chủ đề." });
         int n = Math.Clamp(req.Count, 3, 10);
@@ -90,6 +105,7 @@ public class AIController : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> FlashcardsGenerate([FromBody] FlashReq req)
     {
+        if (!AllowAiCall()) return Json(new { ok = false, message = "Bạn thao tác quá nhanh, vui lòng thử lại sau ít giây." });
         var uid = _userManager.GetUserId(User)!;
         var note = await _db.LessonNotes
             .Include(nt => nt.Booking).ThenInclude(bk => bk!.Subject)
@@ -145,6 +161,7 @@ public class AIController : Controller
     [HttpPost]
     public async Task<IActionResult> SendMessage([FromBody] ChatRequest request)
     {
+        if (!AllowAiCall()) return Json(new { ok = false, message = "Bạn thao tác quá nhanh, vui lòng thử lại sau ít giây." });
         if (string.IsNullOrWhiteSpace(request.Message))
             return BadRequest("Tin nhắn trống");
 
@@ -230,6 +247,7 @@ public class AIController : Controller
     [HttpPost]
     public async Task<IActionResult> GenerateStudyPlan([FromBody] StudyPlanRequest req)
     {
+        if (!AllowAiCall()) return Json(new { ok = false, message = "Bạn thao tác quá nhanh, vui lòng thử lại sau ít giây." });
         var subject = await _db.Subjects.FindAsync(req.SubjectId);
         if (subject == null) return Json(new { error = "Không tìm thấy môn học" });
 

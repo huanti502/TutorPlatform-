@@ -65,6 +65,7 @@ public class ReviewController : Controller
 
     [Authorize(Roles = "Student")]
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(int bookingId, int rating, string? comment)
     {
         var user = await _userManager.GetUserAsync(User);
@@ -134,6 +135,7 @@ public class ReviewController : Controller
     /// </summary>
     [Authorize(Roles = "Tutor")]
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Reply(int reviewId, string content, int tutorProfileId)
     {
         if (string.IsNullOrWhiteSpace(content))
@@ -217,5 +219,71 @@ public class ReviewController : Controller
             ? profile.ReceivedReviews.Average(r => r.Rating) : 0;
 
         return View(reviews.OrderByDescending(r => r.CreatedAt).ToList());
+    }
+
+    // ==========================================
+    // ĐÁNH GIÁ 2 CHIỀU: GIA SƯ ĐÁNH GIÁ HỌC VIÊN
+    // ==========================================
+
+    [Authorize(Roles = "Tutor")]
+    [HttpGet]
+    public async Task<IActionResult> ReviewStudent(int bookingId)
+    {
+        var uid = _userManager.GetUserId(User)!;
+        var booking = await _db.Bookings
+            .Include(b => b.Student)
+            .Include(b => b.TutorProfile)
+            .FirstOrDefaultAsync(b => b.Id == bookingId);
+        if (booking == null) return NotFound();
+        if (booking.TutorProfile?.UserId != uid) return Forbid();
+        if (booking.Status != "Completed")
+        {
+            TempData["Error"] = "Chỉ đánh giá được buổi đã hoàn thành.";
+            return RedirectToAction("TutorRequests", "Booking");
+        }
+        if (await _db.StudentReviews.AnyAsync(r => r.BookingId == bookingId))
+        {
+            TempData["Error"] = "Bạn đã đánh giá học viên cho buổi này rồi.";
+            return RedirectToAction("TutorRequests", "Booking");
+        }
+        ViewBag.Booking = booking;
+        return View();
+    }
+
+    [Authorize(Roles = "Tutor")]
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ReviewStudent(int bookingId, int rating, string? comment)
+    {
+        var uid = _userManager.GetUserId(User)!;
+        var booking = await _db.Bookings
+            .Include(b => b.TutorProfile)
+            .FirstOrDefaultAsync(b => b.Id == bookingId);
+        if (booking == null) return NotFound();
+        if (booking.TutorProfile?.UserId != uid) return Forbid();
+        if (booking.Status != "Completed") { TempData["Error"] = "Buổi chưa hoàn thành."; return RedirectToAction("TutorRequests", "Booking"); }
+        if (await _db.StudentReviews.AnyAsync(r => r.BookingId == bookingId))
+        {
+            TempData["Error"] = "Đã đánh giá rồi.";
+            return RedirectToAction("TutorRequests", "Booking");
+        }
+
+        var mod = await _moderation.DeepCheckAsync(comment);
+        if (!mod.Ok) { TempData["Error"] = mod.Reason; return RedirectToAction("ReviewStudent", new { bookingId }); }
+
+        _db.StudentReviews.Add(new StudentReview
+        {
+            BookingId = bookingId,
+            TutorProfileId = booking.TutorProfileId,
+            StudentId = booking.StudentId,
+            Rating = Math.Clamp(rating, 1, 5),
+            Comment = comment
+        });
+        await _db.SaveChangesAsync();
+
+        await _notif.NotifyAsync(booking.StudentId, "Gia sư đã đánh giá bạn",
+            "Gia sư vừa để lại đánh giá về buổi học. Cảm ơn bạn đã học tập tích cực!", "/Student/Dashboard");
+        TempData["Success"] = "Đã gửi đánh giá học viên!";
+        return RedirectToAction("TutorRequests", "Booking");
     }
 }

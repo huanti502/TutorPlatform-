@@ -1,0 +1,108 @@
+@model List<TutorPlatform.Core.Models.WithdrawalRequest>
+@{
+    ViewData["Title"] = "Duyệt rút tiền";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+    var current = ViewBag.CurrentStatus as string ?? "";
+    string Badge(string s) => s switch { "Pending" => "bg-warning text-dark", "Approved" => "bg-success", _ => "bg-secondary" };
+    string Text(string s) => s switch { "Pending" => "Chờ duyệt", "Approved" => "Đã duyệt", _ => "Đã từ chối" };
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3 class="mb-0">Yêu cầu rút tiền</h3>
+    <span class="badge bg-danger">@ViewBag.PendingCount chờ xử lý</span>
+</div>
+
+@if (TempData["Success"] != null) { <div class="alert alert-success">@TempData["Success"]</div> }
+@if (TempData["Error"] != null) { <div class="alert alert-danger">@TempData["Error"]</div> }
+
+<ul class="nav nav-pills mb-3">
+    <li class="nav-item"><a class="nav-link @(current == "" ? "active" : "")" href="/Admin/Withdrawals">Tất cả</a></li>
+    <li class="nav-item"><a class="nav-link @(current == "Pending" ? "active" : "")" href="/Admin/Withdrawals?status=Pending">Chờ duyệt</a></li>
+    <li class="nav-item"><a class="nav-link @(current == "Approved" ? "active" : "")" href="/Admin/Withdrawals?status=Approved">Đã duyệt</a></li>
+    <li class="nav-item"><a class="nav-link @(current == "Rejected" ? "active" : "")" href="/Admin/Withdrawals?status=Rejected">Đã từ chối</a></li>
+</ul>
+
+@if (!Model.Any())
+{
+    <div class="card border-0 shadow-sm"><div class="card-body text-center text-muted py-4">Không có yêu cầu nào.</div></div>
+}
+else
+{
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Người rút</th><th>Số tiền</th><th>Ngân hàng</th><th>Trạng thái</th><th>Thời gian</th><th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var w in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="fw-semibold">@w.AccountHolder</div>
+                                <div class="text-muted small">@w.User?.Email</div>
+                            </td>
+                            <td class="fw-bold">@w.Amount.ToString("N0")đ</td>
+                            <td>
+                                <div>@w.BankName</div>
+                                <div class="text-muted small">@w.BankAccount</div>
+                            </td>
+                            <td><span class="badge @Badge(w.Status)">@Text(w.Status)</span></td>
+                            <td class="small text-muted">@w.CreatedAt.ToLocalTime().ToString("HH:mm dd/MM/yyyy")</td>
+                            <td class="text-end">
+                                @if (w.Status == "Pending")
+                                {
+                                    <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#wModal"
+                                            data-id="@w.Id" data-act="approve" data-name="@w.AccountHolder" data-amount="@w.Amount.ToString("N0")">Duyệt</button>
+                                    <button class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#wModal"
+                                            data-id="@w.Id" data-act="reject" data-name="@w.AccountHolder" data-amount="@w.Amount.ToString("N0")">Từ chối</button>
+                                }
+                                else if (!string.IsNullOrEmpty(w.AdminNote))
+                                {
+                                    <span class="text-muted small">@w.AdminNote</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="modal fade" id="wModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <form class="modal-content" method="post" asp-action="HandleWithdrawal">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="wId" />
+                <input type="hidden" name="action" id="wAct" />
+                <div class="modal-header border-0 pb-0"><h5 class="modal-title fw-bold" id="wTitle">Xử lý</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                <div class="modal-body">
+                    <p class="text-muted small" id="wDesc"></p>
+                    <label class="form-label small fw-semibold">Ghi chú (bắt buộc khi từ chối)</label>
+                    <textarea name="note" id="wNote" class="form-control" rows="2" placeholder="VD: đã chuyển khoản / sai thông tin ngân hàng"></textarea>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Huỷ</button>
+                    <button type="submit" class="btn btn-primary" id="wSubmit">Xác nhận</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('wModal')?.addEventListener('show.bs.modal', function (ev) {
+            const b = ev.relatedTarget;
+            document.getElementById('wId').value = b.dataset.id;
+            document.getElementById('wAct').value = b.dataset.act;
+            const approve = b.dataset.act === 'approve';
+            document.getElementById('wTitle').textContent = approve ? 'Duyệt rút tiền' : 'Từ chối rút tiền';
+            document.getElementById('wDesc').textContent = (approve ? 'Xác nhận đã chuyển ' : 'Từ chối và hoàn ') + b.dataset.amount + 'đ cho ' + b.dataset.name + '.';
+            const note = document.getElementById('wNote');
+            note.required = !approve;
+            document.getElementById('wSubmit').className = 'btn ' + (approve ? 'btn-success' : 'btn-danger');
+        });
+    </script>
+}

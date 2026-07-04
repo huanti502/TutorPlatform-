@@ -24,13 +24,12 @@ public class ClassRequestController : Controller
 
     // GET /ClassRequest — danh sách lớp đang mở (công khai) + bộ lọc
     [HttpGet]
-    public async Task<IActionResult> Index(int? subjectId, string? mode, string? keyword)
+    public async Task<IActionResult> Index(int? subjectId, string? mode, string? keyword, string? sort)
     {
         var query = _db.ClassRequests
             .Include(c => c.Subject)
             .Include(c => c.Applications)
             .Where(c => c.Status == "Open")
-            .OrderByDescending(c => c.CreatedAt)
             .AsQueryable();
 
         if (subjectId.HasValue)
@@ -45,10 +44,18 @@ public class ClassRequestController : Controller
                 || (c.Location != null && c.Location.ToLower().Contains(k)));
         }
 
+        query = sort switch
+        {
+            "price_asc" => query.OrderBy(c => c.BudgetPerSession),
+            "price_desc" => query.OrderByDescending(c => c.BudgetPerSession),
+            _ => query.OrderByDescending(c => c.CreatedAt)
+        };
+
         ViewBag.Subjects = await _db.Subjects.Where(s => s.IsActive).OrderBy(s => s.Name).ToListAsync();
         ViewBag.SubjectId = subjectId;
         ViewBag.Mode = mode ?? "";
         ViewBag.Keyword = keyword ?? "";
+        ViewBag.Sort = sort ?? "";
 
         // Nếu là gia sư: đánh dấu lớp đã gửi đề nghị để hiển thị đúng nút.
         if (User.Identity?.IsAuthenticated == true && User.IsInRole("Tutor"))
@@ -66,6 +73,17 @@ public class ClassRequestController : Controller
         }
 
         return View(await query.Take(100).ToListAsync());
+    }
+
+    // JSON: số đề nghị hiện tại của các lớp đang mở — dùng để cập nhật động ở trang danh sách.
+    [HttpGet]
+    public async Task<IActionResult> LiveCounts()
+    {
+        var data = await _db.ClassRequests
+            .Where(c => c.Status == "Open")
+            .Select(c => new { id = c.Id, count = c.Applications.Count })
+            .ToListAsync();
+        return Json(new { total = data.Count, items = data });
     }
 
     // GET /ClassRequest/Create — form đăng lớp (học viên)

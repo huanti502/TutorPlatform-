@@ -5,8 +5,11 @@ public class Payment
 {
     public int Id { get; set; }
 
-    public int BookingId { get; set; }
+    public int? BookingId { get; set; }              // null nếu là giao dịch nạp ví
     public Booking? Booking { get; set; }
+
+    public string Type { get; set; } = "Booking";     // Booking | WalletDeposit
+    public string? PayerUserId { get; set; }          // người nạp (dùng cho WalletDeposit)
 
     public long OrderCode { get; set; }          // vnp_TxnRef - mã giao dịch duy nhất
     public decimal Amount { get; set; }          // số tiền (VND)

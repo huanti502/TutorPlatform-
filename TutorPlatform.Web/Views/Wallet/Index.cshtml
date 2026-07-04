@@ -27,6 +27,34 @@
         </div>
     </div>
 
+    @{
+        var pending = ViewBag.PendingWithdrawal as TutorPlatform.Core.Models.WithdrawalRequest;
+    }
+    @if (pending != null)
+    {
+        <div class="alert alert-warning d-flex align-items-center gap-2">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <div>Đang có yêu cầu rút <b>@pending.Amount.ToString("N0")đ</b> về @pending.BankName — chờ admin duyệt.</div>
+        </div>
+    }
+    else if (bal >= 50000)
+    {
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-body">
+                <h6 class="fw-bold mb-3">Rút tiền về ngân hàng</h6>
+                <form asp-action="Withdraw" method="post" class="row g-2">
+                    @Html.AntiForgeryToken()
+                    <div class="col-md-3"><input type="number" name="amount" class="form-control" min="50000" step="10000" placeholder="Số tiền (₫)" required /></div>
+                    <div class="col-md-3"><input type="text" name="bankName" class="form-control" placeholder="Ngân hàng (VD: Vietcombank)" required /></div>
+                    <div class="col-md-3"><input type="text" name="bankAccount" class="form-control" placeholder="Số tài khoản" required /></div>
+                    <div class="col-md-2"><input type="text" name="accountHolder" class="form-control" placeholder="Chủ TK" required /></div>
+                    <div class="col-md-1 d-grid"><button class="btn btn-primary">Rút</button></div>
+                </form>
+                <div class="text-muted small mt-2">Tối thiểu 50.000đ. Admin xử lý trong 1-2 ngày làm việc.</div>
+            </div>
+        </div>
+    }
+
     <div class="card border-0 shadow-sm">
         <div class="card-body">
             <h6 class="fw-bold mb-3">Lịch sử giao dịch</h6>
@@ -47,6 +75,7 @@
                                 "Hold" => ("Giữ tiền", "bg-warning text-dark"),
                                 "Release" => ("Nhận tiền", "bg-success"),
                                 "Refund" => ("Hoàn tiền", "bg-info text-dark"),
+                                "Withdraw" => ("Rút tiền", "bg-dark"),
                                 _ => (t.Type, "bg-secondary")
                             };
                             <tr>

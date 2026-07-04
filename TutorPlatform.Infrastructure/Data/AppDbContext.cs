@@ -51,6 +51,8 @@ public class AppDbContext : IdentityDbContext<AppUser>, IDataProtectionKeyContex
     public DbSet<SupportTicket> SupportTickets => Set<SupportTicket>();
     public DbSet<ClassRequest> ClassRequests => Set<ClassRequest>();
     public DbSet<ClassApplication> ClassApplications => Set<ClassApplication>();
+    public DbSet<WithdrawalRequest> WithdrawalRequests => Set<WithdrawalRequest>();
+    public DbSet<StudentReview> StudentReviews => Set<StudentReview>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

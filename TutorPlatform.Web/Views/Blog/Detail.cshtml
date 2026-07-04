@@ -79,6 +79,7 @@
                             {
                                 <form asp-controller="Blog" asp-action="Delete" asp-route-id="@Model.Id" method="post" class="m-0 ms-3"
                                       onsubmit="return confirm('Bạn có chắc chắn muốn xóa bài viết này không? Hành động này không thể hoàn tác.');">
+                                    @Html.AntiForgeryToken()
                                     <button type="submit" class="btn btn-outline-danger btn-sm d-flex align-items-center gap-1" style="white-space:nowrap;">
                                         <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                             <polyline points="3 6 5 6 21 6"></polyline>

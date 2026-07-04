@@ -89,6 +89,7 @@ public class BlogController : Controller
 
     [Authorize]
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(string title, string content, IFormFile? imageFile)
     {
         if (string.IsNullOrWhiteSpace(title) || string.IsNullOrWhiteSpace(content))
@@ -98,6 +99,13 @@ public class BlogController : Controller
         }
 
         var user = await _userManager.GetUserAsync(User);
+
+        // Kiểm duyệt nội dung bằng AI trước khi đăng (nhất quán với đánh giá & tin nhắn).
+        var titleCheck = await _moderation.DeepCheckAsync(title);
+        if (!titleCheck.Ok) { TempData["Error"] = titleCheck.Reason; return View(); }
+        var contentCheck = await _moderation.DeepCheckAsync(content);
+        if (!contentCheck.Ok) { TempData["Error"] = contentCheck.Reason; return View(); }
+
         var post = new Post
         {
             Title = title,
@@ -126,6 +134,7 @@ public class BlogController : Controller
     // Thêm bình luận
     [Authorize]
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> AddComment(int postId, string content)
     {
         // #18: kiểm duyệt bình luận blog (regex + AI)
@@ -182,6 +191,7 @@ public class BlogController : Controller
     // Xóa bài viết
     [HttpPost]
     [Authorize]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
         var post = await _db.Posts.FindAsync(id);
