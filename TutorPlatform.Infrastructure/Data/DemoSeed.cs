@@ -458,4 +458,221 @@ public static class DemoSeed
 
         Console.WriteLine("DemoSeed v2: đã bổ sung gia sư/học viên mới, lịch sử học, blog có ảnh, tài liệu, thanh toán.");
     }
+
+    // ══════════════════════════════════════════════════════════════
+    // Làm giàu dữ liệu "gamification" & học tập: XP, bài tập, lớp cần
+    // gia sư, đánh giá 2 chiều. Gọi SAU khi các bảng đã được tạo.
+    // Idempotent: chỉ thêm khi dữ liệu còn thiếu, an toàn khi chạy lại.
+    // ══════════════════════════════════════════════════════════════
+    public static async Task SeedGamificationAsync(AppDbContext db)
+    {
+        var rng = new Random(2027);
+
+        string LevelOf(int xp) =>
+            xp >= 5000 ? "Huyền thoại" :
+            xp >= 2000 ? "Chuyên gia" :
+            xp >= 1000 ? "Xuất sắc" :
+            xp >= 600 ? "Thành thạo" :
+            xp >= 300 ? "Chăm chỉ" :
+            xp >= 100 ? "Học viên" : "Mới bắt đầu";
+
+        // ── 1. XP cho học viên (để bảng xếp hạng sinh động) ──
+        // Chỉ gán cho học viên đang có 0 XP → không ghi đè XP thật đã tích luỹ.
+        var students = await db.Users.Where(u => u.Role == "Student").ToListAsync();
+        var zeroXpStudents = students.Where(s => s.XpPoints == 0).ToList();
+        if (zeroXpStudents.Count > 0)
+        {
+            // Tạo phân bố XP đa dạng: vài người top cao, phần lớn ở giữa, số ít mới.
+            int idx = 0;
+            foreach (var s in zeroXpStudents)
+            {
+                int xp = (idx % 7) switch
+                {
+                    0 => rng.Next(1200, 2600),   // top
+                    1 => rng.Next(600, 1200),
+                    2 => rng.Next(300, 700),
+                    3 => rng.Next(150, 400),
+                    4 => rng.Next(80, 260),
+                    5 => rng.Next(30, 150),
+                    _ => rng.Next(0, 90),        // mới bắt đầu
+                };
+                // làm tròn về bội số 10 cho đẹp
+                xp = xp / 10 * 10;
+                s.XpPoints = xp;
+                s.XpLevel = LevelOf(xp);
+                idx++;
+            }
+            await db.SaveChangesAsync();
+        }
+
+        // Cho gia sư một ít XP nữa (họ cũng xuất hiện ở Battle/Top XP).
+        var tutorsZero = await db.Users.Where(u => u.Role == "Tutor" && u.XpPoints == 0).ToListAsync();
+        foreach (var t in tutorsZero)
+        {
+            int xp = rng.Next(20, 400) / 10 * 10;
+            t.XpPoints = xp;
+            t.XpLevel = LevelOf(xp);
+        }
+        if (tutorsZero.Count > 0) await db.SaveChangesAsync();
+
+        // ── 2. Bài tập mẫu (Assignments) gắn với buổi học đã có ──
+        if (await db.Assignments.CountAsync() < 8)
+        {
+            var withAssignment = await db.Assignments.Select(a => a.BookingId).ToListAsync();
+            var bookingsForHw = await db.Bookings
+                .Include(b => b.TutorProfile)
+                .Include(b => b.Subject)
+                .Where(b => (b.Status == "Completed" || b.Status == "Confirmed")
+                    && b.TutorProfile != null
+                    && !withAssignment.Contains(b.Id))
+                .OrderByDescending(b => b.StartTime)
+                .Take(14)
+                .ToListAsync();
+
+            var hwTitles = new[]
+            {
+                ("Bài tập về nhà buổi {0}", "Hoàn thành các bài trong phiếu bài tập đã gửi, chú ý trình bày các bước rõ ràng."),
+                ("Ôn tập chương {0}", "Làm lại toàn bộ ví dụ trong chương và 5 bài luyện tập cuối chương."),
+                ("Luyện đề số {0}", "Làm đề trong 45 phút rồi tự chấm, ghi lại câu sai để buổi sau chữa."),
+                ("Bài tập nâng cao {0}", "Thử sức 3 bài nâng cao, không bắt buộc làm hết nhưng cần ghi ý tưởng."),
+            };
+            var grades = new[] { "9/10", "8/10", "7/10", "Đạt", "10/10", "6/10" };
+            var feedbacks = new[]
+            {
+                "Làm bài tốt, trình bày sạch. Cố gắng phát huy!",
+                "Đúng phần lớn, còn sai bước biến đổi ở câu 3. Xem lại nhé.",
+                "Có tiến bộ so với buổi trước, tiếp tục luyện thêm dạng này.",
+                "Cần cẩn thận hơn ở phần tính toán, kiến thức đã nắm được.",
+            };
+
+            int k = 0;
+            foreach (var b in bookingsForHw)
+            {
+                var (titleTpl, desc) = hwTitles[rng.Next(hwTitles.Length)];
+                var created = b.StartTime.AddHours(2);
+                var due = created.AddDays(rng.Next(3, 8));
+
+                // Trạng thái đa dạng: chưa làm / đã nộp / đã chấm.
+                int roll = rng.Next(10);
+                string status; DateTime? submittedAt = null, gradedAt = null;
+                string? submissionText = null, grade = null, feedback = null;
+
+                if (b.Status == "Completed" && roll < 5)
+                {
+                    status = "Graded";
+                    submittedAt = created.AddDays(rng.Next(1, 4));
+                    submissionText = "Em đã hoàn thành bài tập, có một câu em chưa chắc chắn ạ.";
+                    gradedAt = submittedAt.Value.AddHours(rng.Next(4, 30));
+                    grade = grades[rng.Next(grades.Length)];
+                    feedback = feedbacks[rng.Next(feedbacks.Length)];
+                }
+                else if (roll < 8)
+                {
+                    status = "Submitted";
+                    submittedAt = created.AddDays(rng.Next(1, 5));
+                    submissionText = "Em nộp bài ạ, em làm hết các câu bắt buộc.";
+                }
+                else
+                {
+                    status = "Assigned";
+                }
+
+                db.Assignments.Add(new Assignment
+                {
+                    BookingId = b.Id,
+                    TutorId = b.TutorProfile!.UserId,
+                    StudentId = b.StudentId,
+                    Title = string.Format(titleTpl, rng.Next(1, 6)) + $" - {b.Subject?.Name}",
+                    Description = desc,
+                    DueDate = due,
+                    CreatedAt = created,
+                    SubmissionText = submissionText,
+                    SubmittedAt = submittedAt,
+                    Grade = grade,
+                    Feedback = feedback,
+                    GradedAt = gradedAt,
+                    Status = status
+                });
+                k++;
+            }
+            await db.SaveChangesAsync();
+        }
+
+        // ── 3. Lớp cần gia sư (ClassRequests) ──
+        if (await db.ClassRequests.CountAsync(c => c.Status == "Open") < 5 && students.Count > 0)
+        {
+            var subjects = await db.Subjects.Where(s => s.IsActive).ToListAsync();
+            int? SubjId(string name) => subjects.FirstOrDefault(s => s.Name.Contains(name))?.Id;
+
+            var samples = new (string Title, string Desc, string Subj, string Mode, string? Loc, string Sched, int Sess, decimal Budget)[]
+            {
+                ("Toán lớp 8 - lấy lại gốc, 2 buổi/tuần", "- Học sinh Nam, học lực trung bình, cần kèm lại kiến thức nền lớp 7-8.\n- Yêu cầu: gia sư kiên nhẫn, dạy dễ hiểu.\n- Ưu tiên sinh viên sư phạm.", "Toán", "Offline", "P.25, Q. Bình Thạnh, TP.HCM", "Tối T2, T5 từ 19h30", 2, 180000),
+                ("Tiếng Anh giao tiếp cho người đi làm", "- Học viên đã đi làm, mất gốc, muốn giao tiếp cơ bản trong công việc.\n- Học online, linh hoạt giờ.", "Anh", "Online", null, "Tối T3, T5, CN", 3, 250000),
+                ("Luyện thi IELTS mục tiêu 6.5", "- Học sinh lớp 12, hiện band 5.0, cần đạt 6.5 trong 4 tháng.\n- Tập trung Writing và Speaking.", "Anh", "Both", "Q.1, TP.HCM", "T7, CN buổi sáng", 2, 400000),
+                ("Vật lý lớp 11 - nâng cao", "- Học sinh khá, muốn học nâng cao chuẩn bị thi HSG.\n- Cần gia sư chuyên Lý, ra bài tập khó.", "Lý", "Online", null, "Tối T2, T6 từ 20h", 2, 300000),
+                ("Hóa học lớp 10 - cơ bản đến nâng cao", "- Học sinh Nữ, mất gốc Hóa, cần xây lại từ đầu.\n- Kèm sát chương trình trên lớp.", "Hóa", "Offline", "TP. Thủ Đức, TP.HCM", "Chiều T4, T7", 2, 200000),
+                ("Lập trình Python cho học sinh cấp 3", "- Học sinh muốn học Python từ cơ bản, định hướng thi tin học trẻ.\n- Gia sư biết dạy trực quan, có project.", "Tin", "Online", null, "Tối T3, T6", 2, 280000),
+                ("Ngữ văn lớp 9 - ôn thi vào 10", "- Học sinh cần ôn thi chuyển cấp, yếu phần nghị luận.\n- Gia sư có kinh nghiệm luyện thi vào 10.", "Văn", "Offline", "Q. Gò Vấp, TP.HCM", "Tối T2, T4, T6", 3, 220000),
+                ("Toán tư duy cho học sinh tiểu học", "- Bé lớp 4, phụ huynh muốn phát triển tư duy Toán sớm.\n- Gia sư nhẹ nhàng, tạo hứng thú học.", "Toán", "Offline", "P. Hiệp Bình Chánh, TP. Thủ Đức", "Chiều T3, T5", 2, 150000),
+            };
+
+            foreach (var s in samples)
+            {
+                var student = students[rng.Next(students.Count)];
+                db.ClassRequests.Add(new ClassRequest
+                {
+                    StudentId = student.Id,
+                    Title = s.Title,
+                    Description = s.Desc,
+                    SubjectId = SubjId(s.Subj),
+                    Mode = s.Mode,
+                    Location = s.Loc,
+                    Schedule = s.Sched,
+                    SessionsPerWeek = s.Sess,
+                    BudgetPerSession = s.Budget,
+                    Status = "Open",
+                    CreatedAt = DateTime.UtcNow.AddHours(-rng.Next(1, 120))
+                });
+            }
+            await db.SaveChangesAsync();
+        }
+
+        // ── 4. Đánh giá 2 chiều (gia sư đánh giá học viên) ──
+        if (await db.StudentReviews.CountAsync() < 5)
+        {
+            var reviewed = await db.StudentReviews.Select(r => r.BookingId).ToListAsync();
+            var completedForSr = await db.Bookings
+                .Include(b => b.TutorProfile)
+                .Where(b => b.Status == "Completed" && b.TutorProfile != null && !reviewed.Contains(b.Id))
+                .OrderByDescending(b => b.EndTime)
+                .Take(12)
+                .ToListAsync();
+
+            var srComments = new[]
+            {
+                "Học viên chăm chỉ, làm bài đầy đủ và đúng giờ.",
+                "Tiếp thu nhanh, chủ động đặt câu hỏi khi chưa hiểu.",
+                "Có tinh thần cầu tiến, tiến bộ rõ qua từng buổi.",
+                "Ngoan, hợp tác tốt trong giờ học. Cần luyện thêm ở nhà.",
+                "Thái độ học tập tích cực, làm bài tập nghiêm túc.",
+            };
+
+            foreach (var b in completedForSr)
+            {
+                if (rng.Next(10) < 3) continue; // không phải buổi nào cũng có đánh giá
+                db.StudentReviews.Add(new StudentReview
+                {
+                    BookingId = b.Id,
+                    TutorProfileId = b.TutorProfileId,
+                    StudentId = b.StudentId,
+                    Rating = rng.Next(10) < 8 ? 5 : 4,
+                    Comment = srComments[rng.Next(srComments.Length)],
+                    CreatedAt = b.EndTime.AddHours(rng.Next(1, 24))
+                });
+            }
+            await db.SaveChangesAsync();
+        }
+
+        Console.WriteLine("DemoSeed gamification: đã bổ sung XP, bài tập, lớp cần gia sư, đánh giá 2 chiều.");
+    }
 }

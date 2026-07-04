@@ -636,6 +636,17 @@ using (var paymentScope = app.Services.CreateScope())
         await pDb.Database.ExecuteSqlRawAsync(
             "CREATE INDEX IF NOT EXISTS \"IX_AuditLogs_CreatedAt\" ON \"AuditLogs\" (\"CreatedAt\");");
 
+        // Làm giàu dữ liệu demo cho các bảng vừa tạo (XP, bài tập, lớp cần gia sư, đánh giá 2 chiều).
+        // Đặt ở đây để chắc chắn mọi bảng đã tồn tại. Idempotent + bọc try/catch riêng.
+        try
+        {
+            await DemoSeed.SeedGamificationAsync(pDb);
+        }
+        catch (Exception seedEx)
+        {
+            pLogger.LogError(seedEx, "Lỗi khi seed dữ liệu gamification (bỏ qua): {Message}", seedEx.GetBaseException().Message);
+        }
+
         pLogger.LogInformation("Bảng Payments đã sẵn sàng.");
     }
     catch (Exception ex)

@@ -842,7 +842,7 @@ public class BookingController : Controller
     // Xuất file .ics để thêm buổi học vào Google Calendar / Outlook / Apple Calendar.
     [Authorize]
     [HttpGet]
-    public async Task<IActionResult> Calendar(int id)
+    public async Task<IActionResult> ExportCalendar(int id)
     {
         var uid = _userManager.GetUserId(User);
         var b = await _db.Bookings
