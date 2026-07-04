@@ -6,6 +6,18 @@
     bool isTutor = User.Identity?.IsAuthenticated == true && User.IsInRole("Tutor");
     bool isStudent = User.Identity?.IsAuthenticated == true && User.IsInRole("Student");
 
+    var mySubjectIds = ViewBag.MySubjectIds as List<int> ?? new();
+    var myMode = ViewBag.MyMode as string ?? "";
+    // Lớp "phù hợp": trùng môn gia sư dạy (và hình thức không xung khắc).
+    bool IsMatch(TutorPlatform.Core.Models.ClassRequest c) =>
+        isTutor && c.SubjectId.HasValue && mySubjectIds.Contains(c.SubjectId.Value)
+        && (myMode == "Both" || c.Mode == "Both" || c.Mode == myMode);
+
+    var displayList = isTutor
+        ? Model.OrderByDescending(IsMatch).ToList()   // đẩy lớp phù hợp lên đầu
+        : Model;
+    int matchCount = isTutor ? Model.Count(IsMatch) : 0;
+
     string ModeText(string m) => m switch { "Online" => "Trực tuyến", "Offline" => "Tại nhà", _ => "Linh hoạt" };
 }
 
@@ -21,6 +33,14 @@
         }
     </div>
     <p class="text-muted mb-4">Có <b>@Model.Count</b> lớp đang mở — gia sư có thể gửi đề nghị dạy trực tiếp.</p>
+
+    @if (isTutor && matchCount > 0)
+    {
+        <div class="alert d-flex align-items-center gap-2 border-0" style="background:var(--primary-light);color:var(--primary);">
+            <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+            <span><b>@matchCount lớp</b> phù hợp với môn bạn đang dạy — đã được đẩy lên đầu danh sách.</span>
+        </div>
+    }
 
     <form method="get" class="card border-0 shadow-sm mb-4">
         <div class="card-body d-flex flex-wrap gap-2 align-items-center">
@@ -64,9 +84,10 @@
         </div></div>
     }
 
-    @foreach (var c in Model)
+    @foreach (var c in displayList)
     {
-        <div class="card border-0 shadow-sm mb-3 class-card">
+        var matched = IsMatch(c);
+        <div class="card border-0 shadow-sm mb-3 class-card" style="@(matched ? "border-left:3px solid var(--primary) !important;" : "")">
             <div class="card-body p-4">
                 <div class="row g-3 align-items-center">
                     <div class="col-lg-2 col-md-3 text-md-center">
@@ -79,7 +100,13 @@
                         <span class="badge mt-1 @(c.Mode == "Online" ? "bg-info text-dark" : c.Mode == "Offline" ? "bg-success" : "bg-secondary")">@ModeText(c.Mode)</span>
                     </div>
                     <div class="col-lg-6 col-md-9">
-                        <h5 class="fw-bold mb-2" style="font-size:1.02rem;">@c.Title</h5>
+                        <h5 class="fw-bold mb-2" style="font-size:1.02rem;">
+                            @c.Title
+                            @if (matched)
+                            {
+                                <span class="badge ms-1" style="background:var(--primary);color:#fff;font-size:.68rem;vertical-align:middle;">✓ Phù hợp với bạn</span>
+                            }
+                        </h5>
                         @if (c.Student != null)
                         {
                             var lv = TutorPlatform.Web.Services.XpService.GetLevel(c.Student.XpPoints);

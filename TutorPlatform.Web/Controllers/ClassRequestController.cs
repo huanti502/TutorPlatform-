@@ -58,11 +58,13 @@ public class ClassRequestController : Controller
         ViewBag.Keyword = keyword ?? "";
         ViewBag.Sort = sort ?? "";
 
-        // Nếu là gia sư: đánh dấu lớp đã gửi đề nghị để hiển thị đúng nút.
+        // Nếu là gia sư: đánh dấu lớp đã gửi đề nghị + gợi ý lớp khớp môn dạy.
         if (User.Identity?.IsAuthenticated == true && User.IsInRole("Tutor"))
         {
             var userId = _userManager.GetUserId(User)!;
-            var profile = await _db.TutorProfiles.FirstOrDefaultAsync(t => t.UserId == userId);
+            var profile = await _db.TutorProfiles
+                .Include(t => t.TutorSubjects)
+                .FirstOrDefaultAsync(t => t.UserId == userId);
             if (profile != null)
             {
                 ViewBag.MyTutorProfileId = profile.Id;
@@ -70,6 +72,10 @@ public class ClassRequestController : Controller
                     .Where(a => a.TutorProfileId == profile.Id)
                     .Select(a => a.ClassRequestId)
                     .ToListAsync();
+
+                // Môn học gia sư đang dạy → dùng để đánh dấu "Phù hợp với bạn".
+                ViewBag.MySubjectIds = profile.TutorSubjects.Select(ts => ts.SubjectId).ToList();
+                ViewBag.MyMode = profile.TeachingMode; // Online | Offline | Both
             }
         }
 
