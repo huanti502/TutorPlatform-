@@ -29,6 +29,7 @@ public class ClassRequestController : Controller
         var query = _db.ClassRequests
             .Include(c => c.Subject)
             .Include(c => c.Applications)
+            .Include(c => c.Student)
             .Where(c => c.Status == "Open")
             .AsQueryable();
 

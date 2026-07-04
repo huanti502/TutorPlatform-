@@ -51,6 +51,57 @@
             animation: battlePulse .5s infinite;
         }
 
+    /* ===== Combo + hiệu ứng điểm ===== */
+    .combo-badge {
+        display: inline-block;
+        margin-top: 6px;
+        padding: 2px 12px;
+        border-radius: 999px;
+        background: linear-gradient(135deg,#f97316,#ef4444);
+        color: #fff;
+        font-weight: 800;
+        font-size: .85rem;
+        box-shadow: 0 4px 12px rgba(239,68,68,.35);
+        transform: scale(0);
+        transition: transform .2s cubic-bezier(.34,1.56,.64,1);
+    }
+        .combo-badge.show { transform: scale(1); }
+        .combo-badge.bump { animation: comboBump .35s; }
+
+    @@keyframes comboBump {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.35); }
+        100% { transform: scale(1); }
+    }
+
+    .points-float {
+        position: absolute;
+        font-weight: 800;
+        font-size: 1.4rem;
+        pointer-events: none;
+        animation: floatUp 1s ease-out forwards;
+        z-index: 20;
+    }
+    @@keyframes floatUp {
+        0% { opacity: 0; transform: translateY(0) scale(.8); }
+        20% { opacity: 1; transform: translateY(-8px) scale(1.1); }
+        100% { opacity: 0; transform: translateY(-46px) scale(1); }
+    }
+
+    .score-num.flash { animation: scoreFlash .5s; }
+    @@keyframes scoreFlash {
+        0% { transform: scale(1); }
+        40% { transform: scale(1.3); color: #16a34a; }
+        100% { transform: scale(1); }
+    }
+
+    .option-btn.correct { animation: correctPop .4s; }
+    @@keyframes correctPop {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.03); }
+        100% { transform: scale(1); }
+    }
+
     .option-btn {
         width: 100%;
         text-align: left;
@@ -121,7 +172,7 @@
 <p class="text-muted" id="loading-msg">Đang kết nối với đối thủ và tải câu hỏi...</p>
 </div>
 
-    <div id="battle-card" style="display:none">
+    <div id="battle-card" style="display:none; position:relative;">
 <div class="scoreboard">
 <div class="player-score">
 <div class="fw-bold" id="p1-name">Player 1</div>
@@ -132,6 +183,7 @@
 <div class="timer-circle" id="timer-circle">60</div>
 <small class="text-muted">giây</small>
 <div class="mt-1 text-muted small" id="q-counter">Câu 1/10</div>
+<div class="combo-badge" id="combo-badge">🔥 Combo x2</div>
 </div>
 
             <div class="player-score">
@@ -198,6 +250,11 @@ const roomId = '@ViewBag.RoomId';
         let battleStarted = false;
         let finished = false;
         let questionsLoaded = false;
+
+        // ── Nâng cấp: combo (chuỗi đúng liên tiếp) + đo tốc độ trả lời ──
+        let myCombo = 0;
+        let questionShownAt = 0;   // mốc thời gian hiện câu (ms) để tính điểm tốc độ
+        let myCorrectCount = 0;    // số câu đúng của mình (để hiện độ chính xác cuối trận)
 
         // ── Kết nối SignalR
         const conn = new signalR.HubConnectionBuilder()
@@ -317,9 +374,17 @@ const roomId = '@ViewBag.RoomId';
         });
 
         // ── Cập nhật điểm
-        conn.on("ScoreUpdate", ({ score1, score2 }) => {
-        document.getElementById("score1").textContent = score1;
-        document.getElementById("score2").textContent = score2;
+        conn.on("ScoreUpdate", ({ score1, score2, scorerId, gained, correct }) => {
+        const el1 = document.getElementById("score1");
+        const el2 = document.getElementById("score2");
+        el1.textContent = score1;
+        el2.textContent = score2;
+        // Nhấp nháy điểm của người vừa ghi điểm (nếu là đối thủ thì mình vẫn thấy họ ghi điểm).
+        if (correct && scorerId && scorerId !== myId) {
+        const p1 = battleInfo && battleInfo.player1Id;
+        const oppEl = (scorerId === p1) ? el1 : el2;
+        oppEl.classList.remove("flash"); void oppEl.offsetWidth; oppEl.classList.add("flash");
+        }
         });
 
         // ── Kết quả trận
@@ -347,7 +412,9 @@ const roomId = '@ViewBag.RoomId';
 
         document.getElementById("result-emoji").textContent = emoji;
         document.getElementById("result-title").textContent = title;
-        document.getElementById("result-detail").textContent = detail;
+        const acc = questions.length > 0 ? Math.round(myCorrectCount / questions.length * 100) : 0;
+        document.getElementById("result-detail").textContent =
+        detail + `  •  Bạn đúng ${myCorrectCount}/${questions.length} câu (${acc}%)`;
         document.getElementById("final-score1").textContent = score1;
         document.getElementById("final-score2").textContent = score2;
 
@@ -438,6 +505,7 @@ const roomId = '@ViewBag.RoomId';
         if (currentQ >= questions.length) return;
         const q = questions[currentQ];
         answered = false;
+        questionShownAt = Date.now();   // bắt đầu đếm giờ cho câu này
 
         document.getElementById("question-text").textContent = q.question || "Không có nội dung câu hỏi";
         document.getElementById("q-counter").textContent = `Câu ${currentQ + 1}/${questions.length}`;
@@ -471,7 +539,26 @@ const roomId = '@ViewBag.RoomId';
         else if (i === chosen && !isCorrect) b.classList.add("wrong");
         });
 
-        conn.invoke("SubmitAnswer", roomId, currentQ, isCorrect).catch(console.error);
+        // ── Tính điểm: đúng = 100 điểm gốc + thưởng tốc độ + thưởng combo ──
+        let points = 0;
+        if (isCorrect) {
+        myCorrectCount++;
+        myCombo++;
+        // Thưởng tốc độ: trả lời trong 2s đầu được tối đa 60, giảm dần, tối thiểu 0.
+        const elapsed = (Date.now() - questionShownAt) / 1000;
+        const speedBonus = Math.max(0, Math.round(60 * (1 - Math.min(elapsed, 8) / 8)));
+        // Thưởng combo: mỗi mắt xích liên tiếp +20, tối đa +100.
+        const comboBonus = Math.min((myCombo - 1) * 20, 100);
+        points = 100 + speedBonus + comboBonus;
+        showComboBadge();
+        showPointsFloat("+" + points, "#16a34a");
+        } else {
+        myCombo = 0;           // trả lời sai → mất combo
+        hideComboBadge();
+        showPointsFloat("Sai!", "#dc2626");
+        }
+
+        conn.invoke("SubmitAnswer", roomId, currentQ, isCorrect, points).catch(console.error);
 
         setTimeout(() => {
         currentQ++;
@@ -483,6 +570,36 @@ const roomId = '@ViewBag.RoomId';
         document.getElementById("options-wrap").innerHTML = "";
         }
         }, 1200);
+        }
+
+        // Hiển thị huy hiệu combo khi chuỗi ≥ 2
+        function showComboBadge() {
+        const el = document.getElementById("combo-badge");
+        if (!el) return;
+        if (myCombo >= 2) {
+        el.textContent = "🔥 Combo x" + myCombo;
+        el.classList.add("show");
+        el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump");
+        }
+        }
+        function hideComboBadge() {
+        const el = document.getElementById("combo-badge");
+        if (el) el.classList.remove("show");
+        }
+
+        // Hiệu ứng điểm bay lên tại vị trí câu hỏi
+        function showPointsFloat(text, color) {
+        const host = document.getElementById("battle-card");
+        if (!host) return;
+        const span = document.createElement("div");
+        span.className = "points-float";
+        span.textContent = text;
+        span.style.color = color;
+        span.style.left = "50%";
+        span.style.top = "150px";
+        span.style.transform = "translateX(-50%)";
+        host.appendChild(span);
+        setTimeout(() => span.remove(), 1000);
         }
 
         function setLoadingMsg(msg) {

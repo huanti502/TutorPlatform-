@@ -487,9 +487,66 @@ public class AdminController : Controller
     }
 
     // ==========================================
-    // DUYỆT RÚT TIỀN (WITHDRAWAL)
+    // TẠO DỮ LIỆU MẪU (DEMO)
     // ==========================================
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SeedSampleData()
+    {
+        var students = await _db.Users.Where(u => u.Role == "Student").Take(10).ToListAsync();
+        if (students.Count == 0)
+        {
+            TempData["Error"] = "Chưa có tài khoản học viên nào để gán dữ liệu mẫu. Hãy tạo vài học viên trước.";
+            return RedirectToAction("Index");
+        }
+        var subjects = await _db.Subjects.Where(s => s.IsActive).ToListAsync();
+        int? SubjId(string name) => subjects.FirstOrDefault(s => s.Name.Contains(name))?.Id;
+
+        var rnd = new Random();
+        var samples = new (string Title, string Desc, string Subj, string Mode, string? Loc, string Sched, int Sess, decimal Budget)[]
+        {
+            ("Toán lớp 8 - lấy lại gốc, 2 buổi/tuần", "- Học sinh Nam, học lực trung bình, cần kèm lại kiến thức nền lớp 7-8.\n- Yêu cầu: gia sư kiên nhẫn, có kinh nghiệm, dạy dễ hiểu.\n- Ưu tiên sinh viên sư phạm.", "Toán", "Offline", "P.25, Q. Bình Thạnh, TP.HCM", "Tối T2, T5 từ 19h30", 2, 180000),
+            ("Tiếng Anh giao tiếp cho người đi làm", "- Học viên đã đi làm, mất gốc, muốn giao tiếp cơ bản trong công việc.\n- Học online qua Zoom/Meet, linh hoạt giờ.\n- Ưu tiên gia sư phát âm chuẩn.", "Anh", "Online", null, "Tối T3, T5, CN", 3, 250000),
+            ("Luyện thi IELTS mục tiêu 6.5", "- Học sinh lớp 12, hiện band 5.0, cần đạt 6.5 trong 4 tháng.\n- Tập trung Writing và Speaking.\n- Gia sư cần có chứng chỉ IELTS ≥ 7.0.", "Anh", "Both", "Q.1, TP.HCM", "T7, CN buổi sáng", 2, 400000),
+            ("Vật lý lớp 11 - nâng cao", "- Học sinh khá, muốn học nâng cao chuẩn bị thi HSG.\n- Cần gia sư chuyên Lý, ra bài tập khó.", "Lý", "Online", null, "Tối T2, T6 từ 20h", 2, 300000),
+            ("Hóa học lớp 10 - cơ bản đến nâng cao", "- Học sinh Nữ, mất gốc Hóa, cần xây lại từ đầu.\n- Kèm sát chương trình trên lớp.", "Hóa", "Offline", "TP. Thủ Đức, TP.HCM", "Chiều T4, T7", 2, 200000),
+            ("Tin học lập trình Python cho học sinh cấp 3", "- Học sinh muốn học lập trình Python từ cơ bản.\n- Định hướng thi tin học trẻ.\n- Gia sư biết dạy trực quan, có project thực hành.", "Tin", "Online", null, "Tối T3, T6", 2, 280000),
+            ("Ngữ văn lớp 9 - ôn thi vào 10", "- Học sinh cần ôn thi chuyển cấp, yếu phần nghị luận.\n- Gia sư có kinh nghiệm luyện thi vào 10.", "Văn", "Offline", "Q. Gò Vấp, TP.HCM", "Tối T2, T4, T6", 3, 220000),
+            ("Toán tư duy cho học sinh tiểu học", "- Bé lớp 4, phụ huynh muốn phát triển tư duy Toán sớm.\n- Gia sư nhẹ nhàng, tạo hứng thú học.", "Toán", "Offline", "P. Hiệp Bình Chánh, TP. Thủ Đức", "Chiều T3, T5", 2, 150000),
+        };
+
+        int created = 0;
+        foreach (var s in samples)
+        {
+            var student = students[rnd.Next(students.Count)];
+            _db.ClassRequests.Add(new ClassRequest
+            {
+                StudentId = student.Id,
+                Title = s.Title,
+                Description = s.Desc,
+                SubjectId = SubjId(s.Subj),
+                Mode = s.Mode,
+                Location = s.Loc,
+                Schedule = s.Sched,
+                SessionsPerWeek = s.Sess,
+                BudgetPerSession = s.Budget,
+                Status = "Open",
+                // Rải thời gian tạo trong 5 ngày gần đây để trông tự nhiên.
+                CreatedAt = DateTime.UtcNow.AddHours(-rnd.Next(1, 120))
+            });
+            created++;
+        }
+        await _db.SaveChangesAsync();
+
+        TempData["Success"] = $"Đã tạo {created} lớp cần gia sư mẫu. Vào trang 'Nhận lớp dạy' để xem.";
+        await LogAuditAsync("Tạo dữ liệu mẫu", "ClassRequest", $"{created} lớp");
+        return RedirectToAction("Index");
+    }
+
+    // ==========================================
+    // DUYỆT RÚT TIỀN (WITHDRAWAL)
+    // ==========================================
     [HttpGet]
     public async Task<IActionResult> Withdrawals(string? status)
     {

@@ -498,7 +498,7 @@ public class BattleHub : Hub
         }
     }
 
-    public async Task SubmitAnswer(string roomId, int questionIndex, bool isCorrect)
+    public async Task SubmitAnswer(string roomId, int questionIndex, bool isCorrect, int points)
     {
         try
         {
@@ -519,15 +519,21 @@ public class BattleHub : Hub
                     return; // câu này đã được tính rồi
             }
 
-            if (userId == room.Player1Id && isCorrect) room.Score1++;
-            else if (userId == room.Player2Id && isCorrect) room.Score2++;
+            // Điểm do client tính (tốc độ + combo) nhưng CLAMP lại phía server để hạn chế gian lận.
+            int pts = isCorrect ? Math.Clamp(points, 1, 250) : 0;
+
+            if (userId == room.Player1Id) room.Score1 += pts;
+            else if (userId == room.Player2Id) room.Score2 += pts;
 
             await _db.SaveChangesAsync();
 
             await Clients.Group(room.RoomId).SendAsync("ScoreUpdate", new
             {
                 score1 = room.Score1,
-                score2 = room.Score2
+                score2 = room.Score2,
+                scorerId = userId,
+                gained = pts,
+                correct = isCorrect
             });
         }
         catch (Exception ex)

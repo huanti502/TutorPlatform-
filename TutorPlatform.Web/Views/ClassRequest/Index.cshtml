@@ -75,6 +75,19 @@
                     </div>
                     <div class="col-lg-6 col-md-9">
                         <h5 class="fw-bold mb-2" style="font-size:1.02rem;">@c.Title</h5>
+                        @if (c.Student != null)
+                        {
+                            var lv = TutorPlatform.Web.Services.XpService.GetLevel(c.Student.XpPoints);
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <span class="text-muted small">Đăng bởi @c.Student.FullName</span>
+                                @if (c.Student.XpPoints >= 100)
+                                {
+                                    <span class="badge" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;" title="Học viên tích cực - đã tích luỹ @c.Student.XpPoints XP">
+                                        ⭐ @lv.level
+                                    </span>
+                                }
+                            </div>
+                        }
                         <p class="text-muted small mb-2" style="white-space:pre-line;">@c.Description</p>
                         <div class="text-muted small mb-2">
                             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="vertical-align:-2px;"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
